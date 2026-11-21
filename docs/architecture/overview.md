@@ -57,3 +57,28 @@
 * Befehlsprotokoll: `…\logs\daw-commands.jsonl` (jeder Befehl mit gemessener Dauer und Verifikation)
 * Umgebungsvariablen für Tests/Fehlersuche: `LOM_ADAPTER=mock|abletonOsc`, `LOM_OSC_SEND_PORT`,
   `LOM_OSC_LISTEN_PORT`, `LOM_ABLETON_USER_LIBRARY`
+
+## Zusammenarbeit (Sprint 2)
+
+```
+ Host (Connect Studio)                                          Gast (Connect Studio)
+ ┌───────────────────────────┐   wss/ws: join, Angebot, ICE   ┌───────────────────────────┐
+ │ RtcSession ───────────────┼──► lom-signaling ◄─────────────┼── RtcSession              │
+ │  SessionCore (Freigaben,  │   (eingebettet oder selbst     │  SessionCore              │
+ │  DAW-Befehle, Hub-Sync)   │    gehostet; nur Vermittlung)   │                           │
+ │  FileTransfers            │                                 │  FileTransfers            │
+ │        ▲  ▲               │ ◄══ WebRTC (DTLS/SRTP) ═══════► │                           │
+ │ Tauri: │  │ hub_merge ────┼─ Audio: Mikrofon | Systemton    │                           │
+ │ daw_execute transfer_* ───┼─ Video: Kamera | Bildschirm     │                           │
+ │  (Allowlist)  (Rust)      │  Data:  control (JSON) | files  │                           │
+ └───────────────────────────┘                                 └───────────────────────────┘
+```
+
+* `packages/protocol/src/session.ts` – Nachrichtenschema, Einladungen, Sicherheitscode, Dateirahmen
+* `packages/protocol/src/hub.ts` – Hub-Datenmodell und Abgleich (Lamport-Uhr, Last-Writer-Wins)
+* `apps/desktop/src/collab/core.ts` – Sitzungslogik ohne Transport (vollständig unit-getestet)
+* `apps/desktop/src/collab/files.ts` – Dateiaustausch (Sender/Empfänger)
+* `apps/desktop/src/collab/rtc.ts` – WebRTC, Medien, Messwerte
+* `services/signaling` – Signalisierungsdienst (Bibliothek + Binary + Docker)
+* `services/transfer` – sicherer Dateiempfang
+* `apps/desktop/src-tauri/src/hub.rs` – Hub-Speicher (SQLite)

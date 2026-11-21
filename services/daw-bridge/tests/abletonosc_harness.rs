@@ -219,6 +219,8 @@ async fn every_read_address_exists_in_abletonosc() {
         DawCommand::SetTrackVolume { track: 0, value: 0.3 },
         DawCommand::SetTrackPanning { track: 0, value: 0.3 },
         DawCommand::FireClip { track: 0, slot: 0 },
+        DawCommand::SetLinkEnabled { enabled: true },
+        DawCommand::SetLinkEnabled { enabled: false },
     ] {
         assert!(a.execute(c.clone()).await.unwrap().verified, "{c:?}");
     }

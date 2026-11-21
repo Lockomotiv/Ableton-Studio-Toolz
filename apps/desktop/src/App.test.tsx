@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import App from "./App";
+import { SessionProvider } from "./collab/SessionContext";
 import { badgeState } from "./components/ConnectionBadge";
 import type { AppInfo, LiveStatus, Settings } from "@lom/shared-types";
 
@@ -26,11 +27,15 @@ const status = (over: Partial<LiveStatus> = {}): LiveStatus => ({
   tempo: 120,
   loopEnabled: false,
   numTracks: 0,
+  linkEnabled: false,
   queryMs: 0,
   ...over,
 });
 
-const settings: Settings = { role: "host", defaultMode: "remote", adapter: "mock", setupCompleted: true };
+const settings: Settings = {
+  role: "host", defaultMode: "remote", adapter: "mock", setupCompleted: true, displayName: "Test", siteId: "site1",
+  signalingUrl: "", usePublicStun: true, extraStun: "", lanPort: 47870, projectFolder: "", activeProjectId: "",
+};
 
 describe("badgeState", () => {
   it("meldet Mock niemals als verbunden", () => {
@@ -83,13 +88,13 @@ describe("App", () => {
   });
 
   it("startet im Mock-Modus und kennzeichnet ihn sichtbar", async () => {
-    render(<App />);
+    render(<SessionProvider><App /></SessionProvider>);
     await waitFor(() => expect(screen.getByTestId("connection-badge").dataset.state).toBe("mock"));
     expect(await screen.findByTestId("mock-banner")).toBeTruthy();
   });
 
   it("Play/Stop aktualisiert den Transportstatus", async () => {
-    render(<App />);
+    render(<SessionProvider><App /></SessionProvider>);
     const play = await screen.findByTestId("btn-play");
     await waitFor(() => expect((play as HTMLButtonElement).disabled).toBe(false));
     fireEvent.click(play);
@@ -100,7 +105,7 @@ describe("App", () => {
   });
 
   it("ungültiges Tempo wird vor dem Senden abgelehnt", async () => {
-    render(<App />);
+    render(<SessionProvider><App /></SessionProvider>);
     const input = await screen.findByTestId("tempo-input");
     await waitFor(() => expect((screen.getByTestId("btn-play") as HTMLButtonElement).disabled).toBe(false));
     fireEvent.change(input, { target: { value: "5" } });

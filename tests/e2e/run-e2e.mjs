@@ -21,6 +21,11 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createSocket } from "node:dgram";
+import { createHash } from "node:crypto";
+import { readFileSync, readdirSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { installMockBackend } from "./mock-backend.mjs";
+import { loadPlaywright, serveDir } from "./util.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const WIN = process.platform === "win32";
@@ -31,8 +36,9 @@ const PY = process.env.PYTHON ?? (WIN ? "python" : "python3");
 
 const results = [];
 function record(name, ok, detail = "") {
-  results.push({ name, ok, detail });
-  console.log(`${ok ? "✔" : "✘"} ${name}${detail ? " – " + detail : ""}`);
+  // ok === "skip": nicht durchführbar – zählt NICHT als bestanden
+  results.push({ name, ok: ok === "skip" ? null : !!ok, skipped: ok === "skip", detail });
+  console.log(`${ok === "skip" ? "○" : ok ? "✔" : "✘"} ${name}${detail ? " – " + detail : ""}`);
 }
 
 async function freePort() {
@@ -79,6 +85,7 @@ const s = (p) => `/session/${sid}${p}`;
 const find = async (css) => (await wd("POST", s("/element"), { using: "css selector", value: css }))[EL];
 const click = async (css) => wd("POST", s(`/element/${await find(css)}/click`), {});
 const text = async (css) => wd("GET", s(`/element/${await find(css)}/text`));
+const execJs = async (script, args = []) => wd("POST", s("/execute/sync"), { script, args });
 const attr = async (css, a) => wd("GET", s(`/element/${await find(css)}/attribute/${a}`));
 const exists = async (css) => {
   try {
@@ -223,6 +230,99 @@ async function main() {
   const disabled = (await attr('[data-testid="btn-play"]', "disabled")) !== null;
   record("Verbindungsabbruch → 'Nicht verbunden', Steuerung gesperrt", disabled);
 
+  // ---------------- E: Projekt-Hub im echten Rust-Backend (SQLite)
+  await click('[data-testid="nav-hub"]');
+  await type('[data-testid="hub-new-project"]', "Tauri E2E Track");
+  await click('[data-testid="btn-hub-new-project"]');
+  await waitFor(async () => (await attr('[data-testid="hub-quick"]', "disabled")) === null);
+  await type('[data-testid="hub-quick"]', "Idee aus dem echten Backend");
+  await click('[data-testid="btn-hub-add"]');
+  await waitFor(() => exists('[data-testid="hub-card"][data-title="Idee aus dem echten Backend"]'));
+  const sqlite = (q) => execFileSync(PY, ["-c", `import sqlite3,sys;c=sqlite3.connect(sys.argv[1]);print(c.execute(sys.argv[2]).fetchone()[0])`, join(dataDir, "settings.sqlite"), q]).toString().trim();
+  const stored = sqlite("select count(*) from hub_items where json like '%Idee aus dem echten Backend%'");
+  record("Hub-Eintrag in SQLite gespeichert (Rust hub_merge)", stored === "1", `hub_items=${stored}`);
+
+  // ---------------- F: Session-Host mit eingebettetem Signalisierungsserver
+  await click('[data-testid="nav-session"]');
+  await type('[data-testid="host-new-project"]', "Tauri-Host-Projekt");
+  await click('[data-testid="btn-host"]');
+  const invite = await waitFor(async () => (await exists('[data-testid="invite-code"]')) && (await text('[data-testid="invite-code"]')), 15000).catch(() => null);
+  const errMsg = invite ? "" : await text('[data-testid="session-error"]').catch(() => "");
+  record("Eingebetteter Signalisierungsserver startet, Einladung erzeugt", !!invite, invite ? JSON.parse(Buffer.from(invite.slice(5), "base64url")).s : errMsg);
+  const hasRtc = await execJs("return typeof RTCPeerConnection === 'function'");
+  if (!invite) {
+    // nichts weiter möglich
+  } else if (!hasRtc) {
+    record("Gast verbindet sich mit Tauri-Host (WebRTC)", "skip", "ÜBERSPRUNGEN: diese WebView (WebKitGTK) hat kein WebRTC – unter Windows nutzt Tauri WebView2 (Chromium)");
+  } else {
+    const { chromium } = loadPlaywright();
+    const web = await serveDir(join(ROOT, "apps", "desktop", "dist"));
+    const browser = await chromium.launch({ args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"] });
+    try {
+      const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+      await ctx.addInitScript(installMockBackend, { role: "guest", name: "Chromium-Gast", siteId: "chromiumguest", signalUrl: "" });
+      const g = await ctx.newPage();
+      await g.goto(web.url);
+      await g.click('[data-testid="nav-session"]');
+      await g.fill('[data-testid="join-code"]', invite);
+      await g.click('[data-testid="btn-join"]');
+      const ok = await g.waitForSelector('[data-testid="session-phase"][data-phase="connected"]', { timeout: 25000 }).then(() => true).catch(() => false);
+      await waitFor(async () => (await attr('[data-testid="session-phase"]', "data-phase")) === "connected", 10000).catch(() => {});
+      record("Chromium-Gast verbindet sich mit Tauri-Host (echter eingebetteter Server, WebRTC)", ok);
+      if (ok) {
+        const size = 1024 * 1024 + 7;
+        const bytes = Buffer.alloc(size, 0);
+        for (let i = 0; i < size; i++) bytes[i] = (i * 13) & 0xff;
+        const sha = createHash("sha256").update(bytes).digest("hex");
+        await g.click('[data-testid="nav-samples"]');
+        await g.setInputFiles('[data-testid="file-input"]', { name: "Tauri Test Loop.wav", mimeType: "audio/wav", buffer: bytes });
+        await click('[data-testid="nav-samples"]');
+        await waitFor(() => exists('[data-testid="btn-accept"]'), 15000);
+        await click('[data-testid="btn-accept"]');
+        await waitFor(() => exists('[data-testid="transfer"][data-status="done"]'), 30000);
+        const recvDir = join(dataDir, "received");
+        const files = readdirSync(recvDir);
+        const got = files.includes("Tauri Test Loop.wav") ? createHash("sha256").update(readFileSync(join(recvDir, "Tauri Test Loop.wav"))).digest("hex") : null;
+        record("Sample landet im echten Empfangsordner (Rust ReceiveStore), SHA-256 identisch", got === sha, files.join(", "));
+        await screenshot("19-tauri-host-sample-empfangen.png");
+      }
+    } finally {
+      await browser.close();
+      web.srv.close();
+    }
+  }
+
+  // ---------------- G: Sample-Empfang über die echte Binär-IPC (ohne WebRTC)
+  const ipc = await wd("POST", s("/execute/async"), {
+    script: `const done = arguments[arguments.length - 1];
+      (async () => {
+        const inv = window.__TAURI_INTERNALS__.invoke;
+        const data = new Uint8Array(300000).map((_, i) => (i * 7) & 255);
+        const sha = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", data)), (b) => b.toString(16).padStart(2, "0")).join("");
+        const out = {};
+        try { await inv("transfer_begin", { id: "evil-0001", name: "payload.exe", size: 10, sha256: sha }); out.exe = "angenommen"; } catch (e) { out.exe = e.kind; }
+        const b = await inv("transfer_begin", { id: "ipc-test-0001", name: "../../Windows/Kick IPC.wav", size: data.length, sha256: sha });
+        out.name = b.fileName;
+        let off = 0;
+        for (let i = 0; i < data.length; i += 65536) {
+          off = await inv("transfer_write", data.slice(i, i + 65536), { headers: { "x-transfer-id": "ipc-test-0001", "x-offset": String(i) } });
+        }
+        try { await inv("transfer_write", data.slice(0, 10), { headers: { "x-transfer-id": "ipc-test-0001", "x-offset": "5" } }); } catch (e) { out.gap = e.kind; }
+        const f = await inv("transfer_finish", { id: "ipc-test-0001" });
+        out.finish = f; out.sha = sha;
+        const prev = await inv("transfer_preview", { fileName: f.fileName });
+        out.previewBytes = prev.byteLength;
+        try { await inv("transfer_import", { fileName: f.fileName, projectDir: "/tmp" }); out.import = "erlaubt"; } catch (e) { out.import = e.kind; }
+        done(out);
+      })().catch((e) => done({ error: String(e && (e.message || e)) }));`,
+    args: [],
+  });
+  const recvFile = join(dataDir, "received", ipc.finish?.fileName ?? "-");
+  const diskSha = existsSync(recvFile) ? createHash("sha256").update(readFileSync(recvFile)).digest("hex") : null;
+  record("Rust-Empfang über Binär-IPC: Datei im Empfangsordner, SHA-256 identisch", ipc.finish?.verified === true && diskSha === ipc.sha, ipc.error ?? `${ipc.finish?.fileName}, ${ipc.previewBytes} Bytes Vorschau`);
+  record("Rust-Empfang: Path Traversal entfernt, .exe abgelehnt, Lücken abgelehnt", ipc.name === "Kick IPC.wav" && ipc.exe === "extensionNotAllowed" && ipc.gap === "outOfOrder", `name=${ipc.name}, exe=${ipc.exe}, gap=${ipc.gap}`);
+  record("Rust-Import nur in Ableton-Projektordner (.als)", ipc.import === "notAbletonProject", `import=${ipc.import}`);
+
   await wd("DELETE", s(""));
 }
 
@@ -232,8 +332,9 @@ main()
   })
   .finally(async () => {
     stopAll();
-    const failed = results.filter((r) => !r.ok);
-    console.log(`\n${results.length - failed.length}/${results.length} E2E-Prüfungen bestanden`);
+    const failed = results.filter((r) => r.ok === false);
+    const skipped = results.filter((r) => r.skipped).length;
+    console.log(`\n${results.filter((r) => r.ok).length}/${results.length - skipped} E2E-Prüfungen bestanden${skipped ? `, ${skipped} übersprungen` : ""}`);
     writeFileSync(join(ROOT, "tests", "e2e", "last-run.json"), JSON.stringify({ at: new Date().toISOString(), platform: process.platform, results }, null, 2));
     process.exit(failed.length ? 1 : 0);
   });

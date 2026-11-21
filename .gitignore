@@ -7,3 +7,5 @@ tests/e2e/last-run.json
 __pycache__/
 *.log
 .DS_Store
+services/signaling/deploy/.env
+tests/e2e/last-collab-run.json

@@ -13,6 +13,8 @@ export interface LiveStatus {
   tempo: number;
   loopEnabled: boolean;
   numTracks: number;
+  /** Ableton Link aktiv; null = nicht abfragbar */
+  linkEnabled: boolean | null;
   queryMs: number;
 }
 
@@ -39,7 +41,8 @@ export type DawCommand =
   | { type: "setLoop"; enabled: boolean }
   | { type: "setTrackVolume"; track: number; value: number }
   | { type: "setTrackPanning"; track: number; value: number }
-  | { type: "fireClip"; track: number; slot: number };
+  | { type: "fireClip"; track: number; slot: number }
+  | { type: "setLinkEnabled"; enabled: boolean };
 
 export interface CommandOutcome {
   command: DawCommand;
@@ -90,6 +93,31 @@ export interface Settings {
   defaultMode: StudioMode | null;
   adapter: AdapterKind;
   setupCompleted: boolean;
+  displayName: string;
+  siteId: string;
+  signalingUrl: string;
+  usePublicStun: boolean;
+  extraStun: string;
+  lanPort: number;
+  projectFolder: string;
+  activeProjectId: string;
+}
+
+export interface HostingInfo {
+  active: boolean;
+  port: number;
+  urls: string[];
+}
+
+export interface TransferInfo {
+  receiveDir: string;
+  maxBytes: number;
+}
+
+export interface ReceivedFile {
+  fileName: string;
+  size: number;
+  modifiedMs: number;
 }
 
 export interface AppInfo {

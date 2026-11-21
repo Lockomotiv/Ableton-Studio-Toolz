@@ -46,6 +46,8 @@ export function SettingsPage(props: {
       </header>
       {error && <div className="banner banner-error" data-testid="settings-error">{error}</div>}
 
+      <CollabSettings settings={settings} save={save} />
+
       <section className="grid-2">
         <div className="card">
           <div className="card-title">DAW-Adapter (aktuelle Sitzung)</div>
@@ -127,5 +129,49 @@ export function SettingsPage(props: {
         </div>
       </section>
     </div>
+  );
+}
+
+function CollabSettings(props: { settings: Settings; save: (p: Partial<Settings>) => Promise<void> }) {
+  const [d, setD] = useState(props.settings);
+  const dirty = JSON.stringify(d) !== JSON.stringify(props.settings);
+  const urlOk = !d.signalingUrl || /^wss?:\/\/[^\s]+$/.test(d.signalingUrl);
+  return (
+    <section className="card">
+      <div className="card-title">Zusammenarbeit</div>
+      <div className="grid-2 tight">
+        <div className="form">
+          <label className="field">
+            Anzeigename
+            <input className="input" maxLength={64} value={d.displayName} onChange={(e) => setD({ ...d, displayName: e.target.value })} data-testid="set-name" />
+          </label>
+          <label className="field">
+            Signalisierungsserver für Internet-Sessions (eigener Server, siehe docs/deployment)
+            <input className="input mono" placeholder="wss://signal.mein-studio.de" value={d.signalingUrl} onChange={(e) => setD({ ...d, signalingUrl: e.target.value.trim() })} />
+          </label>
+          {!urlOk && <div className="error-text small">Muss mit ws:// oder wss:// beginnen.</div>}
+          <label className="field">
+            LAN-Port (eingebauter Server)
+            <input className="input narrow" type="number" min={1024} max={65535} value={d.lanPort} onChange={(e) => setD({ ...d, lanPort: Number(e.target.value) })} />
+          </label>
+        </div>
+        <div className="form">
+          <label className="switch">
+            <input type="checkbox" checked={d.usePublicStun} onChange={(e) => setD({ ...d, usePublicStun: e.target.checked })} />
+            Öffentlichen STUN-Server von Google verwenden (hilft beim Verbindungsaufbau durch Router; übermittelt Ihre öffentliche IP an Google)
+          </label>
+          <label className="field">
+            Weitere STUN-Server (eine URL je Zeile, z. B. stun:turn.mein-studio.de:3478)
+            <textarea className="input mono" rows={3} value={d.extraStun} onChange={(e) => setD({ ...d, extraStun: e.target.value })} />
+          </label>
+          <p className="hint">TURN-Zugangsdaten werden nicht hier gespeichert – Ihr Signalisierungsserver stellt zeitlich begrenzte Zugangsdaten aus.</p>
+        </div>
+      </div>
+      <div className="row">
+        <button className="btn btn-accent" disabled={!dirty || !urlOk || d.lanPort < 1024 || d.lanPort > 65535} onClick={() => void props.save(d)} data-testid="btn-save-collab">
+          Speichern
+        </button>
+      </div>
+    </section>
   );
 }

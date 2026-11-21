@@ -24,6 +24,7 @@ struct MockState {
     is_playing: bool,
     tempo: f32,
     loop_enabled: bool,
+    link_enabled: bool,
     tracks: Vec<MockTrack>,
 }
 
@@ -45,6 +46,7 @@ impl Default for MockAdapter {
                 is_playing: false,
                 tempo: 120.0,
                 loop_enabled: false,
+                link_enabled: false,
                 tracks: vec![
                     t("Drums (Mock)", &[true, true, false, false]),
                     t("Bass (Mock)", &[true, false, true, false]),
@@ -90,6 +92,7 @@ impl DawAdapter for MockAdapter {
             tempo: s.tempo,
             loop_enabled: s.loop_enabled,
             num_tracks: s.tracks.len() as u32,
+            link_enabled: Some(s.link_enabled),
             query_ms: 0.0,
         })
     }
@@ -125,6 +128,7 @@ impl DawAdapter for MockAdapter {
             DawCommand::Stop => s.is_playing = false,
             DawCommand::SetTempo { bpm } => s.tempo = bpm,
             DawCommand::SetLoop { enabled } => s.loop_enabled = enabled,
+            DawCommand::SetLinkEnabled { enabled } => s.link_enabled = enabled,
             DawCommand::SetTrackVolume { track, value } => s.tracks[track as usize].volume = value,
             DawCommand::SetTrackPanning { track, value } => s.tracks[track as usize].panning = value,
             DawCommand::FireClip { track, slot } => {

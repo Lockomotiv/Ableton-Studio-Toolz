@@ -38,6 +38,8 @@ pub struct LiveStatus {
     pub tempo: f32,
     pub loop_enabled: bool,
     pub num_tracks: u32,
+    /// Ableton Link aktiv (None = nicht abfragbar)
+    pub link_enabled: Option<bool>,
     /// Gemessene Dauer der gesamten Statusabfrage in ms (Mock: 0).
     pub query_ms: f64,
 }

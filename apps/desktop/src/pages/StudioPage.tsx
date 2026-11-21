@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import type { AdapterKind, CommandOutcome, DawCommand, LiveStatus, TrackInfo } from "@lom/shared-types";
 import { describeCommand, formatPan, TEMPO_MAX, TEMPO_MIN } from "@lom/protocol";
 import { api, errorMessage } from "../api";
@@ -18,6 +18,15 @@ export function StudioPage(props: {
   status: LiveStatus | null;
   statusError: string | null;
   onChanged: () => Promise<void> | void;
+  /** Ziel der Befehle (Standard: lokale DAW). Gast im Remote Studio: DAW des Hosts. */
+  exec?: (c: DawCommand) => Promise<CommandOutcome>;
+  /** Spuren kommen vom Host statt aus der lokalen DAW */
+  tracksOverride?: TrackInfo[] | null;
+  /** Bedienung gesperrt (mit Begründung/Aktion) */
+  locked?: ReactNode | null;
+  /** Hinweis über dem Studio, z. B. "Sie steuern die DAW von …" */
+  context?: ReactNode | null;
+  title?: string;
 }) {
   const { status, adapter } = props;
   const [busy, setBusy] = useState(false);
@@ -33,7 +42,7 @@ export function StudioPage(props: {
       setBusy(true);
       const entry: LogEntry = { id: ++logId, at: new Date(), label: describeCommand(cmd) };
       try {
-        entry.outcome = await api.execute(cmd);
+        entry.outcome = await (props.exec ?? api.execute)(cmd);
       } catch (e) {
         entry.error = errorMessage(e);
       } finally {
@@ -47,6 +56,7 @@ export function StudioPage(props: {
   );
 
   const loadTracks = useCallback(async () => {
+    if (props.tracksOverride) return;
     try {
       setTracks(await api.tracks());
       setTracksError(null);
@@ -54,31 +64,39 @@ export function StudioPage(props: {
       setTracks([]);
       setTracksError(errorMessage(e));
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!props.tracksOverride]);
 
   useEffect(() => {
     void loadTracks();
   }, [loadTracks, adapter, status?.numTracks]);
 
-  const disabled = busy || !status;
+  const shownTracks = props.tracksOverride ?? tracks;
+  const disabled = busy || !status || !!props.locked;
   const playing = status?.isPlaying ?? false;
 
   return (
     <div className="page">
       <header className="page-head">
         <div>
-          <h1>Studio</h1>
-          <p className="muted">Lokale Steuerung von Ableton Live über AbletonOSC</p>
+          <h1>{props.title ?? "Studio"}</h1>
+          <p className="muted">{props.tracksOverride ? "Fernsteuerung der Host-DAW über die Session" : "Lokale Steuerung von Ableton Live über AbletonOSC"}</p>
         </div>
       </header>
 
-      {adapter === "mock" && (
+      {props.context}
+      {props.locked && (
+        <div className="banner banner-warn" data-testid="studio-locked">
+          {props.locked}
+        </div>
+      )}
+      {adapter === "mock" && !props.tracksOverride && (
         <div className="banner banner-warn" data-testid="mock-banner">
           <strong>Mock-Modus:</strong> Es besteht keine Verbindung zu Ableton Live. Alle Werte und Befehle auf dieser
           Seite werden nur simuliert. Unter <em>Einstellungen</em> auf „AbletonOSC“ umschalten.
         </div>
       )}
-      {adapter === "abletonOsc" && !status && props.statusError && (
+      {(adapter === "abletonOsc" || props.tracksOverride) && !status && props.statusError && (
         <div className="banner banner-error" data-testid="status-error">
           {props.statusError}
         </div>
@@ -157,10 +175,19 @@ export function StudioPage(props: {
             >
               ⟲ Loop {status ? (status.loopEnabled ? "an" : "aus") : ""}
             </button>
+            <button
+              data-testid="btn-link"
+              className={`btn toggle ${status?.linkEnabled ? "on" : ""}`}
+              disabled={disabled || status?.linkEnabled == null}
+              title="Ableton Link: Tempo und Phase mit anderen Link-Programmen im selben Netz synchronisieren"
+              onClick={() => status && run({ type: "setLinkEnabled", enabled: !status.linkEnabled })}
+            >
+              🔗 Link {status?.linkEnabled == null ? "?" : status.linkEnabled ? "an" : "aus"}
+            </button>
           </div>
           <div className="row">
             <select className="input" value={clipTrack} onChange={(e) => setClipTrack(Number(e.target.value))}>
-              {tracks.map((t) => (
+              {shownTracks.map((t) => (
                 <option key={t.index} value={t.index}>
                   {t.index + 1}: {t.name}
                 </option>
@@ -177,7 +204,7 @@ export function StudioPage(props: {
             <button
               className="btn"
               data-testid="btn-fire-clip"
-              disabled={disabled || tracks.length === 0}
+              disabled={disabled || shownTracks.length === 0}
               onClick={() => run({ type: "fireClip", track: clipTrack, slot: clipSlot - 1 })}
             >
               Clip starten
@@ -205,10 +232,10 @@ export function StudioPage(props: {
               </tr>
             </thead>
             <tbody>
-              {tracks.map((t) => (
+              {shownTracks.map((t) => (
                 <TrackRow key={`${adapter}-${t.index}`} track={t} disabled={disabled} run={run} />
               ))}
-              {tracks.length === 0 && !tracksError && (
+              {shownTracks.length === 0 && !tracksError && (
                 <tr>
                   <td colSpan={4} className="muted">
                     Keine Spuren geladen.

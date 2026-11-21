@@ -16,30 +16,32 @@ Automatisch erzeugt mit `node scripts/license-report.mjs` aus dem aufgelösten C
 
 ## Zusammenfassung
 
-* MIT OR Apache-2.0: 215
-* MIT: 114
+* MIT OR Apache-2.0: 225
+* MIT: 116
 * Apache-2.0 OR MIT: 36
 * Unicode-3.0: 18
 * MIT/Apache-2.0: 17
 * Zlib OR Apache-2.0 OR MIT: 17
 * Unlicense OR MIT: 14
 * MPL-2.0: 7
+* BSD-3-Clause: 3
 * Apache-2.0/MIT: 3
 * Zlib: 3
 * Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT: 3
-* BSD-3-Clause: 2
 * MIT OR Zlib OR Apache-2.0: 2
 * BSD-3-Clause OR MIT OR Apache-2.0: 2
 * MIT OR Apache-2.0 OR LGPL-2.1-or-later: 2
 * MIT OR Apache-2.0 OR Zlib: 2
 * Unlicense/MIT: 2
 * Apache-2.0: 2
+* BSD-2-Clause OR Apache-2.0 OR MIT: 2
 * 0BSD OR MIT OR Apache-2.0: 1
 * BSD-3-Clause AND MIT: 1
 * BSD-3-Clause/MIT: 1
 * Apache-2.0 AND MIT: 1
 * CC0-1.0 OR MIT-0 OR Apache-2.0: 1
 * Apache-2.0 / MIT: 1
+* MIT OR BSD-3-Clause: 1
 * ISC: 1
 * Apache-2.0 WITH LLVM-exception: 1
 * (MIT OR Apache-2.0) AND Unicode-3.0: 1
@@ -55,7 +57,7 @@ Automatisch erzeugt mit `node scripts/license-report.mjs` aus dem aufgelösten C
 * cargo selectors 0.38.0: MPL-2.0
 * cargo selectors 0.41.0: MPL-2.0
 
-## Rust-Crates (464)
+## Rust-Crates (480)
 
 | Ökosystem | Paket | Version | Lizenz |
 |---|---|---|---|
@@ -72,6 +74,7 @@ Automatisch erzeugt mit `node scripts/license-report.mjs` aus dem aufgelösten C
 | cargo | autocfg | 1.5.1 | Apache-2.0 OR MIT |
 | cargo | base64 | 0.21.7 | MIT OR Apache-2.0 |
 | cargo | base64 | 0.23.1 | MIT OR Apache-2.0 |
+| cargo | base64 | 0.22.1 | MIT OR Apache-2.0 |
 | cargo | bit-set | 0.8.0 | Apache-2.0 OR MIT |
 | cargo | bit-set | 0.11.1 | Apache-2.0 OR MIT |
 | cargo | bit-vec | 0.8.0 | Apache-2.0 OR MIT |
@@ -121,6 +124,7 @@ Automatisch erzeugt mit `node scripts/license-report.mjs` aus dem aufgelösten C
 | cargo | darling | 0.24.1 | MIT |
 | cargo | darling_core | 0.24.1 | MIT |
 | cargo | darling_macro | 0.24.1 | MIT |
+| cargo | data-encoding | 2.11.1 | MIT |
 | cargo | dbus | 0.9.12 | Apache-2.0/MIT |
 | cargo | deranged | 0.5.9 | MIT OR Apache-2.0 |
 | cargo | derive_more | 2.1.1 | MIT |
@@ -195,6 +199,7 @@ Automatisch erzeugt mit `node scripts/license-report.mjs` aus dem aufgelösten C
 | cargo | heck | 0.5.0 | MIT OR Apache-2.0 |
 | cargo | heck | 0.4.1 | MIT OR Apache-2.0 |
 | cargo | hex | 0.4.3 | MIT OR Apache-2.0 |
+| cargo | hmac | 0.12.1 | MIT OR Apache-2.0 |
 | cargo | html5ever | 0.39.0 | MIT OR Apache-2.0 |
 | cargo | html5ever | 0.40.1 | MIT OR Apache-2.0 |
 | cargo | http | 1.5.0 | MIT OR Apache-2.0 |
@@ -217,6 +222,7 @@ Automatisch erzeugt mit `node scripts/license-report.mjs` aus dem aufgelösten C
 | cargo | ident_case | 1.0.1 | MIT/Apache-2.0 |
 | cargo | idna | 1.1.0 | MIT OR Apache-2.0 |
 | cargo | idna_adapter | 1.2.2 | Apache-2.0 OR MIT |
+| cargo | if-addrs | 0.13.4 | MIT OR BSD-3-Clause |
 | cargo | indexmap | 2.14.2 | Apache-2.0 OR MIT |
 | cargo | indexmap | 1.9.3 | Apache-2.0 OR MIT |
 | cargo | infer | 0.22.0 | MIT |
@@ -315,6 +321,7 @@ Automatisch erzeugt mit `node scripts/license-report.mjs` aus dem aufgelösten C
 | cargo | portable-atomic-util | 0.2.8 | Apache-2.0 OR MIT |
 | cargo | potential_utf | 0.1.6 | Unicode-3.0 |
 | cargo | powerfmt | 0.2.1 | MIT OR Apache-2.0 |
+| cargo | ppv-lite86 | 0.2.21 | MIT OR Apache-2.0 |
 | cargo | precomputed-hash | 0.1.1 | MIT |
 | cargo | proc-macro-crate | 2.0.2 | MIT OR Apache-2.0 |
 | cargo | proc-macro-crate | 1.3.1 | MIT OR Apache-2.0 |
@@ -326,6 +333,9 @@ Automatisch erzeugt mit `node scripts/license-report.mjs` aus dem aufgelösten C
 | cargo | quote | 1.0.47 | MIT OR Apache-2.0 |
 | cargo | r-efi | 6.0.0 | MIT OR Apache-2.0 OR LGPL-2.1-or-later |
 | cargo | r-efi | 5.3.0 | MIT OR Apache-2.0 OR LGPL-2.1-or-later |
+| cargo | rand | 0.9.5 | MIT OR Apache-2.0 |
+| cargo | rand_chacha | 0.9.0 | MIT OR Apache-2.0 |
+| cargo | rand_core | 0.9.5 | MIT OR Apache-2.0 |
 | cargo | raw-window-handle | 0.6.2 | MIT OR Apache-2.0 OR Zlib |
 | cargo | redox_syscall | 0.5.18 | MIT |
 | cargo | redox_users | 0.5.3 | MIT |
@@ -364,6 +374,7 @@ Automatisch erzeugt mit `node scripts/license-report.mjs` aus dem aufgelösten C
 | cargo | serialize-to-javascript-impl | 0.1.2 | MIT OR Apache-2.0 |
 | cargo | servo_arc | 0.4.3 | MIT OR Apache-2.0 |
 | cargo | servo_arc | 0.5.0 | MIT OR Apache-2.0 |
+| cargo | sha1 | 0.10.7 | MIT OR Apache-2.0 |
 | cargo | sha2 | 0.10.9 | MIT OR Apache-2.0 |
 | cargo | sha2 | 0.11.1 | MIT OR Apache-2.0 |
 | cargo | shlex | 2.0.1 | MIT OR Apache-2.0 |
@@ -383,6 +394,7 @@ Automatisch erzeugt mit `node scripts/license-report.mjs` aus dem aufgelösten C
 | cargo | string_cache_codegen | 0.6.1 | MIT OR Apache-2.0 |
 | cargo | string_cache_codegen | 0.11.2 | MIT OR Apache-2.0 |
 | cargo | strsim | 0.11.1 | MIT |
+| cargo | subtle | 2.6.1 | BSD-3-Clause |
 | cargo | swift-rs | 1.0.9 | MIT OR Apache-2.0 |
 | cargo | syn | 3.0.10 | MIT OR Apache-2.0 |
 | cargo | syn | 2.0.119 | MIT OR Apache-2.0 |
@@ -414,6 +426,7 @@ Automatisch erzeugt mit `node scripts/license-report.mjs` aus dem aufgelösten C
 | cargo | tinyvec | 1.13.3 | Zlib OR Apache-2.0 OR MIT |
 | cargo | tokio | 1.54.1 | MIT |
 | cargo | tokio-macros | 2.7.2 | MIT |
+| cargo | tokio-tungstenite | 0.28.0 | MIT |
 | cargo | tokio-util | 0.7.20 | MIT |
 | cargo | toml | 1.2.2+spec-1.1.0 | MIT OR Apache-2.0 |
 | cargo | toml | 0.8.2 | MIT OR Apache-2.0 |
@@ -432,6 +445,7 @@ Automatisch erzeugt mit `node scripts/license-report.mjs` aus dem aufgelösten C
 | cargo | tracing-core | 0.1.36 | MIT |
 | cargo | tray-icon | 0.25.1 | MIT OR Apache-2.0 |
 | cargo | try-lock | 0.2.5 | MIT |
+| cargo | tungstenite | 0.28.0 | MIT OR Apache-2.0 |
 | cargo | typeid | 1.0.3 | MIT OR Apache-2.0 |
 | cargo | typenum | 1.20.1 | MIT OR Apache-2.0 |
 | cargo | unicode-ident | 1.0.27 | (MIT OR Apache-2.0) AND Unicode-3.0 |
@@ -439,6 +453,7 @@ Automatisch erzeugt mit `node scripts/license-report.mjs` aus dem aufgelösten C
 | cargo | url | 2.5.9 | MIT OR Apache-2.0 |
 | cargo | urlpattern | 0.6.0 | MIT |
 | cargo | utf_types | 1.0.0 | Apache-2.0 OR MIT |
+| cargo | utf-8 | 0.7.6 | MIT OR Apache-2.0 |
 | cargo | utf8_iter | 1.1.0 | Apache-2.0 OR MIT |
 | cargo | uuid | 1.29.3 | Apache-2.0 OR MIT |
 | cargo | vcpkg | 0.2.15 | MIT/Apache-2.0 |
@@ -472,38 +487,39 @@ Automatisch erzeugt mit `node scripts/license-report.mjs` aus dem aufgelösten C
 | cargo | window-vibrancy | 0.8.1 | Apache-2.0 OR MIT |
 | cargo | windows | 0.62.2 | MIT OR Apache-2.0 |
 | cargo | windows | 0.57.0 | MIT OR Apache-2.0 |
-| cargo | windows_aarch64_gnullvm | 0.52.6 | MIT OR Apache-2.0 |
 | cargo | windows_aarch64_gnullvm | 0.42.2 | MIT OR Apache-2.0 |
-| cargo | windows_aarch64_msvc | 0.52.6 | MIT OR Apache-2.0 |
+| cargo | windows_aarch64_gnullvm | 0.52.6 | MIT OR Apache-2.0 |
 | cargo | windows_aarch64_msvc | 0.42.2 | MIT OR Apache-2.0 |
-| cargo | windows_i686_gnu | 0.52.6 | MIT OR Apache-2.0 |
+| cargo | windows_aarch64_msvc | 0.52.6 | MIT OR Apache-2.0 |
 | cargo | windows_i686_gnu | 0.42.2 | MIT OR Apache-2.0 |
+| cargo | windows_i686_gnu | 0.52.6 | MIT OR Apache-2.0 |
 | cargo | windows_i686_gnullvm | 0.52.6 | MIT OR Apache-2.0 |
-| cargo | windows_i686_msvc | 0.52.6 | MIT OR Apache-2.0 |
 | cargo | windows_i686_msvc | 0.42.2 | MIT OR Apache-2.0 |
-| cargo | windows_x86_64_gnu | 0.52.6 | MIT OR Apache-2.0 |
+| cargo | windows_i686_msvc | 0.52.6 | MIT OR Apache-2.0 |
 | cargo | windows_x86_64_gnu | 0.42.2 | MIT OR Apache-2.0 |
-| cargo | windows_x86_64_gnullvm | 0.52.6 | MIT OR Apache-2.0 |
+| cargo | windows_x86_64_gnu | 0.52.6 | MIT OR Apache-2.0 |
 | cargo | windows_x86_64_gnullvm | 0.42.2 | MIT OR Apache-2.0 |
-| cargo | windows_x86_64_msvc | 0.52.6 | MIT OR Apache-2.0 |
+| cargo | windows_x86_64_gnullvm | 0.52.6 | MIT OR Apache-2.0 |
 | cargo | windows_x86_64_msvc | 0.42.2 | MIT OR Apache-2.0 |
+| cargo | windows_x86_64_msvc | 0.52.6 | MIT OR Apache-2.0 |
 | cargo | windows-collections | 0.3.2 | MIT OR Apache-2.0 |
-| cargo | windows-core | 0.57.0 | MIT OR Apache-2.0 |
 | cargo | windows-core | 0.62.2 | MIT OR Apache-2.0 |
+| cargo | windows-core | 0.57.0 | MIT OR Apache-2.0 |
 | cargo | windows-future | 0.3.2 | MIT OR Apache-2.0 |
-| cargo | windows-implement | 0.57.0 | MIT OR Apache-2.0 |
 | cargo | windows-implement | 0.60.2 | MIT OR Apache-2.0 |
-| cargo | windows-interface | 0.57.0 | MIT OR Apache-2.0 |
+| cargo | windows-implement | 0.57.0 | MIT OR Apache-2.0 |
 | cargo | windows-interface | 0.59.3 | MIT OR Apache-2.0 |
+| cargo | windows-interface | 0.57.0 | MIT OR Apache-2.0 |
 | cargo | windows-link | 0.2.1 | MIT OR Apache-2.0 |
 | cargo | windows-numerics | 0.3.1 | MIT OR Apache-2.0 |
-| cargo | windows-result | 0.1.2 | MIT OR Apache-2.0 |
 | cargo | windows-result | 0.4.1 | MIT OR Apache-2.0 |
+| cargo | windows-result | 0.1.2 | MIT OR Apache-2.0 |
 | cargo | windows-strings | 0.5.1 | MIT OR Apache-2.0 |
 | cargo | windows-sys | 0.61.2 | MIT OR Apache-2.0 |
 | cargo | windows-sys | 0.45.0 | MIT OR Apache-2.0 |
-| cargo | windows-targets | 0.52.6 | MIT OR Apache-2.0 |
+| cargo | windows-sys | 0.59.0 | MIT OR Apache-2.0 |
 | cargo | windows-targets | 0.42.2 | MIT OR Apache-2.0 |
+| cargo | windows-targets | 0.52.6 | MIT OR Apache-2.0 |
 | cargo | windows-threading | 0.2.1 | MIT OR Apache-2.0 |
 | cargo | windows-version | 0.1.7 | MIT OR Apache-2.0 |
 | cargo | winnow | 1.0.5 | MIT |
@@ -516,6 +532,8 @@ Automatisch erzeugt mit `node scripts/license-report.mjs` aus dem aufgelösten C
 | cargo | x11-dl | 2.21.0 | MIT |
 | cargo | yoke | 0.8.4 | Unicode-3.0 |
 | cargo | yoke-derive | 0.8.4 | Unicode-3.0 |
+| cargo | zerocopy | 0.8.64 | BSD-2-Clause OR Apache-2.0 OR MIT |
+| cargo | zerocopy-derive | 0.8.64 | BSD-2-Clause OR Apache-2.0 OR MIT |
 | cargo | zerofrom | 0.1.8 | Unicode-3.0 |
 | cargo | zerofrom-derive | 0.1.8 | Unicode-3.0 |
 | cargo | zerotrie | 0.2.5 | Unicode-3.0 |

@@ -1,0 +1,60 @@
+# Selbst betriebener Verbindungsdienst für Internet-Sessions:
+#   caddy      – TLS (Let's Encrypt) für wss://SIGNAL_DOMAIN
+#   signaling  – lom-signaling (Räume, Einladungen, TURN-Zugangsdaten)
+#   coturn     – STUN/TURN für Verbindungen durch strikte NATs/Firewalls
+#
+# Vorbereitung (siehe docs/deployment/selbst-hosten.md):
+#   cp .env.example .env   # Domain, öffentliche IP und ein langes Zufallsgeheimnis eintragen
+#   docker compose up -d --build
+services:
+  signaling:
+    build:
+      context: ../../..
+      dockerfile: services/signaling/Dockerfile
+    restart: unless-stopped
+    environment:
+      LOM_TURN_SECRET: ${TURN_SECRET:?TURN_SECRET fehlt in .env}
+    command:
+      - "--bind"
+      - "0.0.0.0:8787"
+      - "--stun"
+      - "stun:${TURN_DOMAIN}:3478"
+      - "--turn"
+      - "turn:${TURN_DOMAIN}:3478?transport=udp"
+      - "--turn"
+      - "turn:${TURN_DOMAIN}:3478?transport=tcp"
+    expose: ["8787"]
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      SIGNAL_DOMAIN: ${SIGNAL_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+
+  coturn:
+    image: coturn/coturn:4
+    restart: unless-stopped
+    network_mode: host
+    command:
+      - "-n"
+      - "--listening-port=3478"
+      - "--fingerprint"
+      - "--use-auth-secret"
+      - "--static-auth-secret=${TURN_SECRET}"
+      - "--realm=${TURN_DOMAIN}"
+      - "--external-ip=${PUBLIC_IP}"
+      - "--min-port=49160"
+      - "--max-port=49200"
+      - "--no-cli"
+      - "--no-multicast-peers"
+      - "--denied-peer-ip=10.0.0.0-10.255.255.255"
+      - "--denied-peer-ip=172.16.0.0-172.31.255.255"
+      - "--denied-peer-ip=192.168.0.0-192.168.255.255"
+      - "--denied-peer-ip=127.0.0.0-127.255.255.255"
+
+volumes:
+  caddy_data:

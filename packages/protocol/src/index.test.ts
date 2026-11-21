@@ -4,7 +4,7 @@ import { ALLOWED_COMMAND_TYPES, describeCommand, formatPan, isAllowedCommandType
 describe("Befehls-Allowlist", () => {
   it("entspricht exakt dem Rust-Enum", () => {
     expect([...ALLOWED_COMMAND_TYPES].sort()).toEqual(
-      ["continuePlaying", "fireClip", "play", "setLoop", "setTempo", "setTrackPanning", "setTrackVolume", "stop"].sort(),
+      ["continuePlaying", "fireClip", "play", "setLinkEnabled", "setLoop", "setTempo", "setTrackPanning", "setTrackVolume", "stop"].sort(),
     );
   });
 

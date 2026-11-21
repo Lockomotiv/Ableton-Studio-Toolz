@@ -22,6 +22,8 @@ pub enum DawCommand {
     SetTrackVolume { track: u32, value: f32 },
     SetTrackPanning { track: u32, value: f32 },
     FireClip { track: u32, slot: u32 },
+    /// Ableton Link ein/aus (lokale Tempo-/Phasensynchronisation im LAN).
+    SetLinkEnabled { enabled: bool },
 }
 
 impl DawCommand {

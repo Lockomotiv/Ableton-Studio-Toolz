@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { AdapterKind, AppInfo, DiagnosticCheck, ProbeResult, Role, Settings, StudioMode } from "@lom/shared-types";
 import { api, errorMessage } from "../api";
 import { CheckList } from "../components/CheckList";
+import { VideoTile } from "./SessionPage";
 
 interface Step {
   title: string;
@@ -14,8 +15,8 @@ const STEPS: Step[] = [
   { title: "AbletonOSC prüfen", implemented: true },
   { title: "Lokale OSC-Verbindung testen", implemented: true },
   { title: "Audiointerface & ASIO", implemented: false, plannedSprint: 3 },
-  { title: "Kamera & Mikrofon", implemented: false, plannedSprint: 2 },
-  { title: "Netzwerk", implemented: false, plannedSprint: 2 },
+  { title: "Kamera & Mikrofon", implemented: true },
+  { title: "Netzwerk", implemented: true },
   { title: "Rolle & Standardmodus", implemented: true },
 ];
 
@@ -33,6 +34,7 @@ export function SetupWizard(props: {
   const [role, setRole] = useState<Role>(props.settings.role ?? "host");
   const [mode, setMode] = useState<StudioMode>(props.settings.defaultMode ?? "remote");
   const [adapter, setAdapter] = useState<AdapterKind>(props.settings.adapter);
+  const [displayName, setDisplayName] = useState(props.settings.displayName);
 
   const diagnose = async () => {
     setBusy(true);
@@ -66,7 +68,7 @@ export function SetupWizard(props: {
   const finish = async () => {
     setBusy(true);
     try {
-      const next: Settings = { role, defaultMode: mode, adapter, setupCompleted: true };
+      const next: Settings = { ...props.settings, role, defaultMode: mode, adapter, setupCompleted: true, displayName: displayName.trim() };
       const saved = await api.settingsSave(next);
       const info = await api.setAdapter(adapter);
       await props.onAdapterChanged(info);
@@ -186,11 +188,15 @@ export function SetupWizard(props: {
               Geplant: Erkennung des Audiointerfaces, ASIO-Routing und ein Loopback-/Plugin-Pfad für den Ableton-Mix.
             </p>
           )}
-          {step === 4 && <p className="muted">Geplant: Auswahl und Test von Kamera und Mikrofon (WebRTC).</p>}
-          {step === 5 && <p className="muted">Geplant: LAN-Erkennung, STUN/TURN-Erreichbarkeit und NAT-Typ.</p>}
+          {step === 4 && <MediaTest />}
+          {step === 5 && <NetworkInfo settings={props.settings} />}
 
           {step === 6 && (
             <div className="form">
+              <label className="field">
+                Anzeigename in Sessions
+                <input className="input" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="z. B. Lock" maxLength={64} data-testid="wizard-name" />
+              </label>
               <fieldset>
                 <legend>Ihre Rolle</legend>
                 <label>
@@ -245,5 +251,91 @@ export function SetupWizard(props: {
         </div>
       </div>
     </div>
+  );
+}
+
+function MediaTest() {
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [level, setLevel] = useState(0);
+  useEffect(() => {
+    if (!stream) return;
+    const ctx = new AudioContext();
+    const an = ctx.createAnalyser();
+    ctx.createMediaStreamSource(stream).connect(an);
+    const buf = new Uint8Array(an.fftSize);
+    const t = setInterval(() => {
+      an.getByteTimeDomainData(buf);
+      let peak = 0;
+      buf.forEach((v) => (peak = Math.max(peak, Math.abs(v - 128))));
+      setLevel(peak / 128);
+    }, 100);
+    return () => {
+      clearInterval(t);
+      void ctx.close();
+      stream.getTracks().forEach((tr) => tr.stop());
+    };
+  }, [stream]);
+  return (
+    <>
+      <p>Prüft Kamera und Mikrofon für die Videokonferenz. Es wird nichts aufgezeichnet oder gesendet.</p>
+      <button
+        className="btn btn-accent"
+        onClick={async () => {
+          setErr(null);
+          try {
+            setStream(await navigator.mediaDevices.getUserMedia({ audio: true, video: true }));
+          } catch (e) {
+            setErr(errorMessage(e));
+          }
+        }}
+      >
+        Kamera &amp; Mikrofon testen
+      </button>
+      {err && <div className="banner banner-error">Kein Zugriff: {err}</div>}
+      {stream && (
+        <div className="row">
+          <VideoTile stream={stream} muted mirrored label={stream.getVideoTracks()[0]?.label || "Kamera"} />
+          <div className="meter" title="Mikrofonpegel (gemessen)">
+            <div style={{ width: `${Math.min(100, level * 140)}%` }} />
+            <span>{stream.getAudioTracks()[0]?.label || "Mikrofon"}</span>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function NetworkInfo(props: { settings: Settings }) {
+  const [urls, setUrls] = useState<string[] | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  return (
+    <>
+      <p>
+        <strong>LAN:</strong> Connect Studio enthält einen eigenen Signalisierungsdienst (Port {props.settings.lanPort}). Windows fragt beim ersten
+        Hosten, ob die App im <em>privaten</em> Netzwerk kommunizieren darf – bitte erlauben, öffentliche Netzwerke nicht.
+      </p>
+      <p>
+        <strong>Internet:</strong> {props.settings.signalingUrl ? <>Signalisierungsserver <code>{props.settings.signalingUrl}</code></> : "Unter Einstellungen einen eigenen Signalisierungsserver eintragen (siehe docs/deployment)."}{" "}
+        STUN: {props.settings.usePublicStun ? "stun.l.google.com" : "nur eigene Server"}.
+      </p>
+      <button
+        className="btn"
+        onClick={async () => {
+          setErr(null);
+          try {
+            const h = await api.hostingStart(props.settings.lanPort);
+            setUrls(h.urls);
+            await api.hostingStop();
+          } catch (e) {
+            setErr(errorMessage(e));
+          }
+        }}
+      >
+        LAN-Port testweise öffnen
+      </button>
+      {err && <div className="banner banner-error">{err}</div>}
+      {urls && <div className="banner banner-ok">Port {props.settings.lanPort} kann geöffnet werden. Erreichbar unter: {urls.join(", ") || "– keine LAN-Adresse –"}</div>}
+    </>
   );
 }

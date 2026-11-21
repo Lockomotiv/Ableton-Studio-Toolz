@@ -17,7 +17,7 @@ unter Linux getestet – **noch nie gegen echtes Ableton Live unter Windows.**
    Get-Content .\*.sha256
    ```
    Beide Werte müssen übereinstimmen.
-4. `LOCK-O-MOTIV Connect Studio_0.1.0_x64-setup.exe` ausführen. Der Installer ist **nicht signiert** –
+4. `LOCK-O-MOTIV Connect Studio_0.2.0_x64-setup.exe` ausführen. Der Installer ist **nicht signiert** –
    Windows SmartScreen warnt; *Weitere Informationen → Trotzdem ausführen*. Installation erfolgt pro
    Benutzer (keine Administratorrechte).
 
@@ -128,3 +128,30 @@ Roundtrip-Zeiten aus. Bitte `latenz.json` zurückmelden.
 | „Keine Antwort von AbletonOSC … (Timeout)“ | Live läuft nicht, AbletonOSC ist nicht als Control Surface gewählt, oder der Ordner heißt nicht exakt `AbletonOSC`. AbletonOSC-Log prüfen. |
 | „AbletonOSC Remote Script installiert“ = Fehler, obwohl installiert | Abweichender User-Library-Ort. Umgebungsvariable `LOM_ABLETON_USER_LIBRARY` auf den User-Library-Ordner setzen. |
 | „Ableton Live 12 installiert“ = Fehler | Installation außerhalb `%ProgramData%\Ableton` / `%ProgramFiles%\Ableton`. Rein informativ; die OSC-Verbindung ist maßgeblich. |
+
+---
+
+# Teil 2: Zusammenarbeit testen (Sprint 2)
+
+Benötigt: **zwei Windows-11-Rechner** (A = Host mit Ableton, B = Gast), beide mit Connect Studio 0.2.0, Kopfhörer, Kamera/Mikrofon.
+Zuerst im selben Netz (LAN), danach optional über das Internet mit eigenem Server ([Selbst hosten](../deployment/selbst-hosten.md)).
+
+| # | Aktion | Erwartung | Ergebnis |
+|---|---|---|---|
+| 1 | A: *Session* → Remote Studio, Lokales Netz, Projekt „Test“ → Starten | Windows-Firewall fragt → nur *Privat* erlauben; Einladungscode erscheint | |
+| 2 | B: *Session* → Code einfügen → Beitreten | Kamera-/Mikrofonabfrage von WebView2; beide „Verbunden“ | |
+| 3 | Sicherheitscode vergleichen | identisch auf A und B | |
+| 4 | Video/Ton in beide Richtungen | Bild + Stimme, Mikrofon stumm/an funktioniert | |
+| 5 | A: *Bildschirm + DAW-Ton* → Ableton-Fenster/Bildschirm wählen, „Systemaudio teilen“ an | B sieht Ableton und hört den Mix | |
+| 6 | B hört den Mix: ist B's eigene Stimme darin als Echo zu hören? | Nein (mit Kopfhörern bei A) | |
+| 7 | B: *Studio* → Play | gesperrt mit „Keine Steuerfreigabe“ | |
+| 8 | B: *Steuerung anfragen* → A: *Gemeinsam steuern* | B kann Play/Stop/Tempo/Fader; Live bei A reagiert, ✔ im Protokoll | |
+| 9 | A: *Komplett übergeben* | A's Studio gesperrt; B steuert; A: *Zurückholen* wirkt sofort | |
+| 10 | B: WAV aus dem Explorer ins Connect-Studio-Fenster ziehen | A: Angebot → Annehmen → „Prüfsumme identisch“; Datei in `Dokumente\LOCK-O-MOTIV Connect Studio\Empfangen` | |
+| 11 | A: *Samples* → Projektordner des Live-Sets eintragen → *Ins Projekt übernehmen* | Datei unter `Samples\Imported\Connect Studio`, in Live-Browser sichtbar | |
+| 12 | B: *Projekt-Hub* → Idee festhalten; A: Vorlage einfügen, Karte verschieben | erscheint jeweils sofort beim anderen | |
+| 13 | B: WLAN kurz trennen (10 s) | A: „Verbindung unterbrochen“, Steuerung zurück bei A; danach automatische Wiederverbindung | |
+| 14 | Dual Studio: beide Rechner mit Ableton, Session im Dual-Modus | Play bei A startet auch B (Kopplung an); Fader werden nicht gespiegelt | |
+| 15 | Lokal: Studio → 🔗 Link an (beide) | Tempo/Phase in beiden Live-Instanzen synchron | |
+
+Bitte zusätzlich die Werte aus *Session → Verbindung (gemessen)* notieren (Weg, RTT, Jitter, Verlust) und Screenshots beider Seiten schicken.

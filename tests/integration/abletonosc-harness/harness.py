@@ -138,7 +138,7 @@ class SongView(_Listenable):
         self.selected_scene = song.scenes[0] if song.scenes else None
 
 
-SONG_PROPS_EMIT = {"tempo", "is_playing", "loop"}
+SONG_PROPS_EMIT = {"tempo", "is_playing", "loop", "is_ableton_link_enabled"}
 
 
 class Song(_Listenable):
@@ -151,6 +151,7 @@ class Song(_Listenable):
         self.loop_length = 16.0
         self.current_song_time = 0.0
         self.metronome = False
+        self.is_ableton_link_enabled = False
         self.signature_numerator = 4
         self.signature_denominator = 4
         self.can_undo = self.can_redo = False
@@ -165,7 +166,7 @@ class Song(_Listenable):
         self._ready = True
 
     def __setattr__(self, k, v):
-        if k == "loop":
+        if k in ("loop", "is_ableton_link_enabled"):
             v = bool(v)  # Live speichert loop als bool
         object.__setattr__(self, k, v)
         if k in SONG_PROPS_EMIT and self.__dict__.get("_ready"):

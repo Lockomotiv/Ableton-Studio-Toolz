@@ -16,6 +16,7 @@ export const ALLOWED_COMMAND_TYPES = [
   "setTrackVolume",
   "setTrackPanning",
   "fireClip",
+  "setLinkEnabled",
 ] as const satisfies readonly DawCommand["type"][];
 
 export function isAllowedCommandType(t: string): t is DawCommand["type"] {
@@ -64,6 +65,8 @@ export function describeCommand(c: DawCommand): string {
       return `Spur ${c.track + 1} Lautstärke → ${Math.round(c.value * 100)} %`;
     case "setTrackPanning":
       return `Spur ${c.track + 1} Panorama → ${formatPan(c.value)}`;
+    case "setLinkEnabled":
+      return `Ableton Link ${c.enabled ? "an" : "aus"}`;
     case "fireClip":
       return `Clip starten: Spur ${c.track + 1}, Slot ${c.slot + 1}`;
   }
@@ -73,3 +76,6 @@ export function formatPan(v: number): string {
   if (Math.abs(v) < 0.005) return "C";
   return `${Math.round(Math.abs(v) * 50)}${v < 0 ? "L" : "R"}`;
 }
+
+export * from "./hub";
+export * from "./session";

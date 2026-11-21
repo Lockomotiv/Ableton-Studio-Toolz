@@ -34,8 +34,16 @@ jobs:
         working-directory: apps/desktop
         run: npx tauri build --debug --no-bundle
       - run: cargo install tauri-driver --locked
+      - name: Signalisierungsdienst bauen
+        run: cargo build -p lom-signaling
+      - name: Playwright + Chromium (nur CI)
+        run: |
+          npm i --no-save playwright@1.63.0
+          npx playwright install --with-deps chromium
       - name: E2E (gebaute App über tauri-driver)
         run: xvfb-run -a -s "-screen 0 1440x900x24" node tests/e2e/run-e2e.mjs
+      - name: E2E Zusammenarbeit (2 Teilnehmer, WebRTC)
+        run: node tests/e2e/collab-e2e.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -43,6 +51,7 @@ jobs:
           path: |
             docs/screenshots/*.png
             tests/e2e/last-run.json
+            tests/e2e/last-collab-run.json
 
   windows:
     name: Windows – Tests und NSIS-Installer
@@ -64,6 +73,8 @@ jobs:
       - name: Release-Build + NSIS-Installer
         working-directory: apps/desktop
         run: npx tauri build
+      - name: Signalisierungsdienst (Release)
+        run: cargo build --release -p lom-signaling
       - name: SHA-256 des Installers
         shell: pwsh
         run: |
@@ -78,6 +89,7 @@ jobs:
             target/release/bundle/nsis/*.exe
             target/release/bundle/nsis/*.sha256
             target/release/connect-studio.exe
+            target/release/lom-signaling.exe
 
   windows-e2e:
     name: Windows – E2E (experimentell)

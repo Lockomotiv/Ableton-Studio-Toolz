@@ -329,6 +329,7 @@ impl AbletonOscAdapter {
             "/live/song/get/is_playing",
             "/live/song/get/tempo",
             "/live/song/get/loop",
+            "/live/song/get/is_ableton_link_enabled",
             "/live/song/get/num_tracks",
             "/live/song/get/num_scenes",
             "/live/song/get/track_names",
@@ -469,12 +470,13 @@ impl DawAdapter for AbletonOscAdapter {
 
     async fn status(&self) -> Result<LiveStatus, DawError> {
         let start = Instant::now();
-        let (playing, tempo, looping, tracks, version) = tokio::join!(
+        let (playing, tempo, looping, tracks, version, link) = tokio::join!(
             self.get_song_bool("is_playing"),
             self.get_song_f32("tempo"),
             self.get_song_bool("loop"),
             self.get_song_u32("num_tracks"),
             self.live_version(),
+            self.get_song_bool("is_ableton_link_enabled"),
         );
         Ok(LiveStatus {
             adapter: AdapterKind::AbletonOsc,
@@ -484,6 +486,7 @@ impl DawAdapter for AbletonOscAdapter {
             tempo: tempo?,
             loop_enabled: looping?,
             num_tracks: tracks?,
+            link_enabled: link.ok(),
             query_ms: start.elapsed().as_secs_f64() * 1000.0,
         })
     }
@@ -532,6 +535,11 @@ impl DawAdapter for AbletonOscAdapter {
                 // AbletonOSC-Tests setzen boolesche Song-Properties mit 1/0.
                 self.send("/live/song/set/loop", vec![OscType::Int(enabled as i32)]).await?;
                 self.verify(|| self.get_song_bool("loop"), |r| matches!(r, Ok(b) if *b == enabled))
+                    .await?
+            }
+            DawCommand::SetLinkEnabled { enabled } => {
+                self.send("/live/song/set/is_ableton_link_enabled", vec![OscType::Int(enabled as i32)]).await?;
+                self.verify(|| self.get_song_bool("is_ableton_link_enabled"), |r| matches!(r, Ok(b) if *b == enabled))
                     .await?
             }
             DawCommand::SetTrackVolume { track, value } => {
