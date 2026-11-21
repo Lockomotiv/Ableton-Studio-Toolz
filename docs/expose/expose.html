@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>LOCK-O-MOTIV Connect Studio – Exposé</title>
+<style>
+  @page { size: A4; margin: 0; }
+  :root {
+    --ink: #15171c; --muted: #5d6573; --line: #e3e6ec; --accent: #ff7a1a; --accent-dark: #d95f00;
+    --ok: #1f9e74; --warn: #b7791f; --panel: #f6f7f9; --dark: #0f1115;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: "Inter", sans-serif; color: var(--ink); font-size: 10pt; line-height: 1.5; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .page { width: 210mm; height: 297mm; padding: 18mm 18mm 16mm; position: relative; overflow: hidden; page-break-after: always; }
+  .page:last-child { page-break-after: auto; }
+  .foot { position: absolute; left: 18mm; right: 18mm; bottom: 9mm; display: flex; justify-content: space-between; font-size: 7.5pt; color: var(--muted); border-top: 1px solid var(--line); padding-top: 2.5mm; }
+  h1, h2, h3 { font-family: "Inter Display", "Inter", sans-serif; margin: 0; letter-spacing: -0.01em; }
+  h2 { font-size: 17pt; margin-bottom: 1mm; }
+  h2 + .lead { margin-top: 0; }
+  h3 { font-size: 11pt; margin-bottom: 1.5mm; }
+  .kicker { text-transform: uppercase; letter-spacing: 0.14em; font-size: 7.5pt; font-weight: 700; color: var(--accent-dark); margin-bottom: 1.5mm; }
+  .lead { color: var(--muted); font-size: 10.5pt; margin: 0 0 6mm; max-width: 150mm; }
+  p { margin: 0 0 2.5mm; }
+  ul { margin: 0; padding-left: 4.5mm; }
+  li { margin: 0 0 1.2mm; }
+  li::marker { color: var(--accent); }
+  .muted { color: var(--muted); }
+  .small { font-size: 8.5pt; }
+
+  /* Titelseite */
+  .cover { background: var(--dark); color: #e8eaef; padding: 0; }
+  .cover-inner { padding: 24mm 20mm 0; }
+  .brand { display: flex; align-items: center; gap: 4mm; margin-bottom: 26mm; }
+  .mark { width: 13mm; height: 13mm; border: 2px solid var(--accent); border-radius: 3mm; display: grid; place-items: center; color: var(--accent); font-size: 18pt; }
+  .brand-name { font-weight: 800; letter-spacing: 0.2em; font-size: 10pt; }
+  .brand-sub { color: #ffb070; font-size: 9pt; }
+  .cover h1 { font-size: 38pt; line-height: 1.05; font-weight: 700; margin-bottom: 6mm; }
+  .cover h1 span { color: var(--accent); }
+  .cover .claim { font-size: 13pt; color: #b9bfcb; max-width: 140mm; margin-bottom: 10mm; }
+  .chips { display: flex; flex-wrap: wrap; gap: 2mm; margin-bottom: 12mm; }
+  .chip { border: 1px solid #2f3542; border-radius: 99px; padding: 1.2mm 3.5mm; font-size: 8.5pt; color: #d4d8e0; }
+  .chip b { color: var(--accent); font-weight: 600; }
+  .cover-shot { margin: 0 20mm; border-radius: 3mm 3mm 0 0; overflow: hidden; border: 1px solid #2a2f3a; border-bottom: 0; box-shadow: 0 -6mm 18mm rgba(255,122,26,0.12); }
+  .cover-shot img { display: block; width: 100%; }
+  .cover-meta { position: absolute; left: 20mm; right: 20mm; bottom: 10mm; display: flex; justify-content: space-between; font-size: 8pt; color: #8b93a3; }
+
+  /* Bausteine */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4mm; }
+  .card { background: var(--panel); border-radius: 2.5mm; padding: 4.5mm 5mm; border: 1px solid var(--line); }
+  .card.accent { border-top: 1mm solid var(--accent); }
+  .tag { display: inline-block; font-size: 7pt; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.6mm 2mm; border-radius: 99px; background: #fff1e6; color: var(--accent-dark); margin-bottom: 2mm; }
+  .tag.green { background: #e3f6ef; color: var(--ok); }
+  .feature { display: grid; grid-template-columns: 9mm 1fr; gap: 3mm; padding: 3.2mm 0; border-bottom: 1px solid var(--line); }
+  .feature:last-child { border-bottom: 0; }
+  .ico { width: 9mm; height: 9mm; border-radius: 2mm; background: #fff1e6; color: var(--accent-dark); display: grid; place-items: center; font-size: 12pt; font-weight: 700; }
+  .feature h3 { margin-bottom: 0.8mm; }
+  .feature p { margin: 0; color: #343a46; font-size: 9pt; }
+  .shot { border-radius: 2mm; overflow: hidden; border: 1px solid var(--line); }
+  .shot img { display: block; width: 100%; }
+  figure { margin: 0; }
+  figcaption { font-size: 7.8pt; color: var(--muted); margin-top: 1.5mm; }
+  table { border-collapse: collapse; width: 100%; font-size: 8.8pt; }
+  th, td { text-align: left; padding: 1.8mm 2mm; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 7.5pt; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; }
+  .status-ok { color: var(--ok); font-weight: 600; }
+  .status-open { color: var(--warn); font-weight: 600; }
+  .quote { border-left: 1.2mm solid var(--accent); padding: 2mm 0 2mm 4mm; font-size: 11pt; color: #2a2f3a; margin: 0 0 6mm; }
+  .numbers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3mm; margin: 4mm 0 6mm; }
+  .num { background: var(--dark); color: #fff; border-radius: 2.5mm; padding: 4mm; }
+  .num b { display: block; font-family: "Inter Display"; font-size: 20pt; color: var(--accent); line-height: 1.1; }
+  .num span { font-size: 8pt; color: #b9bfcb; }
+  .steps { counter-reset: s; list-style: none; padding: 0; }
+  .steps li { counter-increment: s; position: relative; padding-left: 9mm; margin-bottom: 2.5mm; }
+  .steps li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 6mm; height: 6mm; border-radius: 50%; background: var(--accent); color: #fff; font-size: 8pt; font-weight: 700; display: grid; place-items: center; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ 1 Titel -->
+<section class="page cover">
+  <div class="cover-inner">
+    <div class="brand">
+      <div class="mark">◎</div>
+      <div><div class="brand-name">LOCK-O-MOTIV</div><div class="brand-sub">Connect Studio · Free Edition</div></div>
+    </div>
+    <h1>Gemeinsam produzieren.<br><span>Egal wo.</span></h1>
+    <p class="claim">Die kostenlose Desktop-App für die Zusammenarbeit mit Ableton Live 12 – im selben Raum mit Ableton Link oder über das Internet mit Video, gemeinsamer Steuerung, Sample-Austausch und einem Projekt-Hub für Ideen und Planung.</p>
+    <div class="chips">
+      <span class="chip"><b>●</b> Video &amp; Sprache</span>
+      <span class="chip"><b>●</b> Steuerung teilen &amp; übergeben</span>
+      <span class="chip"><b>●</b> Samples per Drag &amp; Drop</span>
+      <span class="chip"><b>●</b> Ideen &amp; Planer</span>
+      <span class="chip"><b>●</b> Ableton Link</span>
+      <span class="chip"><b>●</b> Ohne Abo · quelloffen</span>
+    </div>
+  </div>
+  <div class="cover-shot"><img src="../screenshots/15-gast-steuert-host-daw.png" alt=""></div>
+  <div class="cover-meta"><span>Exposé · Version 0.2.0 · November 2026</span><span>Windows 11 · Ableton Live 12 Suite</span></div>
+</section>
+
+<!-- ============================================================ 2 Idee -->
+<section class="page">
+  <div class="kicker">Die Idee</div>
+  <h2>Ein Studio für zwei – auch wenn zwei Städte dazwischen liegen</h2>
+  <p class="lead">Musik entsteht im Austausch: Einer spielt eine Idee an, der andere dreht am Tempo, ein Sample wandert über den Tisch, auf einem Zettel steht, was bis Freitag fertig sein muss. Connect Studio bringt genau diesen Ablauf in eine App – lokal wie online.</p>
+
+  <div class="quote">Gemeinsam ein Projekt steuern, Ideen sofort festhalten und sie später zusammen in Ableton Live umsetzen.</div>
+
+  <h3 style="margin-bottom:3mm">Drei Wege zusammenzuarbeiten</h3>
+  <div class="grid3" style="margin-bottom:7mm">
+    <div class="card accent">
+      <span class="tag">Lokal</span>
+      <h3>Ableton Link</h3>
+      <p class="small">Beide im selben Netz, jeder mit eigenem Live. Tempo und Phase laufen über das in Live eingebaute Ableton Link sample-genau synchron – einschaltbar direkt aus Connect Studio.</p>
+    </div>
+    <div class="card accent">
+      <span class="tag">Online</span>
+      <h3>Remote Studio</h3>
+      <p class="small">Ein Live-Set beim Host. Der Partner sieht den Bildschirm, hört den DAW-Mix, spricht per Video – und steuert nach Freigabe mit, bis zur kompletten Übergabe.</p>
+    </div>
+    <div class="card accent">
+      <span class="tag">Online</span>
+      <h3>Dual Studio</h3>
+      <p class="small">Jeder arbeitet in seinem eigenen Ableton. Play, Stop, Tempo und Loop werden gekoppelt; Projekte bleiben getrennt und werden nie überschrieben.</p>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div>
+      <h3>Für wen?</h3>
+      <ul>
+        <li>Produzenten-Duos und Bands, die nicht am selben Ort wohnen</li>
+        <li>Songwriting-Sessions mit Gästen, Feature-Partnern, Vocalists</li>
+        <li>Coaching und Unterricht: Lehrer sieht und steuert das Live-Set des Schülers</li>
+        <li>Studios mit mehreren Arbeitsplätzen im LAN</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Was es anders macht</h3>
+      <ul>
+        <li><b>Kostenlos und ohne Abo</b> – keine kostenpflichtigen Dienste nötig</li>
+        <li><b>Direkte Verbindung</b> – Video, Ton, Dateien laufen Ende-zu-Ende verschlüsselt zwischen den Teilnehmern</li>
+        <li><b>Selbst betreibbar</b> – der Verbindungsdienst läuft im LAN eingebaut oder auf dem eigenen Server</li>
+        <li><b>Ehrlich</b> – angezeigte Verbindungen, Messwerte und Bestätigungen sind echt, nie simuliert</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>LOCK-O-MOTIV Connect Studio · Exposé</span><span>2</span></div>
+</section>
+
+<!-- ============================================================ 3 Funktionen I -->
+<section class="page">
+  <div class="kicker">Funktionen</div>
+  <h2>Alles, was eine gemeinsame Session braucht</h2>
+  <p class="lead">Die Funktionen im Überblick – gruppiert nach den Bereichen der App.</p>
+
+  <div class="grid2">
+    <div>
+      <div class="feature"><div class="ico">◎</div><div>
+        <h3>Session &amp; Einladung</h3>
+        <p>Host startet eine Session und erhält einen Einladungscode; der Partner fügt ihn ein – fertig. Im LAN mit eingebautem Server, über das Internet mit eigenem Server. Automatische Wiederverbindung nach Netzabbruch.</p>
+      </div></div>
+      <div class="feature"><div class="ico">▶</div><div>
+        <h3>Video &amp; Sprache</h3>
+        <p>Zwei Kamerabilder, Mikrofon an/aus, Geräteauswahl, Qualitätsstufen mit automatischer Bitratenanpassung. Ein kleines Videofenster bleibt auf jeder Seite sichtbar.</p>
+      </div></div>
+      <div class="feature"><div class="ico">▭</div><div>
+        <h3>Bildschirm + DAW-Ton</h3>
+        <p>Das Ableton-Fenster teilen und den Live-Mix als eigene Tonspur senden – getrennt vom Mikrofon, damit nichts doppelt ankommt.</p>
+      </div></div>
+      <div class="feature"><div class="ico">⇄</div><div>
+        <h3>Steuerung teilen und übergeben</h3>
+        <p>Host wählt: <i>Nur ich</i>, <i>Gemeinsam</i> oder <i>Komplett übergeben</i>. Gast kann anfragen, Host kann jederzeit sofort zurückholen. Bei Abbruch fällt die Steuerung automatisch an den Host.</p>
+      </div></div>
+      <div class="feature"><div class="ico">↻</div><div>
+        <h3>Gekoppelter Transport</h3>
+        <p>Im Dual Studio starten, stoppen und Tempoänderungen in beiden Live-Instanzen gleichzeitig – nur wenn beide zustimmen.</p>
+      </div></div>
+    </div>
+    <div>
+      <div class="feature"><div class="ico">◉</div><div>
+        <h3>Studio: Ableton steuern</h3>
+        <p>Play, Stop, Fortsetzen, BPM, Loop, Ableton Link, Spurliste mit Lautstärke und Panorama, Clips starten. Jeder Befehl wird aus Live zurückgelesen und bestätigt (✔).</p>
+      </div></div>
+      <div class="feature"><div class="ico">⇪</div><div>
+        <h3>Samples per Drag &amp; Drop</h3>
+        <p>WAV, AIFF, MP3, FLAC und MIDI einfach ins Fenster ziehen. Empfänger nimmt an, Prüfsumme wird verglichen, abgebrochene Übertragungen setzen fort. Vorschau zum Anhören, Übernahme in den Ableton-Projektordner per Klick.</p>
+      </div></div>
+      <div class="feature"><div class="ico">▦</div><div>
+        <h3>Projekt-Hub: Ideen &amp; Planer</h3>
+        <p>Ideen sofort festhalten – auf Wunsch mit dem aktuellen Live-Tempo. Planer-Board von <i>Ideen</i> bis <i>Fertig</i>, Zuständigkeiten, Fortschrittsanzeige und die Vorlage „Track fertigstellen“ mit zehn Schritten von der Skizze bis zum Export.</p>
+      </div></div>
+      <div class="feature"><div class="ico">⟲</div><div>
+        <h3>Offline &amp; Abgleich</h3>
+        <p>Der Hub funktioniert auch ohne Session. Bei der nächsten Verbindung werden die Ideen beider Seiten automatisch und konfliktfrei zusammengeführt.</p>
+      </div></div>
+      <div class="feature"><div class="ico">✚</div><div>
+        <h3>Einrichtung &amp; Diagnose</h3>
+        <p>Assistent beim ersten Start: Ableton und AbletonOSC finden, Verbindung testen, Kamera/Mikrofon mit Pegel prüfen, Netzwerk testen. Diagnoseseite mit gemessenen Laufzeiten. Mock-Modus zum Ausprobieren ohne Ableton.</p>
+      </div></div>
+    </div>
+  </div>
+  <div class="foot"><span>LOCK-O-MOTIV Connect Studio · Exposé</span><span>3</span></div>
+</section>
+
+<!-- ============================================================ 4 Einblicke -->
+<section class="page">
+  <div class="kicker">Einblicke</div>
+  <h2>So sieht es aus</h2>
+  <p class="lead">Aufnahmen aus dem automatischen Zwei-Teilnehmer-Test (Testbild-Kameras, simulierte DAW).</p>
+  <div class="grid2" style="row-gap:6mm">
+    <figure><div class="shot"><img src="../screenshots/12-session-host-verbunden.png" alt=""></div>
+      <figcaption><b>Session:</b> Video, Steuerungsfreigabe, Sicherheitscode und gemessene Verbindungswerte.</figcaption></figure>
+    <figure><div class="shot"><img src="../screenshots/14-host-steuerungsanfrage.png" alt=""></div>
+      <figcaption><b>Steuerungsanfrage:</b> Der Gast fragt an, der Host gibt gemeinsam frei oder übergibt komplett.</figcaption></figure>
+    <figure><div class="shot"><img src="../screenshots/17-hub-planer.png" alt=""></div>
+      <figcaption><b>Projekt-Hub:</b> Idee mit Live-Tempo und Planer-Vorlage „Track fertigstellen“ – live geteilt.</figcaption></figure>
+    <figure><div class="shot"><img src="../screenshots/18-samples-empfangen.png" alt=""></div>
+      <figcaption><b>Samples:</b> per Drag &amp; Drop gesendet, Prüfsumme identisch, bereit für das Ableton-Projekt.</figcaption></figure>
+    <figure><div class="shot"><img src="../screenshots/13-gast-studio-ohne-freigabe.png" alt=""></div>
+      <figcaption><b>Ohne Freigabe:</b> Der Gast sieht die DAW des Hosts live, die Bedienung bleibt gesperrt.</figcaption></figure>
+    <figure><div class="shot"><img src="../screenshots/16-host-steuerung-uebergeben.png" alt=""></div>
+      <figcaption><b>Komplett übergeben:</b> Der Host ist gesperrt und holt die Steuerung mit einem Klick zurück.</figcaption></figure>
+  </div>
+  <div class="foot"><span>LOCK-O-MOTIV Connect Studio · Exposé</span><span>4</span></div>
+</section>
+
+<!-- ============================================================ 5 Sicherheit + Technik -->
+<section class="page">
+  <div class="kicker">Vertrauen &amp; Technik</div>
+  <h2>Sicher by Design, frei von Abos</h2>
+  <p class="lead">Wer seine DAW für jemand anderen öffnet, muss sich darauf verlassen können, dass nur passiert, was er erlaubt.</p>
+
+  <div class="grid2" style="margin-bottom:7mm">
+    <div class="card">
+      <h3>Sicherheit</h3>
+      <ul class="small">
+        <li>Ende-zu-Ende-Verschlüsselung für Video, Ton, Befehle und Dateien</li>
+        <li>Einladungen mit zufälligem Geheimnis; maximal zwei Teilnehmer je Session</li>
+        <li>Sicherheitscode zum Vergleichen – erkennt, wenn sich jemand dazwischenschaltet</li>
+        <li>Fernsteuerung nur über eine feste Liste erlaubter Befehle – kein Löschen, keine Maus/Tastatur</li>
+        <li>Der Host prüft jeden einzelnen Befehl; Freigabe endet sofort bei Abbruch</li>
+        <li>Empfangene Dateien: nur Audio/MIDI, nie überschrieben, nie ausgeführt</li>
+        <li>Steuerverbindung zu Ableton nur lokal auf dem eigenen Rechner</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Technik</h3>
+      <table>
+        <tr><td><b>App</b></td><td>Tauri 2 · React · TypeScript · Rust</td></tr>
+        <tr><td><b>Ableton</b></td><td>AbletonOSC (MIT), Ableton Link</td></tr>
+        <tr><td><b>Verbindung</b></td><td>WebRTC, STUN/TURN (coturn)</td></tr>
+        <tr><td><b>Server</b></td><td>eigener Signalisierungsdienst, Docker + TLS</td></tr>
+        <tr><td><b>Speicher</b></td><td>SQLite, lokal</td></tr>
+        <tr><td><b>Installer</b></td><td>NSIS, Installation pro Benutzer</td></tr>
+        <tr><td><b>Lizenz</b></td><td>MIT · SBOM und Drittlizenzen dokumentiert</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <h3>Qualität in Zahlen</h3>
+  <div class="numbers">
+    <div class="num"><b>80</b><span>automatische Unit- und Integrationstests (Rust + TypeScript)</span></div>
+    <div class="num"><b>22</b><span>End-to-End-Prüfungen mit zwei Teilnehmern und echtem WebRTC</span></div>
+    <div class="num"><b>20</b><span>End-to-End-Prüfungen der gebauten Desktop-App</span></div>
+    <div class="num"><b>0 €</b><span>laufende Kosten – Verbindungsdienst selbst betreibbar</span></div>
+  </div>
+  <p class="small muted">Alle Ableton-Befehle werden automatisch gegen den Originalcode von AbletonOSC geprüft. Stand der Tests: Linux-Entwicklungsumgebung, November 2026.</p>
+  <div class="foot"><span>LOCK-O-MOTIV Connect Studio · Exposé</span><span>5</span></div>
+</section>
+
+<!-- ============================================================ 6 Stand + Roadmap -->
+<section class="page">
+  <div class="kicker">Entwicklungsstand</div>
+  <h2>Wo das Projekt steht</h2>
+  <p class="lead">Connect Studio wird in fünf Etappen entwickelt. Zwei sind umgesetzt; die nächsten Schritte sind der Praxistest unter Windows und der Ausbau des Audiowegs.</p>
+
+  <table style="margin-bottom:7mm">
+    <tr><th style="width:12%">Etappe</th><th style="width:48%">Inhalt</th><th>Status</th></tr>
+    <tr><td><b>1</b></td><td>Desktop-App, Ableton-Steuerung über AbletonOSC, Mock-Modus, Diagnose</td><td class="status-ok">umgesetzt &amp; automatisch getestet</td></tr>
+    <tr><td><b>2</b></td><td>Online-Zusammenarbeit: Session, Video, Steuerung teilen/übergeben, Samples, Projekt-Hub, Ableton Link</td><td class="status-ok">umgesetzt &amp; automatisch getestet</td></tr>
+    <tr><td><b>3</b></td><td>Eigener Audio-Dienst für den Ableton-Mix (ASIO/Loopback), Internet-Verbindungen im Praxistest, Latenzmessung</td><td class="status-open">geplant</td></tr>
+    <tr><td><b>4</b></td><td>Desktop-Fernsteuerung (Maus/Tastatur) mit Zustimmung und sichtbarer Anzeige, Ausbau Dual Studio</td><td class="status-open">geplant</td></tr>
+    <tr><td><b>5</b></td><td>Windows-Installer, Sicherheitstests, Beta-Release</td><td class="status-open">geplant</td></tr>
+  </table>
+
+  <div class="grid2">
+    <div class="card">
+      <span class="tag green">Bereits nachgewiesen</span>
+      <ul class="small">
+        <li>Verbindung zweier Teilnehmer, Video und Ton in beide Richtungen</li>
+        <li>Gast steuert die DAW des Hosts nach Freigabe; Sperre ohne Freigabe hält auch gezielten Umgehungsversuchen stand</li>
+        <li>Sample-Übertragung mit identischer Prüfsumme</li>
+        <li>Ideen und Planer synchron, auch nach Wiederverbindung</li>
+        <li>Alle Ableton-Befehle gegen den AbletonOSC-Originalcode</li>
+      </ul>
+    </div>
+    <div class="card">
+      <span class="tag">Als Nächstes zu prüfen</span>
+      <ul class="small">
+        <li>Praxistest unter Windows 11 mit Ableton Live 12 Suite</li>
+        <li>Kamera, Bildschirmfreigabe und DAW-Ton in der Windows-App</li>
+        <li>Verbindungen über das Internet mit eigenem Server</li>
+        <li>Betrieb mit reinen ASIO-Interfaces</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 style="margin-top:8mm">In vier Schritten zur ersten Session</h3>
+  <ol class="steps small">
+    <li>Connect Studio installieren und den Einrichtungsassistenten durchlaufen.</li>
+    <li>AbletonOSC in Live als Control Surface aktivieren (kostenlos, Anleitung im Assistenten).</li>
+    <li>Host: <i>Session → Sitzung starten</i> und den Einladungscode an den Partner schicken.</li>
+    <li>Partner: Code einfügen, beitreten – Sicherheitscode vergleichen und loslegen.</li>
+  </ol>
+  <div class="foot"><span>LOCK-O-MOTIV Connect Studio · Free Edition · MIT-Lizenz · Ableton und Ableton Live sind Marken der Ableton AG; kein offizielles Ableton-Produkt.</span><span>6</span></div>
+</section>
+
+</body>
+</html>
