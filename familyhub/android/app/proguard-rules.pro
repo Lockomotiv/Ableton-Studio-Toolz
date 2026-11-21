@@ -1,0 +1,2 @@
+-keepclassmembers class de.familyhub.app.NativeBridge { @android.webkit.JavascriptInterface <methods>; }
+-keepattributes JavascriptInterface

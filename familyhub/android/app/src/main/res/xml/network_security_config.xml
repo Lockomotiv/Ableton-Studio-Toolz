@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Heimnetz: eigene Zertifikate (als Nutzer-CA installiert) werden akzeptiert.
+     Klartext (http) ist erlaubt, weil CasaOS und manche Dienste im Heimnetz nur http sprechen. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

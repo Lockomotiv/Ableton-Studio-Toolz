@@ -1,0 +1,50 @@
+plugins { id 'com.android.application' }
+
+// Weboberfläche aus ../../web in die App packen (assets/web/…)
+def webOut = layout.buildDirectory.dir('generated/webassets')
+tasks.register('copyWeb', Sync) {
+    from('../../web') { exclude 'sw.js' }
+    into(webOut.map { it.dir('web') })
+}
+
+def ks = rootProject.file('keystore.properties')
+def ksProps = new Properties()
+if (ks.exists()) ks.withInputStream { ksProps.load(it) }
+
+android {
+    namespace 'de.familyhub.app'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'de.familyhub.app'
+        minSdk 26
+        targetSdk 35
+        versionCode 30
+        versionName '3.0.0'
+    }
+    signingConfigs {
+        release {
+            if (ks.exists()) {
+                storeFile rootProject.file(ksProps['storeFile'])
+                storePassword ksProps['storePassword']
+                keyAlias ksProps['keyAlias']
+                keyPassword ksProps['keyPassword']
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig ks.exists() ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+    sourceSets { main { assets.srcDirs += webOut.get().asFile } }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    lint { abortOnError false; checkReleaseBuilds false }
+}
+preBuild.dependsOn copyWeb
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.12.1'
+}

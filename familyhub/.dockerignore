@@ -1,0 +1,4 @@
+android
+server/data
+server/test
+**/node_modules

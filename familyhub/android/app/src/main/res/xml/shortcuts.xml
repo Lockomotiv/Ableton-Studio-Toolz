@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="voice" android:enabled="true" android:icon="@drawable/sc_mic"
+        android:shortcutShortLabel="@string/sc_voice" android:shortcutLongLabel="@string/sc_voice_long">
+        <intent android:action="de.familyhub.app.VOICE" android:targetPackage="de.familyhub.app" android:targetClass="de.familyhub.app.MainActivity" />
+    </shortcut>
+    <shortcut android:shortcutId="add" android:enabled="true" android:icon="@drawable/sc_add"
+        android:shortcutShortLabel="@string/sc_add">
+        <intent android:action="de.familyhub.app.ADD" android:targetPackage="de.familyhub.app" android:targetClass="de.familyhub.app.MainActivity" />
+    </shortcut>
+    <shortcut android:shortcutId="shop" android:enabled="true" android:icon="@drawable/sc_cart"
+        android:shortcutShortLabel="@string/sc_shop">
+        <intent android:action="de.familyhub.app.SHOP" android:targetPackage="de.familyhub.app" android:targetClass="de.familyhub.app.MainActivity" />
+    </shortcut>
+</shortcuts>

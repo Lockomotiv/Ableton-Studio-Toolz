@@ -1,0 +1,18 @@
+# Start auf dem Pi:  docker compose up -d --build
+# Danach in der App: Mehr → Synchronisierung → Adresse + neues Familien-Passwort.
+services:
+  familyhub:
+    build: .
+    container_name: familyhub3
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Berlin
+      # Optional: HTTPS direkt im Container (z. B. Tailscale-Zertifikat, siehe README)
+      # - TLS_CERT=/certs/pi.crt
+      # - TLS_KEY=/certs/pi.key
+    volumes:
+      - ./data:/data
+      # - ./certs:/certs:ro
+    ports:
+      # Erst parallel zum alten FamilyHub auf 8446 testen, später auf 8443 umstellen.
+      - "8446:8080"

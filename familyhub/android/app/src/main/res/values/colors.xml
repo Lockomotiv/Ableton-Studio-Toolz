@@ -1,0 +1,10 @@
+<resources>
+    <color name="bg">#F5F2EC</color>
+    <color name="primary">#1F6F66</color>
+    <color name="accent">#EE6C4D</color>
+    <color name="widget_bg">#FFFFFF</color>
+    <color name="widget_text">#1E2329</color>
+    <color name="widget_muted">#6A7077</color>
+    <color name="widget_chip">#DDEDE9</color>
+    <color name="icon_bg">#1F6F66</color>
+</resources>
