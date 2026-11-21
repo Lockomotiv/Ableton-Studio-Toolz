@@ -1,0 +1,18 @@
+{
+  "name": "lock-o-motiv-connect",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "LOCK-O-MOTIV Connect Studio – Free Edition",
+  "license": "MIT",
+  "workspaces": ["apps/desktop", "packages/*"],
+  "scripts": {
+    "dev": "npm run tauri -w @lom/desktop -- dev",
+    "build": "npm run tauri -w @lom/desktop -- build",
+    "test": "npm run test:ts && npm run test:rust",
+    "test:ts": "vitest run",
+    "test:rust": "cargo test --workspace",
+    "test:e2e": "node tests/e2e/run-e2e.mjs",
+    "typecheck": "tsc -p apps/desktop/tsconfig.json --noEmit"
+  }
+}

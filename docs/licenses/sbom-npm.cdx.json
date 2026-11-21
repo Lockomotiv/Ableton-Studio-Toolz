@@ -1,0 +1,183 @@
+{
+  "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "serialNumber": "urn:uuid:0f6deebd-93e6-48b6-8417-e7438dc043a7",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-11-21T07:25:11.736Z",
+    "lifecycles": [
+      {
+        "phase": "build"
+      }
+    ],
+    "tools": [
+      {
+        "vendor": "npm",
+        "name": "cli",
+        "version": "10.9.9"
+      }
+    ],
+    "component": {
+      "bom-ref": "lock-o-motiv-connect@0.1.0",
+      "type": "library",
+      "name": "Ableton-Studio-Toolz",
+      "version": "0.1.0",
+      "scope": "required",
+      "description": "LOCK-O-MOTIV Connect Studio – Free Edition",
+      "purl": "pkg:npm/lock-o-motiv-connect@0.1.0",
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": ""
+        },
+        {
+          "name": "cdx:npm:package:private",
+          "value": "true"
+        }
+      ],
+      "externalReferences": [],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    }
+  },
+  "components": [
+    {
+      "bom-ref": "@lom/desktop@0.1.0",
+      "type": "library",
+      "name": "desktop",
+      "version": "0.1.0",
+      "scope": "required",
+      "purl": "pkg:npm/%40lom/desktop@0.1.0",
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "apps/desktop"
+        },
+        {
+          "name": "cdx:npm:package:private",
+          "value": "true"
+        }
+      ],
+      "externalReferences": []
+    },
+    {
+      "bom-ref": "@tauri-apps/api@2.12.5",
+      "type": "library",
+      "name": "@tauri-apps/api",
+      "version": "2.12.5",
+      "scope": "required",
+      "description": "Tauri API definitions",
+      "purl": "pkg:npm/%40tauri-apps/api@2.12.5",
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@tauri-apps/api"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/@tauri-apps/api/-/api-2.12.5.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/tauri-apps/tauri.git"
+        },
+        {
+          "type": "website",
+          "url": "https://github.com/tauri-apps/tauri#readme"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/tauri-apps/tauri/issues"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "1bd40832de5fcc40fe692e108552b7c351d62caa4b2301ff327a42afdcf5ba01841e74b63919aaacb91cd2e00b3a344ae2a5c9cbee188b0f0b0e5fca89c0b51e"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "Apache-2.0 OR MIT"
+        }
+      ]
+    },
+    {
+      "bom-ref": "@lom/protocol@0.1.0",
+      "type": "library",
+      "name": "protocol",
+      "version": "0.1.0",
+      "scope": "required",
+      "purl": "pkg:npm/%40lom/protocol@0.1.0",
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "packages/protocol"
+        },
+        {
+          "name": "cdx:npm:package:private",
+          "value": "true"
+        }
+      ],
+      "externalReferences": []
+    },
+    {
+      "bom-ref": "@lom/shared-types@0.1.0",
+      "type": "library",
+      "name": "shared-types",
+      "version": "0.1.0",
+      "scope": "required",
+      "purl": "pkg:npm/%40lom/shared-types@0.1.0",
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "packages/shared-types"
+        },
+        {
+          "name": "cdx:npm:package:private",
+          "value": "true"
+        }
+      ],
+      "externalReferences": []
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "lock-o-motiv-connect@0.1.0",
+      "dependsOn": [
+        "@lom/protocol@0.1.0",
+        "@lom/shared-types@0.1.0"
+      ]
+    },
+    {
+      "ref": "@lom/desktop@0.1.0",
+      "dependsOn": [
+        "@lom/protocol@0.1.0",
+        "@lom/shared-types@0.1.0",
+        "@tauri-apps/api@2.12.5"
+      ]
+    },
+    {
+      "ref": "@lom/protocol@0.1.0",
+      "dependsOn": [
+        "@lom/shared-types@0.1.0"
+      ]
+    },
+    {
+      "ref": "@lom/shared-types@0.1.0",
+      "dependsOn": []
+    },
+    {
+      "ref": "@tauri-apps/api@2.12.5",
+      "dependsOn": []
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "liveVersion": "12.1",
+  "measuredAt": 1795245821474,
+  "oscRoundtrip": {
+    "avgMs": 100.37410839054718,
+    "count": 402,
+    "maxMs": 105.17719000000001,
+    "minMs": 77.395583,
+    "p95Ms": 102.321166,
+    "timeouts": 0
+  },
+  "setTempoVerifiedMs": 100.523061,
+  "statusQueries": {
+    "ok": 100,
+    "requested": 100,
+    "wallSeconds": 10.053449123
+  },
+  "target": "127.0.0.1:22289"
+}

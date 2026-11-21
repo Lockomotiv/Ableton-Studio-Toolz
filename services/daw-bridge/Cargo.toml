@@ -1,0 +1,20 @@
+[package]
+name = "lom-daw-bridge"
+description = "DAW-Adapter (AbletonOSC + Mock) für LOCK-O-MOTIV Connect Studio"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+async-trait.workspace = true
+rosc = "0.11"
+sysinfo = { version = "0.33", default-features = false, features = ["system"] }
+dirs = "6"
+futures-util = { version = "0.3", default-features = false, features = ["alloc"] }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }

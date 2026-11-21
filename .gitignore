@@ -1,0 +1,9 @@
+node_modules/
+target/
+apps/desktop/dist/
+apps/desktop/src-tauri/gen/
+tests/integration/abletonosc-harness/vendor/
+tests/e2e/last-run.json
+__pycache__/
+*.log
+.DS_Store

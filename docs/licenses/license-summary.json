@@ -1,0 +1,101 @@
+{
+  "generatedAt": "2026-11-21T07:29:09.499Z",
+  "counts": {
+    "cargo": 464,
+    "npm": 6
+  },
+  "byLicense": {
+    "0BSD OR MIT OR Apache-2.0": 1,
+    "Unlicense OR MIT": 14,
+    "BSD-3-Clause": 2,
+    "MIT OR Apache-2.0": 215,
+    "MIT": 114,
+    "Apache-2.0 OR MIT": 36,
+    "MIT/Apache-2.0": 17,
+    "BSD-3-Clause AND MIT": 1,
+    "BSD-3-Clause/MIT": 1,
+    "Zlib OR Apache-2.0 OR MIT": 17,
+    "Apache-2.0/MIT": 3,
+    "MPL-2.0": 7,
+    "Apache-2.0 AND MIT": 1,
+    "CC0-1.0 OR MIT-0 OR Apache-2.0": 1,
+    "Apache-2.0 / MIT": 1,
+    "Zlib": 3,
+    "Unicode-3.0": 18,
+    "ISC": 1,
+    "MIT OR Zlib OR Apache-2.0": 2,
+    "BSD-3-Clause OR MIT OR Apache-2.0": 2,
+    "MIT OR Apache-2.0 OR LGPL-2.1-or-later": 2,
+    "MIT OR Apache-2.0 OR Zlib": 2,
+    "Unlicense/MIT": 2,
+    "Apache-2.0": 2,
+    "Apache-2.0 WITH LLVM-exception": 1,
+    "(MIT OR Apache-2.0) AND Unicode-3.0": 1,
+    "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT": 3
+  },
+  "flagged": [
+    {
+      "eco": "cargo",
+      "name": "cssparser",
+      "version": "0.37.0",
+      "license": "MPL-2.0",
+      "repo": "https://github.com/servo/rust-cssparser"
+    },
+    {
+      "eco": "cargo",
+      "name": "cssparser",
+      "version": "0.38.0",
+      "license": "MPL-2.0",
+      "repo": "https://github.com/servo/rust-cssparser"
+    },
+    {
+      "eco": "cargo",
+      "name": "cssparser-macros",
+      "version": "0.7.1",
+      "license": "MPL-2.0",
+      "repo": "https://github.com/servo/rust-cssparser"
+    },
+    {
+      "eco": "cargo",
+      "name": "dtoa-short",
+      "version": "0.3.5",
+      "license": "MPL-2.0",
+      "repo": "https://github.com/upsuper/dtoa-short"
+    },
+    {
+      "eco": "cargo",
+      "name": "option-ext",
+      "version": "0.2.0",
+      "license": "MPL-2.0",
+      "repo": "https://github.com/soc/option-ext.git"
+    },
+    {
+      "eco": "cargo",
+      "name": "r-efi",
+      "version": "6.0.0",
+      "license": "MIT OR Apache-2.0 OR LGPL-2.1-or-later",
+      "repo": "https://github.com/r-efi/r-efi"
+    },
+    {
+      "eco": "cargo",
+      "name": "r-efi",
+      "version": "5.3.0",
+      "license": "MIT OR Apache-2.0 OR LGPL-2.1-or-later",
+      "repo": "https://github.com/r-efi/r-efi"
+    },
+    {
+      "eco": "cargo",
+      "name": "selectors",
+      "version": "0.38.0",
+      "license": "MPL-2.0",
+      "repo": "https://github.com/servo/stylo"
+    },
+    {
+      "eco": "cargo",
+      "name": "selectors",
+      "version": "0.41.0",
+      "license": "MPL-2.0",
+      "repo": "https://github.com/servo/stylo"
+    }
+  ]
+}
