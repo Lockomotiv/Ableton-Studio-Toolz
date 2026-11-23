@@ -2,8 +2,12 @@
 import { h, icon, closeTopSheet, sheet, fill } from './ui.js';
 import { store } from './store.js';
 import { childMode, refreshNative, members } from './domain.js';
-import { viewToday, viewCalendar, viewTasks, viewShopping } from './views.js';
-import { viewMore, viewFamily, viewChild, viewPhotos, viewPi, viewSync, viewSettings, viewHelp, exitChildMode } from './more.js';
+import { viewToday, viewCalendar, viewTasks, viewShopping, hubPage, TASK_TABS, KITCHEN_TABS } from './views.js';
+import { viewChores, viewRoutines, viewRewards } from './household.js';
+import { viewMeals, viewRecipes } from './kitchen.js';
+import { openWall, closeWall, wallActive, armScreensaver } from './wall.js';
+import { refreshAll as refreshCalendars } from './extcal.js';
+import { viewMore, viewFamily, viewChild, viewPhotos, viewPi, viewSync, viewSettings, viewHelp, exitChildMode, viewExternal } from './more.js';
 import { openCapture } from './capture.js';
 import { consumeLaunchAction, haptic, moveToBack, isApp } from './native.js';
 import { voiceAvailable } from './voice.js';
@@ -11,11 +15,16 @@ import { editMember } from './editors.js';
 
 const ROUTES = {
   heute: viewToday, kalender: viewCalendar, aufgaben: viewTasks, einkauf: viewShopping, mehr: viewMore,
-  familie: viewFamily, kinder: viewChild, fotos: viewPhotos, pi: viewPi, sync: viewSync, einstellungen: viewSettings, hilfe: viewHelp,
+  aemter: () => hubPage('Aufgaben', TASK_TABS, 'aemter', viewChores()),
+  routinen: () => hubPage('Aufgaben', TASK_TABS, 'routinen', viewRoutines()),
+  sterne: () => hubPage('Aufgaben', TASK_TABS, 'sterne', viewRewards()),
+  essen: () => hubPage('Essen', KITCHEN_TABS, 'essen', viewMeals()),
+  rezepte: () => hubPage('Rezepte', KITCHEN_TABS, 'rezepte', viewRecipes()),
+  familie: viewFamily, kinder: viewChild, extern: viewExternal, fotos: viewPhotos, pi: viewPi, sync: viewSync, einstellungen: viewSettings, hilfe: viewHelp,
 };
-const CHILD_ROUTES = new Set(['heute', 'kalender', 'aufgaben', 'hilfe']);
+const CHILD_ROUTES = new Set(['heute', 'kalender', 'aufgaben', 'aemter', 'routinen', 'sterne', 'hilfe']);
 const TABS = [['heute', 'Heute', 'home'], ['kalender', 'Kalender', 'calendar'], ['aufgaben', 'Aufgaben', 'tasks'], ['einkauf', 'Einkauf', 'cart'], ['mehr', 'Mehr', 'menu']];
-const PARENT = { familie: 'mehr', kinder: 'mehr', fotos: 'mehr', pi: 'mehr', sync: 'mehr', einstellungen: 'mehr', hilfe: 'mehr' };
+const PARENT = { extern: 'mehr', aemter: 'aufgaben', routinen: 'aufgaben', sterne: 'aufgaben', essen: 'einkauf', rezepte: 'einkauf', familie: 'mehr', kinder: 'mehr', fotos: 'mehr', pi: 'mehr', sync: 'mehr', einstellungen: 'mehr', hilfe: 'mehr' };
 
 const app = document.getElementById('app');
 const view = h('main', { id: 'view', tabindex: -1 });
@@ -49,6 +58,7 @@ function render(reason) {
     h('div.brand', null, h('span.logo', null, '⌂'), h('span', null, kid ? `${kid.name}s Bereich` : store.config.familyName || 'FamilyHub')),
     h('span.spacer'),
     store.serverEnabled() ? h('a.sync-dot.' + syncState, { href: kid ? null : '#sync', title: syncState === 'error' ? store.sync.error : 'Synchronisiert', 'aria-label': 'Synchronisierung' }, icon(syncState === 'error' ? 'cloudOff' : 'sync', 18)) : null,
+    h('button.icon-btn', { 'aria-label': 'Wandansicht', title: 'Wandansicht / Bilderrahmen', onclick: () => openWall() }, icon('photo', 20)),
     kid ? h('button.btn.small.tonal', { onclick: exitChildMode }, icon('lock', 16), 'Eltern') : null,
   );
   // Tabs
@@ -85,6 +95,7 @@ function applyTheme() {
 
 // Android-Zurück-Taste
 window.fhBack = () => {
+  if (wallActive()) { closeWall(); return true; }
   if (closeTopSheet()) return true;
   const r = route();
   if (PARENT[r]) { location.hash = PARENT[r]; return true; }
@@ -95,6 +106,7 @@ window.fhLaunch = (action) => handleLaunch(action);
 function handleLaunch(action) {
   if (action === 'voice') openCapture({ mode: 'voice' });
   else if (action === 'add') openCapture({ mode: 'text' });
+  else if (action === 'wand') openWall();
   else if (action && ROUTES[action]) location.hash = action;
 }
 
@@ -125,6 +137,8 @@ render();
 refreshNative();
 store.syncNow();
 setTimeout(onboarding, 400);
+armScreensaver();
+store.on((r) => { if (r === 'config') armScreensaver(); if (r === 'data' && store.list('calendars').length) refreshCalendars(); });
 const la = consumeLaunchAction();
 if (la) setTimeout(() => handleLaunch(la), 300);
 if (!isApp && 'serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});

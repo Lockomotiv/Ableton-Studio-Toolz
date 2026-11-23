@@ -170,6 +170,23 @@ export function parse(input, opts = {}) {
   else if (c.take(rx('\\s(?:muss|müssen|sollten|sollen)\\s+(?:wir\\s+|ich\\s+)?(?:noch\\s+)?(?:kaufen|besorgen|holen)\\s*$'))) explicitKind = 'shopping';
   else if (c.take(rx('\\s(?:kaufen|besorgen)\\s*$'))) explicitKind = 'shopping';
 
+  // ---------- Essensplan ----------
+  if (!explicitKind) {
+    const slotOf = (w) => (/früh/i.test(w) ? 'breakfast' : /mittag/i.test(w) ? 'lunch' : 'dinner');
+    const mealRe = rx('\\b<(?:zum|als|fürs|zu[mr]?)\\s+(frühstück|mittagessen|mittag|abendessen|abendbrot|essen)\\b>');
+    const cue = rx('\\b<(?:gibt\\s+es|gibt\'s|gibts|essen\\s+wir|kochen\\s+wir|koche\\s+ich|machen\\s+wir)\\b>');
+    const head = rx('^\\s*(frühstück|mittagessen|abendessen|abendbrot)\\s*[:,-]?');
+    const plan = rx('\\b<(?:auf\\s+den|in\\s+den|zum)\\s+essensplan\\b>');
+    if (c.has(cue) || c.has(head) || c.has(plan)) {
+      explicitKind = 'meal';
+      out.slot = 'dinner';
+      c.take(mealRe, (m) => { out.slot = slotOf(m[1]); });
+      c.take(head, (m) => { out.slot = slotOf(m[1]); });
+      c.take(cue); c.take(plan);
+      c.take(rx('\\b<(mittags|abends|morgens|zum\\s+mittag|am\\s+abend)\\b>'), (m) => { out.slot = slotOf(m[1]); });
+    }
+  }
+
   if (!explicitKind) {
     if (c.take(rx('^\\s*(?:neue[rn]?\\s+)?(?:aufgabe|todo|to-do|erledigen)\\s*[:,-]?'))) explicitKind = 'task';
     else if (c.take(rx('^\\s*(?:neue[rn]?\\s+)?termin\\s*[:,-]?'))) explicitKind = 'event';
@@ -391,6 +408,13 @@ export function parse(input, opts = {}) {
   if (kind === 'event' && !remindExplicit) out.remindMin = null;
 
   out.kind = kind;
+  if (kind === 'meal') {
+    out.title = cleanTitle(rest).replace(/^(es|wir)\s+/i, '') || 'Essen';
+    out.title = out.title.charAt(0).toUpperCase() + out.title.slice(1);
+    out.date = out.date || ymd(now); out.time = null; out.endTime = null; out.allDay = false; out.repeat = null; out.remindMin = null;
+    delete out._weekday;
+    return out;
+  }
   if (kind === 'shopping') {
     out.items = splitItems(rest).map((name) => ({ name, category: shoppingCategory(name) }));
     out.title = out.items.map((i) => i.name).join(', ');
@@ -406,6 +430,7 @@ export function parse(input, opts = {}) {
 export function describe(p, opts = {}) {
   const now = opts.now ? new Date(opts.now) : new Date();
   const memberNames = (opts.members || []).filter((m) => p.memberIds?.includes(m.id)).map((m) => m.name);
+  if (p.kind === 'meal') return `${p.title} ${relativeDay(p.date, now)} ${({ breakfast: 'zum Frühstück', lunch: 'zum Mittag', dinner: 'zum Abendessen' })[p.slot] || ''} im Essensplan`;
   if (p.kind === 'shopping') return `${p.items.length === 1 ? p.items[0].name : p.items.length + ' Artikel'} auf die Einkaufsliste`;
   const parts = [p.kind === 'event' ? 'Termin' : 'Aufgabe', `„${p.title}“`];
   if (p.date) parts.push(relativeDay(p.date, now));

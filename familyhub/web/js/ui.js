@@ -69,6 +69,8 @@ const P = {
   edit: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z',
   wifi: 'M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M2 9a15 15 0 0 1 20 0M12 20h.01',
   undo: 'M3 7v6h6M3 13a9 9 0 1 0 3-7.7L3 8',
+  meal: 'M7 2v9M4 2v5a3 3 0 0 0 6 0V2M7 11v11M17 2c-2 1-3 4-3 8h3v12M17 2v20',
+  star: 'M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z',
 };
 export function icon(name, size = 22) {
   const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');

@@ -4,4 +4,5 @@
     <string name="sc_voice_long">Neuer Eintrag per Sprache</string>
     <string name="sc_add">Eintragen</string>
     <string name="sc_shop">Einkauf</string>
+    <string name="sc_wall">Wandansicht</string>
 </resources>

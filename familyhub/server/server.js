@@ -11,7 +11,7 @@ import { buildIcs } from './lib/ics.js';
 import { parse as parseText, describe as describeEntry } from '../web/js/nlp.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const VERSION = '3.0.0';
+const VERSION = '3.1.0';
 const cfg = {
   port: +(process.env.PORT || 8080),
   host: process.env.HOST || '0.0.0.0',
@@ -21,7 +21,34 @@ const cfg = {
   tlsCert: process.env.TLS_CERT || '',
   tlsKey: process.env.TLS_KEY || '',
   immichUrl: process.env.IMMICH_URL || '',
+  immichKey: process.env.IMMICH_API_KEY || '',
+  immichAlbum: process.env.IMMICH_ALBUM_ID || '',
+  immichInsecure: process.env.IMMICH_INSECURE === '1',
 };
+
+/** Kleiner HTTP-Client ohne Abhängigkeiten (Redirects, Größenlimit, optional eigene Zertifikate). */
+export function fetchRaw(url, { method = 'GET', headers = {}, body, insecure = false, limit = 5 * 1024 * 1024, redirects = 3, timeout = 15000 } = {}) {
+  return new Promise((resolve, reject) => {
+    let u;
+    try { u = new URL(url); } catch { return reject(new Error('Ungültige Adresse')); }
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return reject(new Error('Nur http/https'));
+    const mod = u.protocol === 'https:' ? https : http;
+    const req = mod.request(u, { method, headers: { 'User-Agent': 'FamilyHub/3', ...headers }, rejectUnauthorized: !insecure, timeout }, (res) => {
+      if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location && redirects > 0) {
+        res.resume();
+        return resolve(fetchRaw(new URL(res.headers.location, u).toString(), { method, headers, body, insecure, limit, redirects: redirects - 1, timeout }));
+      }
+      const chunks = []; let size = 0;
+      res.on('data', (c) => { size += c.length; if (size > limit) { req.destroy(new Error('Antwort zu groß')); return; } chunks.push(c); });
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: Buffer.concat(chunks) }));
+      res.on('error', reject);
+    });
+    req.on('timeout', () => req.destroy(new Error('Zeitüberschreitung')));
+    req.on('error', reject);
+    if (body) req.write(body);
+    req.end();
+  });
+}
 
 export function createApp(options = {}) {
   const c = { ...cfg, ...options };
@@ -30,6 +57,28 @@ export function createApp(options = {}) {
 
   if (c.password) setPassword(c.password, false);
   if (!auth.icsKey) { auth.icsKey = token(18); db.save(); }
+  if (!auth.photoKey) { auth.photoKey = token(18); db.save(); }
+  const immich = () => ({ url: (c.immichUrl || '').replace(/\/+$/, ''), key: c.immichKey, album: c.immichAlbum, insecure: c.immichInsecure });
+  const photoCache = { at: 0, items: [] };
+  async function immichPhotos() {
+    const im = immich();
+    if (!im.url || !im.key) throw Object.assign(new Error('Immich ist auf dem Server nicht eingerichtet (IMMICH_URL / IMMICH_API_KEY).'), { status: 404 });
+    if (Date.now() - photoCache.at < 10 * 60e3 && photoCache.items.length) return [...photoCache.items].sort(() => Math.random() - 0.5).slice(0, 60);
+    const hdr = { 'x-api-key': im.key, Accept: 'application/json', 'Content-Type': 'application/json' };
+    let assets = [];
+    if (im.album) {
+      const r = await fetchRaw(`${im.url}/api/albums/${encodeURIComponent(im.album)}`, { headers: hdr, insecure: im.insecure });
+      if (r.status !== 200) throw Object.assign(new Error('Immich-Album nicht lesbar (HTTP ' + r.status + ')'), { status: 502 });
+      assets = JSON.parse(r.body.toString()).assets || [];
+    } else {
+      const r = await fetchRaw(`${im.url}/api/search/random`, { method: 'POST', headers: hdr, body: JSON.stringify({ size: 120, type: 'IMAGE' }), insecure: im.insecure });
+      if (r.status !== 200) throw Object.assign(new Error('Immich antwortet nicht wie erwartet (HTTP ' + r.status + ')'), { status: 502 });
+      assets = JSON.parse(r.body.toString());
+    }
+    photoCache.items = assets.filter((a) => a.type === 'IMAGE' || !a.type).map((a) => ({ id: a.id }));
+    photoCache.at = Date.now();
+    return [...photoCache.items].sort(() => Math.random() - 0.5).slice(0, 60);
+  }
 
   function setPassword(pw, bump = true) {
     const salt = auth.salt && verifyPassword(pw) ? auth.salt : crypto.randomBytes(16).toString('hex');
@@ -109,7 +158,9 @@ export function createApp(options = {}) {
     const p = parseText(text, { members, meId });
     const now = Date.now();
     const ops = [];
-    if (p.kind === 'shopping') {
+    if (p.kind === 'meal') {
+      ops.push({ op: 'put', col: 'meals', item: { id: newId(), date: p.date, slot: p.slot || 'dinner', title: p.title, createdAt: now, updatedAt: now } });
+    } else if (p.kind === 'shopping') {
       for (const it of p.items) ops.push({ op: 'put', col: 'shopping', item: { id: newId(), name: it.name, category: it.category, done: false, createdAt: now, updatedAt: now } });
     } else {
       const base = { id: newId(), title: p.title, date: p.date, time: p.time, memberIds: p.memberIds, repeat: p.repeat, remindMin: p.remindMin, createdAt: now, updatedAt: now, source: 'voice' };
@@ -150,6 +201,18 @@ export function createApp(options = {}) {
       auth.tokens[sha(t)] = { name: String(b.device || 'Gerät').slice(0, 60), created: Date.now(), lastSeen: Date.now() };
       db.save();
       return send(res, 200, { token: t, familyName: db.data.settings.familyName });
+    }
+    if (p.startsWith('/api/v2/photos/') && req.method === 'GET') {
+      const key = url.searchParams.get('key') || '';
+      if (key.length !== auth.photoKey.length || !crypto.timingSafeEqual(Buffer.from(key), Buffer.from(auth.photoKey))) return send(res, 403, 'Ungültiger Schlüssel');
+      const id = decodeURIComponent(p.slice('/api/v2/photos/'.length));
+      if (!/^[0-9a-f-]{36}$/i.test(id)) return send(res, 400, 'Ungültige ID');
+      const im = immich();
+      if (!im.url || !im.key) return send(res, 404, 'Immich nicht eingerichtet');
+      const r = await fetchRaw(`${im.url}/api/assets/${id}/thumbnail?size=preview`, { headers: { 'x-api-key': im.key }, insecure: im.insecure, limit: 15 * 1024 * 1024 });
+      if (r.status !== 200) return send(res, 502, 'Bild nicht verfügbar');
+      res.writeHead(200, { 'Content-Type': r.headers['content-type'] || 'image/jpeg', 'Cache-Control': 'private, max-age=86400' });
+      return res.end(r.body);
     }
     if (p === '/api/v2/calendar.ics') {
       const key = url.searchParams.get('key') || '';
@@ -200,6 +263,18 @@ export function createApp(options = {}) {
       const text = String(b.text || '').trim();
       if (!text) return send(res, 400, { error: 'text fehlt' });
       return send(res, 200, quickAdd(text, b.memberId));
+    }
+    if (p === '/api/v2/photos' && req.method === 'GET') {
+      return send(res, 200, { items: await immichPhotos(), key: auth.photoKey });
+    }
+    if (p === '/api/v2/ics-proxy' && req.method === 'POST') {
+      // Externe Kalender für die Browser-Version (dort verhindert CORS den direkten Abruf)
+      const b = await readJson(req);
+      const target = String(b.url || '').replace(/^webcal:\/\//i, 'https://');
+      const r = await fetchRaw(target, { headers: { Accept: 'text/calendar' } }).catch((e) => ({ error: e.message }));
+      if (r.error) return send(res, 502, { error: r.error });
+      if (r.status !== 200) return send(res, 502, { error: 'Kalender antwortet mit HTTP ' + r.status });
+      return send(res, 200, { text: r.body.toString('utf8') });
     }
     if (p === '/api/v2/calendar-link' && req.method === 'GET') {
       return send(res, 200, { path: `/api/v2/calendar.ics?key=${auth.icsKey}` });

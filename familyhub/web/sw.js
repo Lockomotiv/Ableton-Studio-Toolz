@@ -1,6 +1,6 @@
 // Offline-Cache für die Browser-Version (in der App liegen die Dateien ohnehin lokal).
-const CACHE = 'fh3-v1';
-const FILES = ['./', 'index.html', 'css/app.css', 'js/app.js', 'js/ui.js', 'js/store.js', 'js/native.js', 'js/voice.js', 'js/nlp.js', 'js/recur.js', 'js/domain.js', 'js/views.js', 'js/more.js', 'js/capture.js', 'js/editors.js', 'img/icon.svg', 'manifest.webmanifest'];
+const CACHE = 'fh3-v2';
+const FILES = ['./', 'index.html', 'css/app.css', 'js/app.js', 'js/ui.js', 'js/store.js', 'js/native.js', 'js/voice.js', 'js/nlp.js', 'js/recur.js', 'js/domain.js', 'js/views.js', 'js/more.js', 'js/capture.js', 'js/editors.js', 'js/household.js', 'js/kitchen.js', 'js/wall.js', 'js/extcal.js', 'js/icsparse.js', 'img/icon.svg', 'manifest.webmanifest'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k))))); self.clients.claim(); });
 self.addEventListener('fetch', (e) => {

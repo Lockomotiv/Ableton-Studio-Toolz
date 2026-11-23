@@ -1,7 +1,7 @@
 // Datenhaltung: lokal zuerst (funktioniert offline), optional Abgleich mit dem FamilyHub-Server auf dem Pi.
-import { http } from './native.js';
+import { http, notify } from './native.js';
 
-export const COLLECTIONS = ['members', 'events', 'tasks', 'shopping', 'notes'];
+export const COLLECTIONS = ['members', 'events', 'tasks', 'shopping', 'notes', 'chores', 'routines', 'rewards', 'points', 'routinelog', 'meals', 'recipes', 'calendars'];
 const KEY_DATA = 'fh3.data';
 const KEY_CFG = 'fh3.config';
 const KEY_OUT = 'fh3.outbox';
@@ -56,6 +56,7 @@ class Store {
     this.listeners = new Set();
     this.sync = { state: 'idle', error: null, online: null };
     this._polling = false;
+    this.rejected = new Set();
   }
 
   on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
@@ -164,6 +165,8 @@ class Store {
       if (this.outbox.length) {
         const ops = this.outbox.slice(0, 200);
         const res = await this.request('api/v2/batch', { method: 'POST', body: { ops } });
+        // Vom Server abgelehnte Einträge lokal behalten (nie stillschweigend Daten verlieren)
+        (res.results || []).forEach((r, i) => { if (r && r.ok === false) this.rejected.add(ops[i].col + ':' + (ops[i].item?.id || ops[i].id)); });
         this.outbox = this.outbox.slice(ops.length);
         persist(KEY_OUT, this.outbox);
         if (res.rev === this.config.server.rev + 1) this.config.server.rev = res.rev; // nur eigene Änderung
@@ -180,7 +183,8 @@ class Store {
   }
 
   mergeServer(st) {
-    const pendingKeys = new Set(this.outbox.map((o) => o.col + ':' + (o.item?.id || o.id)));
+    const pendingKeys = new Set([...this.outbox.map((o) => o.col + ':' + (o.item?.id || o.id)), ...this.rejected]);
+    this.notifyAssigned(st);
     for (const c of COLLECTIONS) {
       const next = {};
       for (const it of st[c] || []) next[it.id] = it;
@@ -191,6 +195,23 @@ class Store {
     if (st.settings?.familyName) this.config.familyName = st.settings.familyName;
     this.saveData();
     this.emit('data');
+  }
+
+  /** Hinweis, wenn jemand anderes mir einen neuen Termin / eine Aufgabe / ein Amt zuteilt. */
+  notifyAssigned(st) {
+    const me = this.config.meId;
+    if (!me || this.config.server.rev < 0 || this.config.child?.activeMemberId) return;
+    const labels = { events: 'Neuer Termin', tasks: 'Neue Aufgabe', chores: 'Neues Amt' };
+    const fresh = [];
+    for (const col of Object.keys(labels)) {
+      for (const it of st[col] || []) {
+        if (it.deleted || this.data[col][it.id] || !it.memberIds?.includes(me)) continue;
+        if (it.createdBy === me || it.external) continue;
+        fresh.push(`${labels[col]}: ${it.title}`);
+      }
+    }
+    if (!fresh.length) return;
+    notify(fresh.length === 1 ? fresh[0] : `${fresh.length} neue Einträge für dich`, fresh.length === 1 ? 'Von deiner Familie eingetragen' : fresh.slice(0, 4).join(' · '));
   }
 
   async startPolling() {

@@ -74,3 +74,7 @@ export function pickFile() {
     i.click();
   });
 }
+export function notify(title, body) {
+  if (N && N.notify) return N.notify(title, body || '');
+  try { if ('Notification' in window && Notification.permission === 'granted') new Notification(title, { body }); } catch { /* egal */ }
+}

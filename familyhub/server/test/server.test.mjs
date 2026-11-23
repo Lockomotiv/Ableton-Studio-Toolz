@@ -61,3 +61,17 @@ test('Weboberfläche wird ausgeliefert', async () => {
 });
 
 test.after(() => { server.close(); db.flush(); fs.rmSync(dir, { recursive: true, force: true }); });
+
+test('Neue Sammlungen, Essensplan per Schnelleingabe, Fotos ohne Immich', async () => {
+  let r = await call('/api/v2/batch', { method: 'POST', body: { ops: [
+    { op: 'put', col: 'chores', item: { id: 'chore1', title: 'Tisch decken', points: 2, updatedAt: 1 } },
+    { op: 'put', col: 'points', item: { id: 'c_chore1_ben_20261121', memberId: 'ben', delta: 2, updatedAt: 1 } },
+    { op: 'put', col: 'recipes', item: { id: 'rec1', title: 'Pizza', ingredients: 'Mehl\nHefe', updatedAt: 1 } },
+  ] } });
+  assert.ok(r.body.results.every((x) => x.ok));
+  r = await call('/api/v2/quick', { method: 'POST', body: { text: 'Am Freitag gibt es Pizza zum Abendessen' } });
+  assert.equal(r.body.created[0].col, 'meals');
+  r = await call('/api/v2/state');
+  assert.equal(r.body.chores.length, 1); assert.equal(r.body.meals.length, 1);
+  assert.equal((await call('/api/v2/photos')).status, 404);
+});

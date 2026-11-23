@@ -7,6 +7,11 @@ services:
     restart: unless-stopped
     environment:
       - TZ=Europe/Berlin
+      # Fotos für Wandansicht/Bilderrahmen aus Immich (API-Schlüssel: Immich → Konto → API-Schlüssel)
+      # - IMMICH_URL=https://192.168.178.51:8444
+      # - IMMICH_API_KEY=hier-den-schluessel-eintragen
+      # - IMMICH_ALBUM_ID=      # optional: nur ein bestimmtes Album zeigen
+      # - IMMICH_INSECURE=1     # bei selbstsigniertem Zertifikat
       # Optional: HTTPS direkt im Container (z. B. Tailscale-Zertifikat, siehe README)
       # - TLS_CERT=/certs/pi.crt
       # - TLS_KEY=/certs/pi.key

@@ -6,8 +6,11 @@ import { editMember } from './editors.js';
 import { http, openUrl, openApp, info, requestNotifications, saveFile, pickFile, copy, setChildLock, isApp } from './native.js';
 import { openCapture } from './capture.js';
 import { avatars } from './views.js';
+import { calendars, refreshCalendar, calStatus } from './extcal.js';
+import { openWall } from './wall.js';
+import { MEMBER_COLORS } from './domain.js';
 
-const APP_VERSION = '3.0.0';
+const APP_VERSION = '3.1.0';
 
 function row(ic, title, sub, onclick, right) {
   return h(onclick ? 'button.menu-row' : 'div.menu-row', { onclick }, h('span.mi', null, icon(ic, 20)), h('span.mt', null, h('b', null, title), sub ? h('small', null, sub) : null), right || (onclick ? icon('right', 18) : null));
@@ -25,6 +28,9 @@ export function viewMore() {
       row('users', 'Familie', members().length ? members().map((m) => m.name).join(', ') : 'Personen anlegen', () => go('familie'), avatars(members().map((m) => m.id))),
       row('lock', 'Kindermodus', store.config.child.pinHash ? 'Eingerichtet' : 'Vereinfachte Ansicht für Kinder', () => go('kinder')),
       row('photo', 'Fotos', 'Immich öffnen', () => go('fotos'))),
+    h('div.menu', null,
+      row('calendar', 'Kalender verbinden', calendars().length ? calendars().map((c) => c.name).join(', ') : 'Google, Apple, Outlook, Schulferien …', () => go('extern')),
+      row('photo', 'Wandansicht & Bilderrahmen', 'Für ein Tablet an der Wand', () => openWall())),
     h('div.menu', null,
       row('sync', 'Synchronisierung', syncSub, () => go('sync')),
       row('server', 'Pi & Dienste', 'Status, Starten/Stoppen, Adressen', () => go('pi'))),
@@ -56,10 +62,16 @@ export function viewFamily() {
 // ---------- Kindermodus ----------
 async function sha(s) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('fh-pin:' + s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, '0')).join(''); }
 
+export async function verifyParentPin(title = 'Eltern bestätigen') {
+  if (!store.config.child.pinHash) return true;
+  const pin = await promptSheet({ title, label: 'Eltern-PIN', type: 'password', ok: 'Bestätigen' });
+  if (pin == null) return false;
+  if (await sha(pin) !== store.config.child.pinHash) { toast('PIN stimmt nicht'); return false; }
+  return true;
+}
+
 export async function exitChildMode() {
-  const pin = await promptSheet({ title: 'Kindermodus verlassen', label: 'Eltern-PIN', type: 'password', ok: 'Entsperren' });
-  if (pin == null) return;
-  if (await sha(pin) !== store.config.child.pinHash) { toast('PIN stimmt nicht'); return; }
+  if (!await verifyParentPin('Kindermodus verlassen')) return;
   store.saveConfig({ child: { activeMemberId: null } });
   setChildLock(false); refreshNative();
   toast('Kindermodus beendet'); location.hash = 'heute';
@@ -274,6 +286,11 @@ export function viewSettings() {
     h('div.menu', null,
       sel('Standard bei Terminen', 'remindDefault', [['', 'Keine'], [0, 'Zur Startzeit'], [10, '10 Min. vorher'], [30, '30 Min. vorher'], [60, '1 Std. vorher']]),
       isApp ? row('bell', 'Benachrichtigungen erlauben', null, () => requestNotifications()) : null),
+    h('h3.section-title', null, 'Wandansicht & Bilderrahmen'),
+    h('div.menu', null,
+      sel('Automatisch starten nach', 'wallIdleMin', [[0, 'Nie'], [2, '2 Min. ohne Bedienung'], [5, '5 Min.'], [10, '10 Min.'], [30, '30 Min.']]),
+      sel('Fotowechsel', 'wallSlideSec', [[10, 'alle 10 s'], [20, 'alle 20 s'], [60, 'jede Minute'], [300, 'alle 5 Min.']]),
+      row('photo', 'Jetzt starten', 'Fotos kommen aus Immich (über den Pi)', () => openWall())),
     h('h3.section-title', null, 'Daten'),
     h('div.menu', null,
       row('download', 'Sicherung exportieren', 'Alle Einträge als Datei', () => { saveFile(`familyhub-${new Date().toISOString().slice(0, 10)}.json`, store.exportJson()); }),
@@ -298,4 +315,62 @@ export function viewHelp() {
       h('li', null, 'Uhrzeiten: „um 8“, „15:30“, „halb vier“, „viertel nach zehn“, „von 14 bis 16 Uhr“. „Um 3“ bedeutet 15 Uhr.'),
       h('li', null, 'Unter „Familie“ kannst du Spitznamen hinterlegen, z. B. „Mama“ oder „Schatz“.'),
       h('li', null, 'Auf dem Startbildschirm: Widget „FamilyHub“ mit Mikrofon-Taste, oder App-Symbol lange drücken → „Sprechen“.'))));
+}
+
+// ---------- Externe Kalender ----------
+const PROVIDERS = [
+  ['Google Kalender', 'Google Kalender im Browser → Einstellungen → Kalender auswählen → „Privatadresse im iCal-Format“ kopieren.'],
+  ['Apple iCloud', 'iPhone: Kalender-App → Kalender → (i) → „Öffentlicher Kalender“ an → Link teilen/kopieren. Beginnt mit webcal://'],
+  ['Outlook / Microsoft 365', 'outlook.com → Einstellungen → Kalender → Freigegebene Kalender → „Kalender veröffentlichen“ → ICS-Link kopieren.'],
+  ['Schule, Ferien, Müllabfuhr', 'Viele Schulen, Vereine und Gemeinden bieten einen iCal-/ICS-Link an. Ferien z. B. von schulferien.org.'],
+];
+
+export function viewExternal() {
+  const list = calendars();
+  return h('div.page', null,
+    back('Kalender verbinden'),
+    h('p.muted', null, 'Termine aus Google, Apple, Outlook oder Schul-/Ferienkalendern erscheinen automatisch in FamilyHub – farbig markiert und alle 30 Minuten aktualisiert. Ändern geht weiterhin im Original-Kalender.'),
+    list.length ? h('div.menu', null, ...list.map((c) => {
+      const st = calStatus(c.id);
+      const sub = st?.error ? '⚠ ' + st.error : st?.fetched ? `${st.count} Termine · aktualisiert ${new Date(st.fetched).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}` : 'Wird geladen …';
+      return h('button.menu-row', { onclick: () => editCalendar(c) }, h('span.mi', { style: { background: c.color, color: '#fff' } }, icon('calendar', 20)), h('span.mt', null, h('b', null, c.name), h('small', null, sub)), icon('right', 18));
+    })) : null,
+    h('button.btn.primary.big.more-btn', { onclick: () => editCalendar(null) }, icon('plus', 18), 'Kalender hinzufügen'),
+    h('h3.section-title', null, 'Wo finde ich die iCal-Adresse?'),
+    h('div.menu', null, ...PROVIDERS.map(([t, d]) => h('details.menu-row.howto', null, h('summary', null, t), h('p.muted', null, d)))));
+}
+
+function editCalendar(c) {
+  const used = new Set(calendars().map((x) => x.color));
+  const v = { name: '', url: '', color: MEMBER_COLORS.find((x) => !used.has(x)) || MEMBER_COLORS[1], memberIds: [], enabled: true, ...(c || {}) };
+  const f = {};
+  let color = v.color;
+  const sw = h('div.swatches');
+  const draw = () => sw.replaceChildren(...MEMBER_COLORS.map((x) => h('button.swatch' + (x === color ? '.on' : ''), { type: 'button', style: { background: x }, 'aria-label': 'Farbe', onclick: () => { color = x; draw(); } })));
+  draw();
+  const set = new Set(v.memberIds);
+  const ppl = h('div.chips.people');
+  const drawP = () => ppl.replaceChildren(...members().map((m) => h('button.person' + (set.has(m.id) ? '.on' : ''), { type: 'button', style: { '--c': m.color }, onclick: () => { set.has(m.id) ? set.delete(m.id) : set.add(m.id); drawP(); } }, h('span.av', null, m.emoji || m.name[0]), m.name)));
+  drawP();
+  const st = h('p.status');
+  sheet((s) => h('form.sheet-body', { onsubmit: async (e) => {
+    e.preventDefault();
+    const url = f.url.value.trim().replace(/^webcal:\/\//i, 'https://');
+    if (!/^https?:\/\//i.test(url)) return status(st, 'Bitte eine iCal-Adresse (https://… oder webcal://…) einfügen', 'bad');
+    const saved = store.put('calendars', { ...(c || {}), name: f.name.value.trim() || 'Kalender', url, color, memberIds: [...set], enabled: f.on.checked });
+    status(st, '◌ Wird geladen …');
+    const r = await refreshCalendar(saved);
+    if (r.error) return status(st, '○ ' + r.error + ' – gespeichert, wird später erneut versucht.', 'bad');
+    s.close(); toast(`${r.count} Termine aus „${saved.name}“`); location.hash = 'extern';
+  } },
+  h('h2.sheet-title', null, c ? c.name : 'Kalender verbinden'),
+  h('label.field', null, h('span', null, 'Name'), f.name = h('input', { value: v.name, placeholder: 'z. B. Papas Arbeit, Schulferien', required: true, autofocus: !c })),
+  h('label.field', null, h('span', null, 'iCal-Adresse'), f.url = h('textarea', { rows: 3, value: v.url, placeholder: 'https://calendar.google.com/calendar/ical/…/basic.ics' })),
+  h('label.field', null, h('span', null, 'Farbe'), sw),
+  members().length ? h('label.field', null, h('span', null, 'Gehört zu (für Filter & Wandansicht)'), ppl) : null,
+  h('label.switch', null, f.on = h('input', { type: 'checkbox', checked: v.enabled !== false }), h('span.track'), h('span', null, 'Anzeigen')),
+  st,
+  h('div.btn-row', null,
+    c ? h('button.btn.danger-ghost', { type: 'button', onclick: async () => { if (await confirmSheet({ title: `„${c.name}“ entfernen?`, text: 'Die Termine verschwinden aus FamilyHub, im Original bleiben sie.', ok: 'Entfernen', danger: true })) { store.del('calendars', c.id); s.close(); location.hash = 'extern'; } } }, icon('trash', 18), 'Entfernen') : h('span'),
+    h('button.btn.primary', { type: 'submit' }, c ? 'Speichern' : 'Verbinden'))), { tall: true, label: 'Kalender' });
 }

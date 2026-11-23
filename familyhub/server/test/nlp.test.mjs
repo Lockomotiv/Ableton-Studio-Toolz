@@ -68,3 +68,14 @@ test('Zusammenfassung ist lesbar', () => {
 test('leere Eingabe', () => {
   assert.equal(p('').kind, 'task');
 });
+
+test('Essensplan per Sprache', () => {
+  let r = p('Am Freitag gibt es Pizza zum Abendessen');
+  assert.equal(r.kind, 'meal'); assert.equal(r.title, 'Pizza'); assert.equal(r.date, '2026-11-27'); assert.equal(r.slot, 'dinner');
+  r = p('Morgen essen wir Spaghetti Bolognese zum Mittag');
+  assert.equal(r.kind, 'meal'); assert.equal(r.title, 'Spaghetti Bolognese'); assert.equal(r.date, '2026-11-22'); assert.equal(r.slot, 'lunch');
+  r = p('Abendessen heute: Gemüsesuppe');
+  assert.equal(r.kind, 'meal'); assert.equal(r.title, 'Gemüsesuppe'); assert.equal(r.date, '2026-11-21');
+  // Termine mit Essen bleiben Termine
+  assert.equal(p('Heute um 18 Uhr Abendessen bei Oma').kind, 'event');
+});

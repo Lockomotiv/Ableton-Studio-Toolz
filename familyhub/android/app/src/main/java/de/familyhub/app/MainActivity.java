@@ -62,6 +62,8 @@ public class MainActivity extends Activity {
         s.setSupportMultipleWindows(false);
         s.setJavaScriptCanOpenWindowsAutomatically(false);
         s.setTextZoom(100);
+        // Fotos vom Pi (http im Heimnetz) dürfen in der Wandansicht angezeigt werden
+        s.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
 
         final WebViewAssetLoader loader = new WebViewAssetLoader.Builder()
                 .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
@@ -119,12 +121,25 @@ public class MainActivity extends Activity {
         }
     }
 
+    /** Wandansicht: Bildschirm bleibt an, Systemleisten ausgeblendet. */
+    void setWallMode(boolean on) {
+        if (on) getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        else getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        if (Build.VERSION.SDK_INT >= 30) {
+            WindowInsetsController c = getWindow().getInsetsController();
+            if (c == null) return;
+            if (on) { c.hide(WindowInsets.Type.systemBars()); c.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE); }
+            else c.show(WindowInsets.Type.systemBars());
+        }
+    }
+
     private String actionOf(Intent i) {
         if (i == null) return "";
         String a = i.getAction();
         if ("de.familyhub.app.VOICE".equals(a)) return "voice";
         if ("de.familyhub.app.ADD".equals(a)) return "add";
         if ("de.familyhub.app.SHOP".equals(a)) return "einkauf";
+        if ("de.familyhub.app.WALL".equals(a)) return "wand";
         String extra = i.getStringExtra("action");
         return extra == null ? "" : extra;
     }

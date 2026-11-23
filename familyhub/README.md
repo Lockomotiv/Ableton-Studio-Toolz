@@ -32,6 +32,17 @@ familyhub/
 
 Überall gilt: **Rückgängig** nach jedem Speichern/Löschen/Abhaken, Personenfilter oben, Hell/Dunkel automatisch.
 
+### Neu in 3.1 (angelehnt an den Dæly Calendar)
+
+* **Ämterplan mit Sternen** – wiederkehrende Ämter pro Kind (bestimmte Wochentage, auf Wunsch wöchentlich wechselnd); Abhaken gibt Sterne, mit Konfetti 🎉
+* **Routinen** – Morgen-/Abendroutine Schritt für Schritt (Vorlagen dabei), Fortschrittsring, Bonus-Sterne bei Abschluss
+* **Belohnungstafel** – Eltern legen Belohnungen fest („30 Min. Tablet = 10 ⭐“), Kinder sehen ihren Fortschritt; Einlösen im Kindermodus nur mit Eltern-PIN; Sterne-Verlauf, Bonus/Abzug
+* **Essensplan & Rezepte** – Wochenplan (Frühstück/Mittag/Abend wählbar), Rezeptsammlung, Zutaten der Woche mit einem Tipp auf die Einkaufsliste; per Sprache: „Am Freitag gibt es Pizza zum Abendessen“
+* **Kalender verbinden** – Google, Apple iCloud, Outlook, Schul-/Ferien-/Müllkalender per iCal-Adresse (Anleitung in der App), farbig, alle 30 Min. aktualisiert
+* **Wochenansicht** im Kalender (auf Tablets als 7 Spalten)
+* **Wandansicht / Bilderrahmen** – große Uhr, Tagesplan je Person, Essen, Kinder-Fortschritt, Diashow aus Immich; startet auf Wunsch automatisch nach x Minuten (Bildschirm bleibt an)
+* **Hinweis bei Zuteilung** – trägt jemand anderes dir einen Termin, eine Aufgabe oder ein Amt ein, kommt eine Benachrichtigung
+
 ### Sprachsteuerung – Beispiele
 
 * „Morgen um halb vier Zahnarzt mit Lena, erinnere mich eine Stunde vorher“
@@ -45,7 +56,7 @@ Unter *Einstellungen* lässt sich „Direkt speichern“ einschalten – dann wi
 
 ## Installation auf dem Handy
 
-1. `release/FamilyHub-3.0.0.apk` aufs Handy und installieren.
+1. `release/FamilyHub-3.1.0.apk` aufs Handy und installieren.
    Die neue App hat eine eigene Paket-ID (`de.familyhub.app`) und läuft **neben** der alten App. Die alte kann gelöscht werden, sobald alles passt.
 2. Beim ersten Start „Familie anlegen“.
 3. Optional: Mehr → Synchronisierung → mit dem Pi verbinden (siehe unten).
@@ -66,6 +77,7 @@ Bisher nur lokal erfasste Einträge werden dabei automatisch hochgeladen.
 * Unterwegs: Tailscale am Handy an → die App wechselt automatisch auf `http://autodartspi.tail318476.ts.net:8446/`
   (Tailscale verschlüsselt selbst, http ist dort unkritisch). Für HTTPS `TLS_CERT`/`TLS_KEY` setzen, z. B. mit `tailscale cert`.
 * Kalender-Abo (Google/Apple/Outlook): *Mehr → Synchronisierung → Kalender abonnieren*
+* Fotos für die Wandansicht: in `docker-compose.yml` `IMMICH_URL` und `IMMICH_API_KEY` setzen (der Schlüssel bleibt auf dem Pi)
 
 ### API (für Home Assistant, Siri-Kurzbefehle, Google-Routinen, Tasker …)
 

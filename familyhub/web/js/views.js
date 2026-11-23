@@ -7,6 +7,33 @@ import { openEditor } from './editors.js';
 import { openCapture, commit } from './capture.js';
 import { haptic } from './native.js';
 import { minutesOf } from './recur.js';
+import { todayKidsCard } from './household.js';
+import { todayMealsCard } from './kitchen.js';
+import { sheet } from './ui.js';
+
+export const TASK_TABS = [['aufgaben', 'To-dos'], ['aemter', 'Ämter'], ['routinen', 'Routinen'], ['sterne', 'Sterne']];
+export const KITCHEN_TABS = [['einkauf', 'Einkauf'], ['essen', 'Essensplan'], ['rezepte', 'Rezepte']];
+export function subnav(tabs, active) {
+  return h('nav.subnav', { 'aria-label': 'Bereich' }, ...tabs.map(([k, l]) => h('a.sub' + (k === active ? '.on' : ''), { href: '#' + k, 'aria-current': k === active ? 'page' : null }, l)));
+}
+export function hubPage(title, tabs, active, content) {
+  return h('div.page', null, h('div.page-head', null, h('h1', null, title)), subnav(tabs, active), content);
+}
+
+function isoWeek(d) {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day);
+  return Math.ceil(((t - new Date(Date.UTC(t.getUTCFullYear(), 0, 1))) / 864e5 + 1) / 7);
+}
+
+function showExternal(ev) {
+  sheet(() => h('div.sheet-body', null,
+    h('h2.sheet-title', null, ev.title),
+    h('p.muted', null, `${fmt.dayLabel(ev.date)}${ev.allDay ? ', ganztägig' : ', ' + fmt.time(ev.time) + (ev.endTime ? '–' + fmt.time(ev.endTime) : '') + ' Uhr'}`),
+    ev.location ? h('p', null, '📍 ', ev.location) : null,
+    ev.notes ? h('p.prewrap.muted', null, ev.notes) : null,
+    h('p.hint', null, `Aus dem verbundenen Kalender „${ev.calName || 'Extern'}“. Ändern bitte dort – FamilyHub zeigt ihn nur an.`)), { label: ev.title });
+}
 
 // ---------- gemeinsame Bausteine ----------
 export function avatars(ids, size = 'sm') {
@@ -16,16 +43,17 @@ export function avatars(ids, size = 'sm') {
 }
 
 function eventRow(ev, { showDay } = {}) {
-  const c = ev.memberIds?.length ? member(ev.memberIds[0])?.color : null;
+  const c = ev.calColor || (ev.memberIds?.length ? member(ev.memberIds[0])?.color : null);
   const now = new Date(); const td = ymd(now); const nowMin = now.getHours() * 60 + now.getMinutes();
   const past = ev.date < td || (ev.date === td && !ev.allDay && (minutesOf(ev.endTime || ev.time) ?? 0) < nowMin);
-  return h('button.item.event' + (past ? '.past' : ''), { style: { '--c': c || 'var(--primary)' }, onclick: () => openEditor('events', ev) },
+  return h('button.item.event' + (past ? '.past' : ''), { style: { '--c': c || 'var(--primary)' }, onclick: () => (ev.readOnly ? showExternal(ev) : openEditor('events', ev)) },
     h('div.when', null, ev.allDay ? h('span.allday', null, 'ganzt.') : [h('b', null, fmt.time(ev.time)), ev.endTime ? h('span', null, fmt.time(ev.endTime)) : null]),
     h('div.bar'),
     h('div.what', null,
       h('div.title', null, ev.title),
       h('div.meta', null,
         showDay ? h('span', null, fmt.dayLabel(ev.date)) : null,
+        ev.calName ? h('span', null, icon('link', 13), ev.calName) : null,
         ev.location ? h('span', null, icon('pin', 13), ev.location) : null,
         ev.repeat ? h('span', null, icon('repeat', 13), repeatLabel(ev.repeat)) : null,
         ev.remindMin != null && ev.time ? h('span', { 'aria-label': 'Erinnerung' }, icon('bell', 13)) : null)),
@@ -112,6 +140,8 @@ export function viewToday() {
       todays.length ? h('div.list', null, ...todays.map((e) => eventRow(e))) : h('p.soft', null, 'Heute keine Termine. 🌤'),
     ),
     dueTasks.length ? section('Zu erledigen', h('div.list', null, ...dueTasks.slice(0, 6).map((t) => taskRow(t))), dueTasks.length > 6 ? h('a.more', { href: '#aufgaben' }, `Alle ${dueTasks.length} anzeigen`) : null) : null,
+    todayKidsCard(),
+    todayMealsCard(),
     tomorrows.length ? section('Morgen', h('div.list', null, ...tomorrows.map((e) => eventRow(e)))) : null,
     !kid && shop.length ? section('Einkaufsliste', h('a.card.shop-teaser', { href: '#einkauf' },
       h('div.pills', null, ...shop.slice(0, 8).map((s) => h('span.pill', null, s.name)), shop.length > 8 ? h('span.pill.more', null, '+' + (shop.length - 8)) : null))) : null,
@@ -128,18 +158,42 @@ export function viewCalendar() {
   const page = h('div.page.calendar');
   const rerender = () => page.replaceWith(viewCalendar());
 
+  const week = cal.mode === 'week';
+  const wkStart = ymd(addDays(fmt.parse(cal.selected), -((fmt.parse(cal.selected).getDay() + 6) % 7)));
+  const shift = (dir) => {
+    if (week) { cal.selected = ymd(addDays(fmt.parse(cal.selected), 7 * dir)); const d = fmt.parse(cal.selected); cal.cursor = new Date(d.getFullYear(), d.getMonth(), 1); }
+    else cal.cursor = new Date(cal.cursor.getFullYear(), cal.cursor.getMonth() + dir, 1);
+    rerender();
+  };
   const head = h('div.cal-head', null,
-    h('h2', null, `${fmt.MO[cal.cursor.getMonth()]} `, h('span.year', null, cal.cursor.getFullYear())),
-    h('button.icon-btn', { 'aria-label': 'Voriger Monat', onclick: () => { cal.cursor = new Date(cal.cursor.getFullYear(), cal.cursor.getMonth() - 1, 1); rerender(); } }, icon('left')),
-    h('button.icon-btn', { 'aria-label': 'Nächster Monat', onclick: () => { cal.cursor = new Date(cal.cursor.getFullYear(), cal.cursor.getMonth() + 1, 1); rerender(); } }, icon('right')),
+    week ? h('h2', null, `KW ${isoWeek(fmt.parse(wkStart))} `, h('span.year', null, `${fmt.parse(wkStart).getDate()}.${fmt.parse(wkStart).getMonth() + 1}.`))
+      : h('h2', null, `${fmt.MO[cal.cursor.getMonth()]} `, h('span.year', null, cal.cursor.getFullYear())),
+    h('button.icon-btn', { 'aria-label': week ? 'Vorige Woche' : 'Voriger Monat', onclick: () => shift(-1) }, icon('left')),
+    h('button.icon-btn', { 'aria-label': week ? 'Nächste Woche' : 'Nächster Monat', onclick: () => shift(1) }, icon('right')),
     h('button.btn.small.tonal', { onclick: () => { cal.cursor = new Date(now.getFullYear(), now.getMonth(), 1); cal.selected = today(); rerender(); } }, 'Heute'),
     h('div.seg.small', null,
       h('button.seg-btn' + (cal.mode === 'month' ? '.on' : ''), { 'aria-label': 'Monat', onclick: () => { cal.mode = 'month'; rerender(); } }, icon('grid', 18)),
+      h('button.seg-btn' + (cal.mode === 'week' ? '.on' : ''), { 'aria-label': 'Woche', onclick: () => { cal.mode = 'week'; rerender(); } }, icon('calendar', 18)),
       h('button.seg-btn' + (cal.mode === 'list' ? '.on' : ''), { 'aria-label': 'Liste', onclick: () => { cal.mode = 'list'; rerender(); } }, icon('list', 18))));
 
   page.append(head, personFilter() || '');
 
-  if (cal.mode === 'month') {
+  if (week) {
+    const days = [...Array(7)].map((_, i) => ymd(addDays(fmt.parse(wkStart), i)));
+    const evs = agenda(days[0], days[6]);
+    const tasks = openTasks().filter((t) => t.date >= days[0] && t.date <= days[6]);
+    page.append(h('div.week', null, ...days.map((d) => {
+      const dt = fmt.parse(d);
+      const dayEv = evs.filter((e) => e.date <= d && (e.endDate || e.date) >= d);
+      const dayT = sortTasks(tasks.filter((t) => t.date === d));
+      return h('div.week-day' + (d === today() ? '.today' : ''), null,
+        h('button.wd-head', { onclick: () => openCapture({ mode: 'text', kind: 'event', date: d }), 'aria-label': 'Termin am ' + fmt.longDate(dt) }, h('span', null, fmt.WD[dt.getDay()]), h('b', null, dt.getDate()), icon('plus', 14)),
+        h('div.wd-items', null,
+          ...dayEv.map((e) => h('button.wchip', { style: { '--c': e.calColor || (e.memberIds?.length ? member(e.memberIds[0])?.color : 'var(--primary)') }, onclick: () => (e.readOnly ? showExternal(e) : openEditor('events', e)) }, e.allDay ? '' : h('b', null, fmt.time(e.time) + ' '), e.title)),
+          ...dayT.map((t) => h('button.wchip.task', { onclick: () => openEditor('tasks', t) }, '☐ ', t.title)),
+          !dayEv.length && !dayT.length ? h('span.wd-free', null, 'frei') : null));
+    })));
+  } else if (cal.mode === 'month') {
     const first = cal.cursor;
     const startOffset = (first.getDay() + 6) % 7; // Montag zuerst
     const gridStart = addDays(first, -startOffset);
@@ -160,7 +214,7 @@ export function viewCalendar() {
       const cls = ['day', d.getMonth() !== first.getMonth() ? 'out' : '', key === today() ? 'today' : '', key === cal.selected ? 'sel' : '', d.getDay() === 0 || d.getDay() === 6 ? 'we' : ''].filter(Boolean).join('.');
       grid.append(h('button.' + cls, { onclick: () => { haptic(); cal.selected = key; rerender(); }, 'aria-label': fmt.longDate(d) + (list.length ? `, ${list.length} Termine` : '') },
         h('span.num', null, d.getDate()),
-        h('span.dots', null, ...list.slice(0, 3).map((e) => h('i', { style: { background: e.memberIds?.length ? member(e.memberIds[0])?.color : 'var(--primary)' } })), list.length > 3 ? h('i.plus') : null, taskDays.has(key) ? h('i.task') : null)));
+        h('span.dots', null, ...list.slice(0, 3).map((e) => h('i', { style: { background: e.calColor || (e.memberIds?.length ? member(e.memberIds[0])?.color : 'var(--primary)') } })), list.length > 3 ? h('i.plus') : null, taskDays.has(key) ? h('i.task') : null)));
     }
     page.append(grid);
     const sel = cal.selected;
@@ -205,7 +259,7 @@ export function viewTasks() {
     h('button.seg-btn' + (tv.show === 'open' ? '.on' : ''), { onclick: () => { tv.show = 'open'; rerender(); } }, 'Offen'),
     h('button.seg-btn' + (tv.show === 'done' ? '.on' : ''), { onclick: () => { tv.show = 'done'; rerender(); } }, 'Erledigt'));
 
-  page.append(h('div.page-head', null, h('h1', null, 'Aufgaben'), seg), add, personFilter() || '');
+  page.append(h('div.page-head', null, h('h1', null, 'Aufgaben'), seg), subnav(TASK_TABS, 'aufgaben'), add, personFilter() || '');
 
   if (tv.show === 'open') {
     const list = sortTasks(openTasks());
@@ -247,7 +301,7 @@ export function viewShopping() {
     h('button.icon-btn.mic', { type: 'button', 'aria-label': 'Per Sprache', onclick: () => openCapture({ mode: 'voice', kind: 'shopping' }) }, icon('mic')),
     h('button.icon-btn.primary', { type: 'submit', 'aria-label': 'Hinzufügen' }, icon('plus')));
 
-  page.append(h('div.page-head', null, h('h1', null, 'Einkauf'), h('span.count', null, open.length ? `${open.length} offen` : '')), add);
+  page.append(h('div.page-head', null, h('h1', null, 'Einkauf'), h('span.count', null, open.length ? `${open.length} offen` : '')), subnav(KITCHEN_TABS, 'einkauf'), add);
 
   // Schnell wieder hinzufügen: zuletzt gekaufte Artikel
   const recent = done.filter((d, i, arr) => arr.findIndex((x) => x.name.toLowerCase() === d.name.toLowerCase()) === i).slice(0, 10);

@@ -12,12 +12,14 @@ const EXAMPLES = [
   'Milch, Eier und Brot auf die Einkaufsliste',
   'Fußball jeden Dienstag um 17 Uhr für Ben',
   'Erinnere mich Freitag an die Brotdosen',
+  'Am Freitag gibt es Pizza zum Abendessen',
   'Elternabend am 3.12. um 19:30 Uhr',
   'Papa muss morgen den Müll rausbringen',
   'Oma Geburtstag am 14. März',
 ];
 
-const KIND = { event: ['Termin', 'calendar'], task: ['Aufgabe', 'tasks'], shopping: ['Einkauf', 'cart'] };
+const KIND = { event: ['Termin', 'calendar'], task: ['Aufgabe', 'tasks'], shopping: ['Einkauf', 'cart'], meal: ['Essen', 'meal'] };
+const SLOT_LABEL = { breakfast: 'Frühstück', lunch: 'Mittag', dinner: 'Abend' };
 
 export function openCapture({ mode = voiceAvailable() ? 'voice' : 'text', text = '', kind = null, date = null } = {}) {
   let parsed = null;
@@ -45,6 +47,13 @@ export function openCapture({ mode = voiceAvailable() ? 'voice' : 'text', text =
     ui.save.disabled = false;
     const kindRow = h('div.seg', { role: 'tablist' }, ...Object.entries(KIND).map(([k, [label, ic]]) => h('button.seg-btn' + (p.kind === k ? '.on' : ''), { role: 'tab', 'aria-selected': p.kind === k, onclick: () => { haptic(); parsed = coerceKind(parsed, k); overrides = {}; renderPreview(); } }, icon(ic, 18), label)));
     const chips = [];
+    if (p.kind === 'meal') {
+      fill(ui.preview, kindRow, h('div.pv-card', null,
+        h('input.pv-title', { value: p.title, 'aria-label': 'Gericht', oninput: (e) => { overrides.title = e.target.value; } }),
+        h('div.chips', null, chip('calendar', p.date ? fmt.dayLabel(p.date) : 'Heute', () => pickDate(p)),
+          ...Object.entries(SLOT_LABEL).map(([k, l]) => h('button.chip' + (p.slot === k ? '.removable' : ''), { onclick: () => { overrides.slot = k; renderPreview(); } }, l)))));
+      return;
+    }
     if (p.kind === 'shopping') {
       ui.preview.replaceChildren(kindRow, h('div.pv-card', null, h('div.pv-items', null, ...(p.items.length ? p.items : [{ name: p.title || '…' }]).map((it) => h('span.pill', null, it.name)))));
       return;
@@ -139,7 +148,7 @@ export function openCapture({ mode = voiceAvailable() ? 'voice' : 'text', text =
       h('div.cap-head', null, h('h2.sheet-title', null, 'Was steht an?'), voiceAvailable() ? toggle : null),
       voiceBlock, ui.status, ui.input, ui.preview,
       h('div.btn-row', null,
-        h('button.btn.ghost', { onclick: () => { const p = current(); s.close(); openEditor(p?.kind === 'event' ? 'events' : p?.kind === 'shopping' ? 'shopping' : 'tasks', null, p || {}); } }, 'Mehr Details'),
+        h('button.btn.ghost', { onclick: () => { const p = current(); s.close(); if (p?.kind === 'meal') { location.hash = 'essen'; return; } openEditor(p?.kind === 'event' ? 'events' : p?.kind === 'shopping' ? 'shopping' : 'tasks', null, p || {}); } }, 'Mehr Details'),
         ui.save));
   }, { tall: true, label: 'Neuer Eintrag', onClose: () => cancelVoice() });
 
@@ -157,6 +166,7 @@ function coerceKind(p, k) {
   } else if (p.kind === 'shopping') {
     q.title = p.items.map((i) => i.name).join(', ') || p.title;
   }
+  if (k === 'meal') { q.slot = q.slot || 'dinner'; if (!q.date) q.date = fmtToday(); }
   if (k === 'event' && !q.date) q.date = fmtToday();
   if (k === 'event' && !q.time) q.allDay = true;
   return q;
@@ -169,6 +179,11 @@ export function commit(p) {
   if (p.kind === 'shopping') {
     const items = (p.items?.length ? p.items : [{ name: p.title, category: shoppingCategory(p.title) }]).filter((i) => i.name);
     for (const it of store.putMany('shopping', items.map((i) => ({ name: i.name, category: i.category, done: false, addedBy: store.config.meId })))) created.push(['shopping', it.id]);
+  } else if (p.kind === 'meal') {
+    const ex = store.list('meals').find((m) => m.date === p.date && m.slot === (p.slot || 'dinner'));
+    const rec = store.list('recipes').find((r) => r.title.toLowerCase() === p.title.toLowerCase());
+    const it = store.put('meals', { ...(ex || {}), date: p.date, slot: p.slot || 'dinner', title: rec ? rec.title : p.title, recipeId: rec?.id || null, emoji: rec?.emoji || null });
+    created.push(['meals', it.id]);
   } else if (p.kind === 'event') {
     const it = store.put('events', { title: p.title, date: p.date, time: p.allDay ? null : p.time, endTime: p.allDay ? null : p.endTime, allDay: !!p.allDay || !p.time, memberIds: p.memberIds, repeat: p.repeat, remindMin: p.remindMin ?? (p.time ? store.config.remindDefault : null), createdBy: store.config.meId });
     created.push(['events', it.id]);

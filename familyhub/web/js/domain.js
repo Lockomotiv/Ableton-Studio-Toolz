@@ -3,6 +3,7 @@ import { store } from './store.js';
 import { occurrences, nextDate, minutesOf } from './recur.js';
 import { ymd, addDays } from './nlp.js';
 import { scheduleReminders, updateWidget } from './native.js';
+import { externalEvents } from './extcal.js';
 
 export const MEMBER_COLORS = ['#E4572E', '#2E86AB', '#7A9E3B', '#9B5DE5', '#F2A541', '#17A398', '#D64A8A', '#5C6B7A'];
 export const MEMBER_EMOJI = ['🦊', '🐻', '🐼', '🦁', '🐯', '🐨', '🐸', '🐙', '🦄', '🐝', '🐳', '🌻', '⚽', '🎸', '🚀', '⭐'];
@@ -23,7 +24,7 @@ export function today() { return ymd(new Date()); }
 export function agenda(from, to, { filter = true } = {}) {
   const f = filter ? activeFilter() : null;
   const out = [];
-  for (const ev of store.list('events')) {
+  for (const ev of [...store.list('events'), ...externalEvents()]) {
     if (!matchesFilter(ev, f)) continue;
     out.push(...occurrences(ev, from, to));
   }

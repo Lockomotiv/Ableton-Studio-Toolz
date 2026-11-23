@@ -285,6 +285,23 @@ public class NativeBridge {
         });
     }
 
+    // ---------------- Hinweise & Wandmodus ----------------
+    private int notifySeq = 0;
+    @JavascriptInterface
+    public void notify(String title, String body) {
+        if (a.getSharedPreferences("familyhub", Context.MODE_PRIVATE).getBoolean("child", false)) return;
+        Reminders.ensureChannel(a);
+        android.app.PendingIntent open = android.app.PendingIntent.getActivity(a, 1, new Intent(a, MainActivity.class), android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
+        android.app.Notification n = new android.app.Notification.Builder(a, "reminders")
+                .setSmallIcon(R.drawable.ic_notify).setColor(a.getColor(R.color.icon_bg))
+                .setContentTitle(title).setContentText(body).setStyle(new android.app.Notification.BigTextStyle().bigText(body))
+                .setAutoCancel(true).setContentIntent(open).build();
+        try { a.getSystemService(android.app.NotificationManager.class).notify(9000 + (notifySeq++ % 50), n); } catch (SecurityException ignored) { }
+    }
+
+    @JavascriptInterface
+    public void setWallMode(boolean on) { a.runOnUiThread(() -> a.setWallMode(on)); }
+
     // ---------------- Erinnerungen & Widget ----------------
     @JavascriptInterface
     public void scheduleReminders(String json) {

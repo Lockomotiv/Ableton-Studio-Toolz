@@ -3,12 +3,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-export const COLLECTIONS = ['members', 'events', 'tasks', 'shopping', 'notes'];
+export const COLLECTIONS = ['members', 'events', 'tasks', 'shopping', 'notes', 'chores', 'routines', 'rewards', 'points', 'routinelog', 'meals', 'recipes', 'calendars'];
 
 const EMPTY = () => ({
   schema: 4,
   rev: 0,
-  members: {}, events: {}, tasks: {}, shopping: {}, notes: {},
+  ...Object.fromEntries(COLLECTIONS.map((c) => [c, {}])),
   settings: { familyName: 'Unsere Familie' },
   auth: { passwordHash: null, salt: null, tokens: {}, icsKey: null },
 });
@@ -107,7 +107,7 @@ const MAX_STRING = 2000;
 function sanitize(item) {
   if (!item || typeof item !== 'object' || Array.isArray(item)) return null;
   const id = String(item.id || '');
-  if (!/^[A-Za-z0-9_-]{4,64}$/.test(id)) return null;
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(id)) return null;
   const json = JSON.stringify(item);
   if (json.length > 20000) return null;
   const clean = JSON.parse(json, (k, v) => (typeof v === 'string' && v.length > MAX_STRING ? v.slice(0, MAX_STRING) : v));

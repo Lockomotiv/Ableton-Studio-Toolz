@@ -99,7 +99,7 @@ export function editTask(t, d = {}) {
     function save() {
       const title = f.title.value.trim(); if (!title) return f.title.focus();
       const rep = valueToRepeat(f.repeat.value);
-      store.put('tasks', { ...(base || {}), title, date: f.date.value || (rep ? ymd(new Date()) : null), time: f.time.value || null, memberIds: ppl.get(), repeat: rep, remindMin: f.remind.value === '' ? null : +f.remind.value, priority: f.prio.checked, notes: f.notes.value.trim(), done: base?.done || false });
+      store.put('tasks', { ...(base || {}), title, date: f.date.value || (rep ? ymd(new Date()) : null), time: f.time.value || null, memberIds: ppl.get(), repeat: rep, remindMin: f.remind.value === '' ? null : +f.remind.value, priority: f.prio.checked, notes: f.notes.value.trim(), done: base?.done || false, createdBy: base?.createdBy || store.config.meId });
       refreshNative(); s.close(); toast(base ? 'Aufgabe aktualisiert' : 'Aufgabe gespeichert');
     }
     function remove() {
