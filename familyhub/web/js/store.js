@@ -1,5 +1,8 @@
 // Datenhaltung: lokal zuerst (funktioniert offline), optional Abgleich mit dem FamilyHub-Server auf dem Pi.
-import { http, notify } from './native.js';
+import { http, notify, isApp } from './native.js';
+
+/** Im Browser vom Pi geladen (iPhone-Web-App, PC): dann ist der Pi immer die eigene Adresse. */
+export const webOrigin = !isApp && typeof location !== 'undefined' && /^https?:$/.test(location.protocol) && !/appassets/.test(location.host) ? location.origin + '/' : null;
 
 export const COLLECTIONS = ['members', 'events', 'tasks', 'shopping', 'notes', 'chores', 'routines', 'rewards', 'points', 'routinelog', 'meals', 'recipes', 'calendars', 'messages', 'contacts', 'lists', 'listitems', 'budget', 'timetable', 'documents'];
 const KEY_DATA = 'fh3.data';
@@ -117,6 +120,7 @@ class Store {
 
   candidates() {
     const s = this.config.server;
+    if (webOrigin) return [webOrigin];
     const list = s.mode === 'home' ? [s.home] : s.mode === 'mobile' ? [s.mobile] : [s.active, s.home, s.mobile];
     return [...new Set(list.filter(Boolean).map(normalizeBase))];
   }

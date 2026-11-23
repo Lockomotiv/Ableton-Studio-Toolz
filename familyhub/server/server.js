@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { Db, COLLECTIONS } from './lib/db.js';
 import { buildIcs } from './lib/ics.js';
 import { Immich } from './lib/immich.js';
+import { Notifier } from './lib/notify.js';
 import { parse as parseText, describe as describeEntry, ymd as ymdOf, addDays as addDaysOf, relativeDay } from '../web/js/nlp.js';
 import { detectCommand } from '../web/js/commands.js';
 import { guessCategory } from '../web/js/budgetcats.js';
@@ -17,7 +18,7 @@ import { parseIcs } from '../web/js/icsparse.js';
 import { wasteType } from '../web/js/wastetypes.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const VERSION = '4.1.0';
+const VERSION = '4.2.0';
 const cfg = {
   port: +(process.env.PORT || 8080),
   host: process.env.HOST || '0.0.0.0',
@@ -91,6 +92,10 @@ export function createApp(options = {}) {
   ].map((e) => { const t = wasteType(e.title); return { date: e.date, wasteKey: t[0], wasteName: t[1] }; }).sort((x, y) => x.date.localeCompare(y.date));
   if (!options.noTimers) { setTimeout(refreshWaste, 2000).unref?.(); setInterval(refreshWaste, 3600e3).unref?.(); }
   db.listeners.add(() => { setTimeout(refreshWaste, 500); });
+
+  // Push-Benachrichtigungen (iPhone-Web-App & Browser)
+  const notifier = new Notifier(db, fetchRaw, { wastePickups: (a, b) => wastePickups(a, b), log: (m) => console.log(m) });
+  if (!options.noTimers) setInterval(() => notifier.tick().catch((e) => console.error('Push:', e.message)), 60e3).unref?.();
 
   function setPassword(pw, bump = true) {
     const salt = auth.salt && verifyPassword(pw) ? auth.salt : crypto.randomBytes(16).toString('hex');
@@ -223,7 +228,8 @@ export function createApp(options = {}) {
       else ops.push({ op: 'put', col: 'tasks', item: { ...base, priority: p.priority, done: false } });
     }
     db.apply(ops);
-    return { parsed: p, summary: describeEntry(p, { members }), created: ops.map((o) => ({ col: o.col, id: o.item.id })) };
+    const summary = describeEntry(p, { members });
+    return { parsed: p, summary, speak: `Erledigt. ${summary}.`, created: ops.map((o) => ({ col: o.col, id: o.item.id })) };
   }
 
   async function api(req, res, url) {
@@ -307,7 +313,10 @@ export function createApp(options = {}) {
     if (p === '/api/v2/batch' && req.method === 'POST') {
       const b = await readJson(req);
       if (!Array.isArray(b.ops) || b.ops.length > 500) return send(res, 400, { error: 'ops fehlt' });
-      return send(res, 200, db.apply(b.ops));
+      const existed = new Set(b.ops.filter((o) => o?.op === 'put' && db.data[o.col]?.[o.item?.id]).map((o) => o.col + ':' + o.item.id));
+      const result = db.apply(b.ops);
+      notifier.afterBatch(b.ops, existed);
+      return send(res, 200, result);
     }
     if (p === '/api/v2/settings' && req.method === 'POST') {
       const b = await readJson(req);
@@ -346,6 +355,27 @@ export function createApp(options = {}) {
     if (del && req.method === 'POST') {
       for (const f of [del[1], del[1] + '.json']) { try { fs.unlinkSync(path.join(filesDir, f)); } catch { /* schon weg */ } }
       return send(res, 200, { ok: true });
+    }
+    if (p === '/api/v2/push/key' && req.method === 'GET') return send(res, 200, { publicKey: notifier.vapid.publicKey });
+    if (p === '/api/v2/push/subscribe' && req.method === 'POST') {
+      const b = await readJson(req);
+      const id = notifier.subscribe(b.subscription, { memberId: b.memberId || null, device: b.device || session.name });
+      if (b.test) await notifier.send(id, { title: 'FamilyHub ✔', body: 'Benachrichtigungen sind auf diesem Gerät aktiv.', tag: 'test', url: '#heute' });
+      return send(res, 200, { ok: true, id });
+    }
+    if (p === '/api/v2/push/unsubscribe' && req.method === 'POST') { const b = await readJson(req); notifier.unsubscribe(b.endpoint); return send(res, 200, { ok: true }); }
+    if (p === '/api/v2/tokens' && req.method === 'POST') {
+      // eigener Zugangsschlüssel, z. B. für einen Siri-Kurzbefehl
+      const b = await readJson(req);
+      const t = token();
+      auth.tokens[sha(t)] = { name: String(b.name || 'Kurzbefehl').slice(0, 60), created: Date.now(), lastSeen: Date.now() };
+      db.save();
+      return send(res, 200, { token: t });
+    }
+    if (p === '/api/v2/settings/waste' && req.method === 'POST') {
+      const b = await readJson(req);
+      if (/^\d{2}:\d{2}$/.test(b.time || '')) db.data.settings.wasteReminderTime = b.time;
+      db.bump(); return send(res, 200, { ok: true });
     }
     if (p === '/api/v2/photos' && req.method === 'GET') {
       if (!immich.configured()) return send(res, 404, { error: 'Immich ist noch nicht verbunden (Mehr → Fotos).' });
@@ -441,7 +471,7 @@ export function createApp(options = {}) {
     }
   };
 
-  return { handler, db, quickAdd };
+  return { handler, db, quickAdd, notifier };
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

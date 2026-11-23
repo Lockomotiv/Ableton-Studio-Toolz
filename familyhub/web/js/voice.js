@@ -71,6 +71,8 @@ function errorText(code) {
     'busy': 'Spracherkennung ist beschäftigt. Gleich nochmal versuchen.',
     'unavailable': 'Auf diesem Gerät ist keine Spracherkennung installiert (Google-App bzw. „Speech Services by Google“).',
     'aborted': '',
+    'service-not-allowed': 'Spracheingabe ist hier nicht verfügbar – einfach die Diktier-Taste 🎤 der Tastatur nutzen.',
+    'language-not-supported': 'Deutsch ist für die Spracheingabe nicht verfügbar – bitte die Diktier-Taste der Tastatur nutzen.',
   };
   return map[code] ?? 'Spracheingabe fehlgeschlagen (' + code + ').';
 }

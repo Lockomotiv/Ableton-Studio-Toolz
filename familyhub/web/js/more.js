@@ -1,6 +1,6 @@
 // Bereich „Mehr“: Familie, Kindermodus, Fotos, Pi & Dienste, Synchronisierung, Einstellungen, Hilfe.
 import { h, icon, toast, confirmSheet, promptSheet, sheet } from './ui.js';
-import { store, normalizeBase } from './store.js';
+import { store, normalizeBase, webOrigin } from './store.js';
 import { members, childMode, refreshNative } from './domain.js';
 import { editMember } from './editors.js';
 import { http, openUrl, openApp, info, requestNotifications, saveFile, pickFile, copy, setChildLock, isApp } from './native.js';
@@ -10,7 +10,7 @@ import { calendars, refreshCalendar, calStatus } from './extcal.js';
 import { openWall } from './wall.js';
 import { MEMBER_COLORS } from './domain.js';
 
-const APP_VERSION = '4.1.0';
+const APP_VERSION = '4.2.0';
 
 function row(ic, title, sub, onclick, right) {
   return h(onclick ? 'button.menu-row' : 'div.menu-row', { onclick }, h('span.mi', null, icon(ic, 20)), h('span.mt', null, h('b', null, title), sub ? h('small', null, sub) : null), right || (onclick ? icon('right', 18) : null));
@@ -30,6 +30,7 @@ export function viewMore() {
       row('photo', 'Fotos', 'Eure Immich-Fotos & Diashow', () => go('fotos'))),
     h('div.menu', null,
       row('trash', 'Abfall', 'Abholtermine, Erinnerung am Vorabend', () => go('abfall')),
+      row('users', 'iPhone & Browser', 'FamilyHub für iPhones, Benachrichtigungen, Siri', () => go('iphone')),
       row('users', 'Pinnwand', 'Nachrichten an die ganze Familie', () => go('pinnwand')),
       row('tasks', 'Listen', 'Packliste, Geschenkideen, Filme …', () => go('listen')),
       row('pin', 'Kontakte', 'Kinderarzt, Kita, Babysitter, Notruf', () => go('kontakte')),
@@ -220,7 +221,7 @@ export function viewSync() {
     } },
     h('h2', null, 'Mit dem FamilyHub-Server verbinden'),
     h('p.muted', null, 'Damit alle Familienmitglieder dieselben Termine, Aufgaben und Einkäufe sehen. Ohne Server bleibt alles nur auf diesem Handy.'),
-    h('label.field', null, h('span', null, 'Server-Adresse'), base = h('input', { value: s.home, inputmode: 'url', autocomplete: 'off', required: true })),
+    h('label.field', null, h('span', null, 'Server-Adresse'), base = h('input', { value: webOrigin || s.home, inputmode: 'url', autocomplete: 'off', required: true })),
     h('label.field', null, h('span', null, 'Familien-Passwort'), pw = h('input', { type: 'password', required: true, autocomplete: 'current-password' })),
     h('details', null, h('summary', null, 'Server ist neu?'), h('p.hint', null, 'Beim allerersten Verbinden wird das eingegebene Passwort als Familien-Passwort festgelegt.'), h('label.field', null, h('span', null, 'Familienname'), fam = h('input', { placeholder: 'z. B. Familie Müller' }))),
     st,

@@ -4,6 +4,8 @@ WORKDIR /app
 COPY web ./web
 COPY server ./server
 ENV NODE_ENV=production PORT=8080 DATA_DIR=/data WEB_DIR=/app/web
+# Datenordner gehört dem App-Benutzer (auch ohne eingebundenen Ordner beschreibbar)
+RUN mkdir -p /data && chown node:node /data
 VOLUME /data
 EXPOSE 8080
 USER node

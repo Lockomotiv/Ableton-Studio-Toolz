@@ -74,7 +74,7 @@ export function viewWaste() {
     h('div.menu', null,
       h('label.menu-row.switch-row', null, h('span.mt', null, h('b', null, 'Am Vorabend erinnern'), h('small', null, `„Morgen: 🟡 Gelber Sack – rausstellen“ um ${r.time} Uhr`)),
         h('span.switch', null, h('input', { type: 'checkbox', checked: r.enabled, onchange: (e) => store.saveConfig({ wasteReminder: { ...r, enabled: e.target.checked } }) }), h('span.track'))),
-      h('label.menu-row', null, h('span.mt', null, h('b', null, 'Uhrzeit')), h('input.mini-time', { type: 'time', value: r.time, onchange: (e) => store.saveConfig({ wasteReminder: { ...r, time: e.target.value || '19:00' } }) })))),
+      h('label.menu-row', null, h('span.mt', null, h('b', null, 'Uhrzeit')), h('input.mini-time', { type: 'time', value: r.time, onchange: (e) => { const time = e.target.value || '19:00'; store.saveConfig({ wasteReminder: { ...r, time } }); if (store.serverEnabled()) store.request('api/v2/settings/waste', { method: 'POST', body: { time } }).catch(() => {}); } })))),
     h('p.hint', null, 'Tipp: Auf eine Tonne tippen, um festzulegen, wer sie rausstellt – das erscheint dann auch auf „Heute“.'));
   return page;
 }

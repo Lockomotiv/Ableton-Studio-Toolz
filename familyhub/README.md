@@ -97,10 +97,27 @@ Unter *Einstellungen* lässt sich „Direkt speichern“ einschalten – dann wi
 
 ## Installation auf dem Handy
 
-1. `release/FamilyHub-4.1.0.apk` aufs Handy und installieren.
+1. `release/FamilyHub-4.2.0.apk` aufs Handy und installieren.
    Die neue App hat eine eigene Paket-ID (`de.familyhub.app`) und läuft **neben** der alten App. Die alte kann gelöscht werden, sobald alles passt.
 2. Beim ersten Start „Familie anlegen“.
 3. Optional: Mehr → Synchronisierung → mit dem Pi verbinden (siehe unten).
+
+## iPhone (iOS 16.4 oder neuer)
+
+FamilyHub läuft auf iPhones als **Web-App direkt vom Pi** – ohne App Store, ohne Mac. Alle sehen dieselben Daten wie die Android-Handys.
+
+1. Auf dem iPhone die App **Tailscale** installieren und anmelden (sichere https-Adresse – nötig für Mikrofon & Benachrichtigungen).
+   Auf dem Pi beim Installieren „HTTPS über Tailscale“ mit **j** bestätigen (`./install-pi.sh`).
+2. In **Safari** öffnen: `https://<pi-name>.<tailnet>.ts.net:8446/`
+3. **Teilen ⬆︎ → „Zum Home-Bildschirm“** → vom Home-Bildschirm öffnen
+4. Anmelden (Familien-Passwort), unter *Familie* „Wer nutzt dieses Handy?“ wählen
+5. *Mehr → iPhone & Browser* → **Benachrichtigungen einschalten**
+
+Benachrichtigungen schickt der Pi selbst (Web Push, VAPID, verschlüsselt nach RFC 8291): Erinnerungen an Termine & Aufgaben,
+Abfall am Vorabend, neue Pinnwand-Nachrichten und neue Einträge für die Person. **„Hey Siri, FamilyHub“**: unter
+*iPhone & Browser → Siri-Kurzbefehl einrichten* stehen URL und Schlüssel zum Kopieren und die Schritte für die Kurzbefehle-App.
+
+Eine echte App aus dem App Store bräuchte einen Mac mit Xcode und ein Apple-Entwicklerkonto (99 €/Jahr).
 
 ## Installation auf dem Pi (Datenbank + Immich)
 
