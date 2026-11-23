@@ -18,3 +18,20 @@ services:
       - ./data:/data
     ports:
       - "${FAMILYHUB_PORT:-8446}:8080"
+
+  # Optional: Zugang von unterwegs ohne Tailscale – HTTPS mit echtem Zertifikat (Let's Encrypt)
+  # für eine eigene Adresse (MyFRITZ!, DuckDNS …). Wird mit „./install-pi.sh internet“ eingeschaltet
+  # (setzt COMPOSE_PROFILES=internet und FH_DOMAIN in .env). Router: extern 443 → Pi 8447.
+  https:
+    image: caddy:2-alpine
+    container_name: familyhub-https
+    restart: unless-stopped
+    profiles: ["internet"]
+    depends_on: [familyhub]
+    environment:
+      - FH_DOMAIN=${FH_DOMAIN:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./data/caddy:/data
+    ports:
+      - "${FH_HTTPS_PORT:-8447}:8447"

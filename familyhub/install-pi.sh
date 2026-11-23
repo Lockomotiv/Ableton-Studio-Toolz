@@ -6,12 +6,13 @@
 #   ./install-pi.sh            # Installation / Neustart mit Rückfragen
 #   ./install-pi.sh update     # neueste Version holen und neu starten
 #   ./install-pi.sh status     # Zustand anzeigen
+#   ./install-pi.sh internet   # Zugang von unterwegs ohne Tailscale (HTTPS über eigene Adresse)
 #
 # Was passiert:
 #   1. prüft Docker (CasaOS bringt Docker bereits mit)
 #   2. findet Immich auf diesem Pi und richtet die Verbindung ein (API-Schlüssel optional jetzt oder später in der App)
 #   3. startet FamilyHub mit SQLite-Datenbank in ./data (tägliche Sicherungen in ./data/backups)
-#   4. optional: HTTPS für unterwegs über Tailscale
+#   4. optional: HTTPS für unterwegs über Tailscale – oder ohne Tailscale: ./install-pi.sh internet
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -41,6 +42,46 @@ status() {
   compose ps 2>/dev/null || true
 }
 
+# ---------- Zugang von unterwegs ohne Tailscale (z. B. für ältere iPads) ----------
+internet() {
+  if [ "${1:-}" = "aus" ] || [ "${1:-}" = "off" ]; then
+    env_set COMPOSE_PROFILES ""; env_set TRUST_PROXY 0
+    compose --profile internet stop https >/dev/null 2>&1 || true; compose --profile internet rm -f https >/dev/null 2>&1 || true
+    compose up -d; ok "Zugang aus dem Internet ist ausgeschaltet. Router-Freigabe (443) bitte auch entfernen."; return
+  fi
+  say "FamilyHub von unterwegs – ohne Tailscale, mit HTTPS-Zertifikat"
+  echo "Du brauchst eine Adresse, die immer auf euren Anschluss zeigt:"
+  echo "  • FRITZ!Box: Internet → MyFRITZ!-Konto → eure MyFRITZ!-Adresse (z. B. abcd1234.myfritz.net)"
+  echo "  • oder kostenlos bei duckdns.org (z. B. familie-xyz.duckdns.org)"
+  local cur dom ext pub dns
+  cur="$(env_get FH_DOMAIN)"
+  dom="$(ask 'Adresse (ohne https://)' "$cur")"; dom="${dom#https://}"; dom="${dom#http://}"; dom="${dom%%/*}"
+  [ -n "$dom" ] || die "Ohne Adresse geht es nicht."
+  echo "$dom" | grep -qE '^[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' || die "„$dom“ sieht nicht wie eine Internet-Adresse aus."
+  pub="$(curl -fsS -4 --max-time 8 https://api.ipify.org 2>/dev/null || true)"
+  dns="$(getent ahostsv4 "$dom" 2>/dev/null | awk 'NR==1{print $1}')"
+  if [ -n "$pub" ] && [ -n "$dns" ] && [ "$pub" != "$dns" ]; then warn "$dom zeigt auf $dns, euer Anschluss hat aber $pub – DynDNS/MyFRITZ prüfen."
+  elif [ -z "$dns" ]; then warn "$dom ist (noch) nicht auflösbar – bei MyFRITZ/DuckDNS prüfen."; else ok "$dom zeigt auf euren Anschluss"; fi
+  env_set FH_DOMAIN "$dom"; env_set COMPOSE_PROFILES internet; env_set TRUST_PROXY 1
+  mkdir -p data/caddy
+  compose up -d --build
+  echo
+  say "Jetzt einmalig im Router freigeben (FRITZ!Box):"
+  echo "  Internet → Freigaben → Portfreigaben → Gerät für Freigaben hinzufügen → diesen Pi ($(lan_ip)) wählen"
+  echo "  → Neue Freigabe → Portfreigabe → „HTTPS-Server“ bzw. Protokoll TCP:"
+  echo "       Port an Gerät: 8447    ·    Port extern gewünscht: 443"
+  echo "  (Bei IPv6-Anschluss/DS-Lite zusätzlich „IPv6 freigeben“ anhaken.)"
+  echo
+  [ "$(ask 'Freigabe eingerichtet? Dann jetzt Zertifikat prüfen (j/n)' j)" = "j" ] || { warn "Später prüfen mit: ./install-pi.sh internet"; return; }
+  echo "Warte auf das Zertifikat (bis zu 2 Minuten) …"
+  for i in $(seq 1 24); do
+    if curl -fsS --max-time 6 "https://$dom/api/v2/health" >/dev/null 2>&1; then ok "Erreichbar: https://$dom/"; echo; echo "  iPad/iPhone: Safari → https://$dom/ → Teilen → „Zum Home-Bildschirm“"; echo "  In der App: Mehr → Synchronisierung → https://$dom/"; return; fi
+    sleep 5
+  done
+  warn "Noch nicht erreichbar. Häufige Ursachen: Freigabe fehlt, Anschluss ohne öffentliche IPv4 (DS-Lite) ohne IPv6-Freigabe."
+  echo "  Protokoll ansehen: $DOCKER logs familyhub-https --tail 40"
+}
+
 touch .env; chmod 600 .env
 case "${1:-install}" in
   status) status; exit 0 ;;
@@ -50,6 +91,7 @@ case "${1:-install}" in
     mkdir -p data; $SUDO chown -R 1000:1000 data 2>/dev/null || true
     compose up -d --build
     sleep 3; status; exit 0 ;;
+  internet) internet "${2:-}"; exit 0 ;;
 esac
 
 say "FamilyHub – Installation"

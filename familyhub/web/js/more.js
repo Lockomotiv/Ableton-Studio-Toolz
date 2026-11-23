@@ -10,7 +10,7 @@ import { calendars, refreshCalendar, calStatus } from './extcal.js';
 import { openWall } from './wall.js';
 import { MEMBER_COLORS } from './domain.js';
 
-const APP_VERSION = '4.6.2';
+const APP_VERSION = '4.6.3';
 
 function row(ic, title, sub, onclick, right) {
   return h(onclick ? 'button.menu-row' : 'div.menu-row', { onclick }, h('span.mi', null, icon(ic, 20)), h('span.mt', null, h('b', null, title), sub ? h('small', null, sub) : null), right || (onclick ? icon('right', 18) : null));
@@ -124,7 +124,7 @@ export function viewPi() {
     [fhStatus, imStatus, casaStatus].forEach((e) => status(e, '◌ Wird geprüft …'));
     const [home, mobile] = await Promise.all([store.probe(normalizeBase(s.home), 3000), store.probe(normalizeBase(s.mobile), 4000)]);
     const atHome = home.ok || home.legacy;
-    netLabel.textContent = atHome ? '⌂ Zuhause (Heimnetz)' : mobile.ok || mobile.legacy ? '↔ Unterwegs (Tailscale)' : 'Kein Pi erreichbar';
+    netLabel.textContent = atHome ? '⌂ Zuhause (Heimnetz)' : mobile.ok || mobile.legacy ? '↔ Unterwegs' : 'Kein Pi erreichbar';
     const fh = atHome ? home : mobile;
     status(fhStatus, fh.ok ? `● Bereit · Version ${fh.version}${fh.setup ? ' · noch nicht eingerichtet' : ''}` : fh.legacy ? '● Alter Server (2.x) läuft – Update empfohlen' : '○ ' + (fh.msg || 'Nicht erreichbar'), fh.ok ? 'ok' : fh.legacy ? 'warn' : 'bad');
     const imUrl = normalizeBase(atHome ? sv.immichHome : sv.immichMobile);
@@ -194,7 +194,7 @@ function editAddresses() {
     sh.close(); toast('Adressen gespeichert'); location.reload();
   } },
   h('h2.sheet-title', null, 'Adressen'),
-  h('p.hint', null, 'Zuhause = Heimnetz, Mobil = per Tailscale. Die App wählt automatisch die erreichbare Adresse.'),
+  h('p.hint', null, 'Zuhause = Heimnetz, Mobil = eure Internet-Adresse (https://…, siehe ./install-pi.sh internet) oder Tailscale. Die App wählt automatisch die erreichbare Adresse.'),
   h('h3.section-title', null, 'FamilyHub'), h('label.field', null, h('span', null, 'Zuhause'), inp('home', s.home, 'https://192.168.178.51:8443/')), h('label.field', null, h('span', null, 'Mobil'), inp('mobile', s.mobile, 'https://pi.tailnet.ts.net:8443/')),
   h('h3.section-title', null, 'Immich'), h('label.field', null, h('span', null, 'Zuhause'), inp('imH', sv.immichHome)), h('label.field', null, h('span', null, 'Mobil'), inp('imM', sv.immichMobile)),
   h('h3.section-title', null, 'CasaOS'), h('label.field', null, h('span', null, 'Zuhause'), inp('caH', sv.casaHome)), h('label.field', null, h('span', null, 'Mobil'), inp('caM', sv.casaMobile)),

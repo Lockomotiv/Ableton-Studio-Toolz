@@ -19,7 +19,7 @@ import { wasteType } from '../web/js/wastetypes.js';
 import { DEFAULT_PLACE, forecastUrl, buildModel } from '../web/js/weathercore.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const VERSION = '4.6.2';
+const VERSION = '4.6.3';
 let imgErrAt = 0; // Bild-Fehler höchstens einmal pro Minute ins Log
 const cfg = {
   port: +(process.env.PORT || 8080),
@@ -33,6 +33,8 @@ const cfg = {
   immichKey: process.env.IMMICH_API_KEY || '',
   immichAlbum: process.env.IMMICH_ALBUM_ID || '',
   immichInsecure: process.env.IMMICH_INSECURE === '1',
+  trustProxy: process.env.TRUST_PROXY === '1',
+  publicDomain: (process.env.COMPOSE_PROFILES || '').includes('internet') ? (process.env.FH_DOMAIN || '') : '',
 };
 
 /** Kleiner HTTP-Client ohne Abhängigkeiten (Redirects, Größenlimit, optional eigene Zertifikate). */
@@ -129,6 +131,15 @@ export function createApp(options = {}) {
     if (!entry) return null;
     if (Date.now() - (entry.lastSeen || 0) > 3600e3) { entry.lastSeen = Date.now(); db.save(); }
     return entry;
+  }
+
+  // Hinter dem eigenen HTTPS-Zugang (Caddy im Docker-Netz) zählt die echte Absender-Adresse –
+  // aber nur, wenn die Anfrage wirklich aus dem Docker-Netz kommt (im Heimnetz lässt sich der Kopf sonst fälschen).
+  const DOCKER_NET = /^(::ffff:)?(172\.(1[6-9]|2\d|3[01])\.|127\.)/;
+  function clientIp(req) {
+    const direct = req.socket.remoteAddress || '';
+    const fwd = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+    return c.trustProxy && fwd && DOCKER_NET.test(direct) ? fwd : direct;
   }
 
   // einfache Bremse gegen Passwort-Raten
@@ -258,7 +269,7 @@ export function createApp(options = {}) {
 
   async function api(req, res, url) {
     const p = url.pathname;
-    const ip = req.socket.remoteAddress || '';
+    const ip = clientIp(req);
 
     if (p === '/healthz' || p === '/api/v2/health') {
       return send(res, 200, { status: 'ok', module: 'familyhub', schema: 5, version: VERSION, setup: !auth.passwordHash, immich: immich.configured(), db: db.kind });
@@ -445,7 +456,7 @@ export function createApp(options = {}) {
       return send(res, 200, { configured: true, ...r });
     }
     if (p === '/api/v2/server-info' && req.method === 'GET') {
-      return send(res, 200, { version: VERSION, node: process.version, db: db.stats(), immich: immich.configured() });
+      return send(res, 200, { version: VERSION, node: process.version, db: db.stats(), immich: immich.configured(), publicUrl: c.publicDomain ? `https://${c.publicDomain}/` : null });
     }
     if (p === '/api/v2/fetch' && req.method === 'POST') {
       // Rezeptseiten für den Import in der Browser-Version (in der App lädt das Handy selbst)

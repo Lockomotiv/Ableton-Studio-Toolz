@@ -53,7 +53,8 @@ export function icon(name, size = 22, cls = '') {
 // ---------- Emojis ↔ Symbole ----------
 // Kinderprofil: bunte Emojis. Eltern & Erwachsene: ruhige Symbole in einer Formensprache.
 // Statt jede Stelle einzeln umzubauen, ersetzt ein Beobachter Emojis in allem, was gezeichnet wird.
-const EMO_RE = /(?:\p{Regional_Indicator}{2}|\p{Extended_Pictographic}\uFE0F?(?:\u200D\p{Extended_Pictographic}\uFE0F?)*)/gu;
+// Ältere Browser kennen \p{Extended_Pictographic} evtl. nicht – dann einfacher Bereich statt Absturz
+const EMO_RE = (() => { try { return new RegExp('(?:\\p{Regional_Indicator}{2}|\\p{Extended_Pictographic}\\uFE0F?(?:\\u200D\\p{Extended_Pictographic}\\uFE0F?)*)', 'gu'); } catch { return /(?:[\u{1F1E6}-\u{1F1FF}]{2}|[\u{2190}-\u{2BFF}\u{1F000}-\u{1FAFF}]\uFE0F?(?:\u200D[\u{2190}-\u{2BFF}\u{1F000}-\u{1FAFF}]\uFE0F?)*)/gu; } })();
 const SKIP = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT', 'OPTION', 'TITLE', 'svg', 'SVG']);
 let emojiMode = true; let observer = null;
 const isEmo = (m) => m.codePointAt(0) >= 0x2190 && m !== '\u2122';

@@ -1,0 +1,23 @@
+# HTTPS für FamilyHub von unterwegs (ohne Tailscale). Adresse steht in .env (FH_DOMAIN).
+# Zertifikat: Let's Encrypt über TLS-ALPN – der Router leitet extern 443 auf Port 8447 des Pi.
+{
+	https_port 8447
+	http_port 8088
+	auto_https disable_redirects
+}
+
+{$FH_DOMAIN} {
+	tls {
+		issuer acme {
+			disable_http_challenge
+		}
+	}
+	encode gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy same-origin
+		-Server
+	}
+	reverse_proxy familyhub:8080
+}

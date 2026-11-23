@@ -6,6 +6,9 @@ import { isApp, copy } from './native.js';
 
 export const isIOS = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
 export const isStandalone = () => typeof window !== 'undefined' && (window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true);
+/** iOS-Hauptversion (z. B. 15.8 → 15.8) – Web-Push gibt es erst ab iOS 16.4. */
+export const iosVersion = (() => { const m = typeof navigator !== 'undefined' && /OS (\d+)_(\d+)/.exec(navigator.userAgent); return m ? +m[1] + +m[2] / 10 : null; })();
+export const oldIOS = () => isIOS && iosVersion != null && iosVersion < 16.4;
 export const pushSupported = () => typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 
 function keyToBytes(b64) { const s = atob(b64.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((b64.length + 3) % 4)); return Uint8Array.from(s, (c) => c.charCodeAt(0)); }
@@ -18,6 +21,7 @@ export async function pushState() {
 
 /** Benachrichtigungen auf diesem Gerät einschalten (Abo beim Pi hinterlegen) */
 export async function enablePush() {
+  if (oldIOS()) throw new Error(`Benachrichtigungen gibt es auf iPhone/iPad erst ab iOS 16.4 (dieses Gerät: iOS ${iosVersion}). Alles andere funktioniert.`);
   if (!pushSupported()) throw new Error(isIOS && !isStandalone() ? 'Auf dem iPhone gehen Benachrichtigungen nur, wenn FamilyHub zum Home-Bildschirm hinzugefügt wurde (Teilen → „Zum Home-Bildschirm“) und von dort geöffnet wird.' : 'Dieser Browser unterstützt keine Push-Benachrichtigungen.');
   if (location.protocol !== 'https:' && location.hostname !== 'localhost') throw new Error('Benachrichtigungen brauchen eine sichere Verbindung (https://). Am einfachsten über Tailscale – siehe Anleitung.');
   if (!store.serverEnabled()) throw new Error('Bitte zuerst mit dem Pi verbinden.');
@@ -41,7 +45,7 @@ export async function disablePush() {
 /** Hinweis auf „Heute“, solange FamilyHub im iPhone-Safari (nicht als App) läuft */
 export function installBanner() {
   if (isApp || !isIOS || isStandalone() || store.config.hideInstallHint) return null;
-  return h('a.card.install-banner', { href: '#iphone' }, h('span.ib-icon', null, '📲'), h('span.ib-text', null, h('b', null, 'FamilyHub als App aufs iPhone'), h('small', null, 'Teilen ⬆︎ → „Zum Home-Bildschirm“ – dann mit Benachrichtigungen')), icon('right', 18));
+  return h('a.card.install-banner', { href: '#iphone' }, h('span.ib-icon', null, '📲'), h('span.ib-text', null, h('b', null, 'FamilyHub als App aufs iPhone'), h('small', null, oldIOS() ? 'Teilen ⬆︎ → „Zum Home-Bildschirm“ – startet dann wie eine App' : 'Teilen ⬆︎ → „Zum Home-Bildschirm“ – dann mit Benachrichtigungen')), icon('right', 18));
 }
 
 // ================= Anleitung & Einrichtung =================
@@ -60,24 +64,26 @@ export function viewIphone() {
   };
   drawPush();
   const pi = store.config.server;
-  const tsAddr = (pi.mobile || '').replace(/^http:/, 'https:');
+  let tsAddr = (pi.mobile || '').replace(/^http:/, 'https:');
+  // Eigene Internet-Adresse (ohne Tailscale) bevorzugen, wenn auf dem Pi eingerichtet
+  store.request('api/v2/server-info').then((i) => { if (i.publicUrl) { tsAddr = i.publicUrl; page.querySelectorAll('.sec-addr').forEach((el) => { el.textContent = i.publicUrl; }); } }).catch(() => {});
   page.append(
     h('div.page-head', null, h('a.icon-btn', { href: '#mehr', 'aria-label': 'Zurück' }, icon('left')), h('h1', null, 'iPhone & Browser')),
     h('p.muted', null, 'Auf iPhones läuft FamilyHub als Web-App direkt vom Pi – ohne App Store. Alle sehen dieselben Termine, Aufgaben, Einkäufe und Fotos wie auf den Android-Handys.'),
     isApp ? h('div.card', null, h('b', null, 'So kommt FamilyHub aufs iPhone'),
       h('ol.tips', null,
-        h('li', null, 'Auf dem iPhone die App „Tailscale“ installieren und mit eurem Konto anmelden.'),
-        h('li', null, 'In Safari öffnen: ', h('code', null, tsAddr || 'https://<pi-name>.ts.net:8446/'), ' (die sichere Adresse über Tailscale – nötig für Mikrofon & Benachrichtigungen).'),
+        h('li', null, 'Unterwegs: entweder die eigene Internet-Adresse des Pi nutzen (./install-pi.sh internet – geht auch mit älteren iPads) oder die App „Tailscale“ installieren und anmelden.'),
+        h('li', null, 'In Safari öffnen: ', h('code.sec-addr', null, tsAddr || 'https://<pi-name>.ts.net:8446/'), ' (die sichere https-Adresse – nötig für Mikrofon & Benachrichtigungen).'),
         h('li', null, 'Teilen ⬆︎ → „Zum Home-Bildschirm“.'),
         h('li', null, 'Vom Home-Bildschirm öffnen, anmelden (Familien-Passwort), unter Familie „Wer nutzt dieses Handy?“ wählen.'),
         h('li', null, 'Hier unter „iPhone & Browser“ die Benachrichtigungen einschalten.')),
       h('button.btn.tonal', { onclick: () => { copy(tsAddr); toast('Adresse kopiert'); } }, 'Adresse kopieren'))
       : h('div.ios-steps', null,
-        step(https, 'Sichere Verbindung (https)', https ? h('small', null, location.host) : h('small', null, `Jetzt: ${location.host}. Für Mikrofon & Benachrichtigungen die Tailscale-Adresse nutzen: ${tsAddr || 'https://<pi-name>.ts.net:8446/'}`)),
+        step(https, 'Sichere Verbindung (https)', https ? h('small', null, location.host) : h('small', null, [`Jetzt: ${location.host}. Für Mikrofon & Benachrichtigungen die sichere Adresse nutzen: `, h('span.sec-addr', null, tsAddr || 'https://<pi-name>.ts.net:8446/')])),
         step(isStandalone(), 'Zum Home-Bildschirm hinzugefügt', isStandalone() ? h('small', null, 'FamilyHub läuft als App') : h('small', null, 'In Safari: Teilen ⬆︎ → „Zum Home-Bildschirm“ → Hinzufügen. Danach FamilyHub vom Home-Bildschirm aus öffnen.')),
         step(store.serverEnabled(), 'Mit dem Pi angemeldet', store.serverEnabled() ? h('small', null, 'Daten werden abgeglichen') : h('a', { href: '#sync' }, 'Jetzt anmelden')),
         step(!!me, 'Wer nutzt dieses iPhone?', me ? h('small', null, me.name) : h('a', { href: '#familie' }, 'Unter „Familie“ auswählen – damit Erinnerungen nur für dich kommen')),
-        h('div.ios-step', null, h('span.ios-check', null, '🔔'), h('div', null, h('b', null, 'Benachrichtigungen'), h('small', null, 'Erinnerungen an Termine & Aufgaben, Abfall am Vorabend, neue Nachrichten – verschickt direkt vom Pi.'), pushBox))),
+        h('div.ios-step', null, h('span.ios-check', null, '🔔'), h('div', null, h('b', null, 'Benachrichtigungen'), h('small', null, oldIOS() ? `Auf iOS ${iosVersion} leider nicht möglich – Apple bietet Web-Benachrichtigungen erst ab iOS 16.4. Termine, Aufgaben, Einkauf und Fotos funktionieren trotzdem.` : 'Erinnerungen an Termine & Aufgaben, Abfall am Vorabend, neue Nachrichten – verschickt direkt vom Pi.'), oldIOS() ? null : pushBox))),
     siriSection(),
     h('section.section', null, h('h3.section-title', null, 'Gut zu wissen'), h('ul.tips', null,
       h('li', null, 'Spracheingabe: das Mikrofon in FamilyHub nutzen – oder die Diktier-Taste 🎤 der iPhone-Tastatur im Eingabefeld.'),

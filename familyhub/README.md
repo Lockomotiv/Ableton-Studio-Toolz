@@ -145,7 +145,7 @@ Unter *Einstellungen* lässt sich „Direkt speichern“ einschalten – dann wi
 
 ## Installation auf dem Handy
 
-1. `release/FamilyHub-4.6.2.apk` aufs Handy und installieren.
+1. `release/FamilyHub-4.6.3.apk` aufs Handy und installieren.
    Die neue App hat eine eigene Paket-ID (`de.familyhub.app`) und läuft **neben** der alten App. Die alte kann gelöscht werden, sobald alles passt.
 2. Beim ersten Start „Familie anlegen“.
 3. Optional: Mehr → Synchronisierung → mit dem Pi verbinden (siehe unten).
@@ -188,6 +188,23 @@ Danach in der App: *Mehr → Synchronisierung* → `http://<Pi-IP>:8446/` → Fa
 Bestehende Daten aus FamilyHub 3.x (`familyhub.json`) werden beim ersten Start automatisch in die Datenbank übernommen.
 
 Update: `./install-pi.sh update` · Status: `./install-pi.sh status`
+
+### Von unterwegs ohne Tailscale (z. B. älteres iPad mit iOS 15)
+Tailscale läuft nicht auf jedem Gerät. Zwei Wege ohne Tailscale:
+
+**A) Eigene Internet-Adresse mit HTTPS** – funktioniert in jedem Browser, auch auf iPads mit iOS 15:
+```bash
+./install-pi.sh internet        # einrichten (fragt nach eurer MyFRITZ!- oder DuckDNS-Adresse)
+./install-pi.sh internet aus    # wieder abschalten
+```
+- Startet einen Caddy-Container (`familyhub-https`), der automatisch ein Let's-Encrypt-Zertifikat holt.
+- Einmalig in der FRITZ!Box: *Internet → Freigaben → Portfreigaben* → Pi → Portfreigabe TCP **extern 443 → Port 8447**.
+- Danach am iPad: Safari → `https://eure-adresse/` → Teilen → „Zum Home-Bildschirm“. In den Android-Apps unter *Mehr → Synchronisierung* als Adresse „Mobil“ eintragen.
+- FamilyHub ist dann aus dem Internet erreichbar: ein starkes Familien-Passwort wählen. Fehlversuche werden pro Absender gebremst (10 in 15 Minuten).
+
+**B) VPN der FRITZ!Box (WireGuard)** – nichts ist öffentlich erreichbar: In der FRITZ!Box unter *Internet → Freigaben → VPN (WireGuard)* eine Verbindung für das iPad anlegen, QR-Code mit der App „WireGuard“ (läuft ab iOS 15) scannen. Unterwegs VPN an und `http://<Pi-IP>:8446/` öffnen. Achtung: Hat das fremde WLAN ebenfalls 192.168.178.x, empfiehlt AVM, das Heimnetz auf einen anderen Bereich umzustellen.
+
+Hinweis iOS 15: Termine, Aufgaben, Einkauf, Fotos und Diashow funktionieren. Benachrichtigungen bietet Apple für Web-Apps erst ab iOS 16.4.
 
 ### Fotos & Diashow
 * **Fotos** (*Mehr → Fotos*): Galerie aus Immich – Zufällig, Favoriten, „An diesem Tag“, Neueste, einzelne Alben; Vollbild mit Wischen
