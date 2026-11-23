@@ -84,6 +84,17 @@ Hinweis zu Cookidoo und Lifesum: Beide bieten keine offene Schnittstelle. Öffen
   Hinweis: Ein in Google *per URL abonnierter* Kalender (`…@import.calendar.google.com`) ist nur im eigenen Google-Konto sichtbar –
   Google liefert dafür keine öffentliche iCal-Adresse (404/401). Dann den ursprünglichen Abo-Link des Entsorgers verwenden.
 
+### Neu in 4.3: Einkauf mit Läden, Bildkacheln und Stammartikeln
+
+* **Läden:** Marktkauf, Rewe, Edeka, Lidl, Aldi, Rossmann – Liste pro Laden (in Markenfarben), Artikel ohne festen Laden erscheinen überall.
+  Hygiene & Pflege landet automatisch bei **Rossmann**; jeder Artikel merkt sich seinen Laden.
+* **Auswahl per Bildkachel:** über 300 gängige Artikel (Wocheneinkauf, Haushalt, Hygiene, Reinigung, Baby, Tier) in 17 Bereichen,
+  „Häufig“ lernt mit, Mengen per Antippen. Unbekanntes einfach eintippen → wird eingeordnet und als eigene Kachel gemerkt.
+* **Wiederkehrende Einkäufe:** pro Artikel „jede Woche / alle 2 Wochen / jeden Monat“ – fällige Stammartikel mit einem Tipp auf die Liste.
+* **Prospekte:** pro Laden der offizielle Prospekt mit einem Tipp, Angebote markieren, „Angebote für diesen Artikel suchen“.
+  Eine automatische Übernahme der Prospekt-Inhalte ist nicht möglich: Die Händler bieten keine Schnittstelle an, und das Auslesen
+  ihrer Seiten verstößt gegen deren Nutzungsbedingungen.
+
 ### Sprachsteuerung – Beispiele
 
 * „Morgen um halb vier Zahnarzt mit Lena, erinnere mich eine Stunde vorher“
@@ -97,7 +108,7 @@ Unter *Einstellungen* lässt sich „Direkt speichern“ einschalten – dann wi
 
 ## Installation auf dem Handy
 
-1. `release/FamilyHub-4.2.0.apk` aufs Handy und installieren.
+1. `release/FamilyHub-4.3.0.apk` aufs Handy und installieren.
    Die neue App hat eine eigene Paket-ID (`de.familyhub.app`) und läuft **neben** der alten App. Die alte kann gelöscht werden, sobald alles passt.
 2. Beim ersten Start „Familie anlegen“.
 3. Optional: Mehr → Synchronisierung → mit dem Pi verbinden (siehe unten).

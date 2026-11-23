@@ -4,6 +4,8 @@
 //   parse("Morgen um halb vier Zahnarzt mit Lena", { now, members })
 //   → { kind: "event", title: "Zahnarzt", date: "2026-11-22", time: "15:30", memberIds: [...] }
 
+import { categoryOf, CATEGORY_ORDER } from './catalog.js';
+
 const WEEKDAYS = ['sonntag', 'montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag'];
 const MONTHS = ['januar', 'februar', 'märz', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'dezember'];
 const MONTH_ALIASES = { jan: 0, feb: 1, 'mär': 2, maerz: 2, mrz: 2, apr: 3, jun: 5, jul: 6, aug: 7, sep: 8, sept: 8, okt: 9, nov: 10, dez: 11 };
@@ -87,23 +89,9 @@ function nextWeekday(now, wd, forceNext) {
   return addDays(now, diff);
 }
 
-const SHOP_CATEGORIES = [
-  ['Obst & Gemüse', /apfel|äpfel|banane|birne|traube|orange|zitrone|beere|kiwi|mango|melone|tomate|gurke|salat|paprika|zwiebel|knoblauch|kartoffel|karotte|möhre|brokkoli|zucchini|pilz|champignon|avocado|lauch|spinat|kohl|obst|gemüse|kräuter|petersilie|basilikum|ingwer|mais|erbsen|bohnen/i],
-  ['Kühlregal', /milch|joghurt|jogurt|quark|käse|butter|sahne|schmand|frischkäse|mozzarella|ei(er)?\b|margarine|skyr|kefir|pudding/i],
-  ['Brot & Backwaren', /brot|brötchen|toast|semmel|croissant|kuchen|brezel|laugen|knäcke|baguette|zwieback/i],
-  ['Fleisch & Fisch', /fleisch|hack|wurst|schinken|salami|hähnchen|huhn|pute|rind|schwein|steak|lachs|fisch|thunfisch|garnele|speck|würstchen/i],
-  ['Vorrat', /nudel|pasta|spaghetti|reis|mehl|zucker|salz|pfeffer|öl|essig|ketchup|senf|mayo|soße|sauce|müsli|haferflocken|cornflakes|honig|marmelade|nutella|konserve|dose|tomatenmark|brühe|gewürz|backpulver|hefe|kaffee|tee|kakao|linsen|kichererbsen/i],
-  ['Getränke', /wasser|saft|cola|limo|sprudel|bier|wein|sekt|schorle|getränk|sirup|eistee/i],
-  ['Süßes & Snacks', /schokolade|schoko|chips|kekse|keks|gummibärchen|bonbon|süßigkeit|eis\b|nüsse|cracker|riegel|snack/i],
-  ['Tiefkühl', /tiefkühl|tk[- ]|pizza|pommes|fischstäbchen|eiswürfel/i],
-  ['Drogerie', /zahnpasta|zahnbürste|shampoo|duschgel|seife|deo|creme|windel|feuchttücher|taschentücher|toilettenpapier|klopapier|wattepad|rasierer|pflaster|tampon|binden|sonnencreme/i],
-  ['Haushalt', /spülmittel|waschmittel|müllbeutel|müllsack|alufolie|frischhaltefolie|backpapier|schwamm|putzmittel|reiniger|batterie|glühbirne|kerze|tabs|weichspüler|küchenrolle|servietten/i],
-];
-export function shoppingCategory(name) {
-  for (const [cat, re] of SHOP_CATEGORIES) if (re.test(name)) return cat;
-  return 'Sonstiges';
-}
-export const SHOPPING_CATEGORY_ORDER = [...SHOP_CATEGORIES.map((c) => c[0]), 'Sonstiges'];
+// Einkauf: Einordnung über den Artikelkatalog (catalog.js)
+export function shoppingCategory(name) { return categoryOf(name); }
+export const SHOPPING_CATEGORY_ORDER = CATEGORY_ORDER;
 
 function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 

@@ -54,9 +54,11 @@ for (const [input, expected] of cases) {
 }
 
 test('Kategorien für Einkauf', () => {
-  assert.equal(shoppingCategory('Milch'), 'Kühlregal');
-  assert.equal(shoppingCategory('Bananen'), 'Obst & Gemüse');
-  assert.equal(shoppingCategory('Waschmittel'), 'Haushalt');
+  assert.equal(shoppingCategory('Milch'), 'Milch, Käse & Eier');
+  assert.equal(shoppingCategory('Banane'), 'Obst & Gemüse');
+  assert.equal(shoppingCategory('Waschmittel'), 'Reinigung & Waschen');
+  assert.equal(shoppingCategory('Zahnpasta'), 'Hygiene & Pflege');
+  assert.equal(shoppingCategory('Grillkohle'), 'Haushalt & Papier');
   assert.equal(shoppingCategory('Irgendwas'), 'Sonstiges');
 });
 

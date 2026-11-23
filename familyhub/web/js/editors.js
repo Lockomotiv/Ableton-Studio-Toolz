@@ -25,7 +25,7 @@ function peoplePicker(selected) {
 export function openEditor(col, item, defaults = {}) {
   if (col === 'events') return editEvent(item, defaults);
   if (col === 'tasks') return editTask(item, defaults);
-  if (col === 'shopping') return editShopping(item, defaults);
+  if (col === 'shopping') return item ? import('./shopping.js').then((m) => m.editItem(item)) : import('./shopping.js').then((m) => m.openPicker());
   if (col === 'members') return editMember(item);
 }
 

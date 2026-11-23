@@ -4,7 +4,7 @@ import { http, notify, isApp } from './native.js';
 /** Im Browser vom Pi geladen (iPhone-Web-App, PC): dann ist der Pi immer die eigene Adresse. */
 export const webOrigin = !isApp && typeof location !== 'undefined' && /^https?:$/.test(location.protocol) && !/appassets/.test(location.host) ? location.origin + '/' : null;
 
-export const COLLECTIONS = ['members', 'events', 'tasks', 'shopping', 'notes', 'chores', 'routines', 'rewards', 'points', 'routinelog', 'meals', 'recipes', 'calendars', 'messages', 'contacts', 'lists', 'listitems', 'budget', 'timetable', 'documents'];
+export const COLLECTIONS = ['members', 'events', 'tasks', 'shopping', 'notes', 'chores', 'routines', 'rewards', 'points', 'routinelog', 'meals', 'recipes', 'calendars', 'messages', 'contacts', 'lists', 'listitems', 'budget', 'timetable', 'documents', 'catalog'];
 const KEY_DATA = 'fh3.data';
 const KEY_CFG = 'fh3.config';
 const KEY_OUT = 'fh3.outbox';

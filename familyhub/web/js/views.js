@@ -285,52 +285,5 @@ export function viewTasks() {
 }
 
 // ---------- Einkauf ----------
-export function viewShopping() {
-  const page = h('div.page.shopping');
-  let input;
-  const all = store.list('shopping');
-  const open = all.filter((s) => !s.done);
-  const done = all.filter((s) => s.done).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
-  const addItems = (txt) => {
-    const p = parse(/einkauf|kauf|brauch|besorg/i.test(txt) ? txt : 'Kaufe ' + txt, { members: members() });
-    const items = p.items.length ? p.items : [{ name: txt, category: shoppingCategory(txt) }];
-    const existing = new Map(all.map((s) => [s.name.toLowerCase(), s]));
-    const fresh = [];
-    for (const it of items) {
-      const ex = existing.get(it.name.toLowerCase());
-      if (ex && ex.done) store.put('shopping', { ...ex, done: false, doneAt: null });
-      else if (!ex) fresh.push({ name: it.name, category: it.category, done: false, addedBy: store.config.meId });
-    }
-    if (fresh.length) store.putMany('shopping', fresh);
-    haptic('success');
-  };
-  const add = h('form.addbar', { onsubmit: (e) => { e.preventDefault(); const t = input.value.trim(); if (!t) return; addItems(t); input.value = ''; input.focus(); } },
-    input = h('input', { placeholder: 'Artikel hinzufügen – mehrere mit Komma', enterkeyhint: 'enter', 'aria-label': 'Artikel' }),
-    h('button.icon-btn.mic', { type: 'button', 'aria-label': 'Per Sprache', onclick: () => openCapture({ mode: 'voice', kind: 'shopping' }) }, icon('mic')),
-    h('button.icon-btn.primary', { type: 'submit', 'aria-label': 'Hinzufügen' }, icon('plus')));
-
-  page.append(h('div.page-head', null, h('h1', null, 'Einkauf'), h('span.count', null, open.length ? `${open.length} offen` : '')), subnav(KITCHEN_TABS, 'einkauf'), add);
-
-  // Schnell wieder hinzufügen: zuletzt gekaufte Artikel
-  const recent = done.filter((d, i, arr) => arr.findIndex((x) => x.name.toLowerCase() === d.name.toLowerCase()) === i).slice(0, 10);
-  if (recent.length) page.append(h('div.recent', null, h('span.muted', null, 'Nochmal:'), ...recent.map((r) => h('button.pill.add', { onclick: () => { store.put('shopping', { ...r, done: false, doneAt: null }); haptic(); } }, '+ ' + r.name))));
-
-  if (!open.length) page.append(empty('cart', 'Die Einkaufsliste ist leer.'));
-  const byCat = {};
-  for (const s of open) (byCat[s.category || 'Sonstiges'] ||= []).push(s);
-  for (const cat of SHOPPING_CATEGORY_ORDER) {
-    const items = byCat[cat]; if (!items) continue;
-    page.append(section(cat, h('div.list.compact', null, ...items.sort((a, b) => a.name.localeCompare(b.name)).map((s) => shopRow(s)))));
-  }
-  if (done.length) {
-    page.append(section(`Im Wagen · ${done.length}`, h('div.list.compact', null, ...done.slice(0, 30).map((s) => shopRow(s)))),
-      h('button.btn.ghost.more-btn', { onclick: () => { done.forEach((s) => store.del('shopping', s.id)); toast('Liste aufgeräumt', { label: 'Rückgängig', run: () => store.putMany('shopping', done) }); } }, icon('trash', 18), 'Gekaufte entfernen'));
-  }
-  return page;
-}
-
-function shopRow(s) {
-  return h('div.item.shop' + (s.done ? '.done' : ''), { role: 'button', tabindex: 0, onclick: () => openEditor('shopping', s) },
-    h('button.check' + (s.done ? '.on' : ''), { 'aria-label': s.done ? 'Zurück auf die Liste' : 'Gekauft', onclick: (e) => { e.stopPropagation(); haptic(); store.put('shopping', { ...s, done: !s.done, doneAt: s.done ? null : Date.now() }); } }, icon('check', 16)),
-    h('div.what', null, h('div.title', null, s.name), s.amount ? h('div.meta', null, s.amount) : null));
-}
+// (neu in shopping.js: Läden, Bildkacheln, wiederkehrende Einkäufe, Prospekte)
+export { viewShopping } from './shopping.js';

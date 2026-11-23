@@ -7,7 +7,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 
 export const COLLECTIONS = ['members', 'events', 'tasks', 'shopping', 'notes', 'chores', 'routines', 'rewards', 'points', 'routinelog', 'meals', 'recipes', 'calendars',
-  'messages', 'contacts', 'lists', 'listitems', 'budget', 'timetable', 'documents'];
+  'messages', 'contacts', 'lists', 'listitems', 'budget', 'timetable', 'documents', 'catalog'];
 
 const EMPTY = () => ({
   schema: 5,

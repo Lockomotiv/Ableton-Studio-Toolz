@@ -13,6 +13,7 @@ import { mealsOn } from './kitchen.js';
 import { guessCategory } from './budget.js';
 import { lessonsOn } from './family.js';
 import { pickups } from './waste.js';
+import { addItem } from './shopping.js';
 import { ymd, addDays } from './nlp.js';
 
 /** Daten für Sprachfragen ("Was steht heute an?") */
@@ -233,7 +234,7 @@ export function commit(p) {
   const created = [];
   if (p.kind === 'shopping') {
     const items = (p.items?.length ? p.items : [{ name: p.title, category: shoppingCategory(p.title) }]).filter((i) => i.name);
-    for (const it of store.putMany('shopping', items.map((i) => ({ name: i.name, category: i.category, done: false, addedBy: store.config.meId })))) created.push(['shopping', it.id]);
+    for (const i of items) { const it = addItem(i.name, { silent: true }); if (it) created.push(['shopping', it.id]); }
   } else if (p.kind === 'meal') {
     const ex = store.list('meals').find((m) => m.date === p.date && m.slot === (p.slot || 'dinner'));
     const rec = store.list('recipes').find((r) => r.title.toLowerCase() === p.title.toLowerCase());

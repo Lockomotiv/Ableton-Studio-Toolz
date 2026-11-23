@@ -18,7 +18,7 @@ import { parseIcs } from '../web/js/icsparse.js';
 import { wasteType } from '../web/js/wastetypes.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const VERSION = '4.2.0';
+const VERSION = '4.3.0';
 const cfg = {
   port: +(process.env.PORT || 8080),
   host: process.env.HOST || '0.0.0.0',
