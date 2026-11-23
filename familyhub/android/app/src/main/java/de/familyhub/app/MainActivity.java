@@ -74,7 +74,9 @@ public class MainActivity extends Activity {
         web.setWebViewClient(new WebViewClient() {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest req) {
-                return loader.shouldInterceptRequest(req.getUrl());
+                Uri u = req.getUrl();
+                if ("appassets.androidplatform.net".equals(u.getHost()) && "/remote".equals(u.getPath())) return remote(u.getQueryParameter("u"));
+                return loader.shouldInterceptRequest(u);
             }
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest req) {
@@ -230,6 +232,34 @@ public class MainActivity extends Activity {
         else if (req == REQ_FILE && fileCallback != null) {
             fileCallback.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(result, data));
             fileCallback = null;
+        }
+    }
+
+    /**
+     * Bilder vom Pi (Fotos, Dokument-Vorschau) über die App laden: Die Seite läuft unter https://appassets…,
+     * der Pi im Heimnetz meist unter http:// – direkt geladen würde die WebView solche Bilder blockieren
+     * bzw. auf https umschreiben. Erlaubt sind nur die Bild-/Datei-Endpunkte von FamilyHub (mit Schlüssel).
+     */
+    private WebResourceResponse remote(String target) {
+        java.util.Map<String, String> h = new java.util.HashMap<>();
+        h.put("Access-Control-Allow-Origin", "*");
+        try {
+            Uri t = Uri.parse(target == null ? "" : target);
+            String scheme = t.getScheme(); String path = t.getPath() == null ? "" : t.getPath();
+            if (!("http".equals(scheme) || "https".equals(scheme)) || !(path.contains("/api/v2/photos/") || path.contains("/api/v2/files/")) || t.getQueryParameter("key") == null)
+                return new WebResourceResponse("text/plain", "utf-8", 403, "Forbidden", h, new java.io.ByteArrayInputStream(new byte[0]));
+            java.net.HttpURLConnection c = (java.net.HttpURLConnection) new java.net.URL(target).openConnection();
+            c.setConnectTimeout(10000); c.setReadTimeout(30000); c.setInstanceFollowRedirects(true);
+            int code = c.getResponseCode();
+            String type = c.getContentType(); if (type == null) type = "image/jpeg";
+            String mime = type.split(";")[0].trim();
+            String cache = c.getHeaderField("Cache-Control"); if (cache != null) h.put("Cache-Control", cache);
+            java.io.InputStream in = code >= 400 ? c.getErrorStream() : c.getInputStream();
+            if (in == null) in = new java.io.ByteArrayInputStream(new byte[0]);
+            String reason = c.getResponseMessage(); if (reason == null || reason.isEmpty()) reason = code >= 400 ? "Error" : "OK";
+            return new WebResourceResponse(mime, null, code, reason, h, in);
+        } catch (Exception e) {
+            return new WebResourceResponse("text/plain", "utf-8", 502, "Bad Gateway", h, new java.io.ByteArrayInputStream(String.valueOf(e.getMessage()).getBytes()));
         }
     }
 }

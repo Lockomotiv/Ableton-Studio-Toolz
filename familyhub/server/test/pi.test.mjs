@@ -61,6 +61,8 @@ test('Immich verbinden, Alben, Quellen, Bilder', async () => {
     const img = await fetch(`${base}/api/v2/photos/00000000-0000-4000-8000-000000000001?key=${key}&size=thumbnail`);
     assert.equal(img.status, 200); assert.deepEqual(Buffer.from(await img.arrayBuffer()), PNG);
     assert.equal((await fetch(`${base}/api/v2/photos/00000000-0000-4000-8000-000000000001?key=falsch`)).status, 403);
+    const denied = await fetch(`${base}/api/v2/photos/00000000-0000-4000-8000-000000000999?key=${key}&size=thumbnail`);
+    assert.equal(denied.status, 502); assert.match((await denied.json()).error, /asset\.view/); // verständlicher Hinweis statt leerer Kachel
     assert.ok(!JSON.stringify((await call('/api/v2/state')).body).includes(KEY));
     r = await call('/api/v2/server-info'); assert.equal(r.body.db.kind, 'sqlite');
   } finally { server.close(); im.srv.close(); db.close(); fs.rmSync(dir, { recursive: true, force: true }); }

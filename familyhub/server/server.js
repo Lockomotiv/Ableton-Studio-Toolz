@@ -19,7 +19,8 @@ import { wasteType } from '../web/js/wastetypes.js';
 import { DEFAULT_PLACE, forecastUrl, buildModel } from '../web/js/weathercore.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const VERSION = '4.6.0';
+const VERSION = '4.6.1';
+let imgErrAt = 0; // Bild-Fehler höchstens einmal pro Minute ins Log
 const cfg = {
   port: +(process.env.PORT || 8080),
   host: process.env.HOST || '0.0.0.0',
@@ -283,7 +284,11 @@ export function createApp(options = {}) {
       const id = decodeURIComponent(p.slice('/api/v2/photos/'.length));
       if (!/^[0-9a-f-]{36}$/i.test(id)) return send(res, 400, 'Ungültige ID');
       if (!immich.configured()) return send(res, 404, 'Immich nicht eingerichtet');
-      const img = await immich.image(id, url.searchParams.get('size'));
+      let img;
+      try { img = await immich.image(id, url.searchParams.get('size')); } catch (e) {
+        if (!imgErrAt || Date.now() - imgErrAt > 60e3) { imgErrAt = Date.now(); console.error(`[Fotos] ${e.message}`); }
+        throw e;
+      }
       res.writeHead(200, { 'Content-Type': img.type, 'Cache-Control': 'private, max-age=604800, immutable' });
       return res.end(img.body);
     }

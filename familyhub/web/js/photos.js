@@ -1,7 +1,7 @@
 // Fotos aus Immich: Galerie, Vollbild-Ansicht, Immich-Verbindung und Einstellungen der Diashow.
 import { h, icon, toast, sheet, fmt } from './ui.js';
 import { store, normalizeBase } from './store.js';
-import { openUrl, openApp } from './native.js';
+import { openUrl, openApp, viaApp } from './native.js';
 
 export const SLIDE_DEFAULTS = { idleMin: 1, source: 'random', albums: [], interval: 12, effect: 'kenburns', overlay: 'agenda', captions: true };
 export function slideCfg() {
@@ -27,7 +27,7 @@ export async function loadPhotos({ source, albums, limit = 80 } = {}) {
   const base = await store.resolveBase();
   return { items: r.items || [], base, key: r.key };
 }
-export const photoUrl = (base, key, id, size = 'preview') => `${base}api/v2/photos/${encodeURIComponent(id)}?key=${encodeURIComponent(key)}&size=${size}`;
+export const photoUrl = (base, key, id, size = 'preview') => viaApp(`${base}api/v2/photos/${encodeURIComponent(id)}?key=${encodeURIComponent(key)}&size=${size}`);
 
 export function caption(p) {
   if (!p?.date) return p?.city || '';
@@ -68,6 +68,15 @@ export function viewPhotos() {
       gstate.cache = r;
       if (!r.items.length) { grid.replaceWith(h('p.soft', null, gstate.source === 'memories' ? 'An diesem Tag gibt es in früheren Jahren keine Fotos.' : 'Keine Fotos gefunden.')); return; }
       grid.append(...r.items.map((p, i) => h('button.photo', { 'aria-label': caption(p) || 'Foto', style: { backgroundImage: `url("${photoUrl(r.base, r.key, p.id, 'thumbnail')}")` }, onclick: () => viewer(r, i) })));
+      // Prüfen, ob die Vorschaubilder wirklich ankommen – sonst verständlich sagen, woran es liegt
+      const probe = new Image();
+      probe.onerror = async () => {
+        let why = 'Die Vorschaubilder kommen nicht an.';
+        try { await store.request(`api/v2/photos/${encodeURIComponent(r.items[0].id)}?key=${encodeURIComponent(r.key)}&size=thumbnail`); } catch (e) { if (e.message) why = e.message; }
+        grid.before(h('div.card.warn-card', null, h('b', null, 'Fotos werden nicht angezeigt'), h('p', null, why),
+          h('p.hint', null, 'Tipp: In Immich unter Kontoeinstellungen → API-Schlüssel braucht der Schlüssel die Rechte „asset.read“, „asset.view“ und „album.read“ (oder „Alle“). Danach hier „Verbindung ändern“ und den neuen Schlüssel eintragen.')));
+      };
+      probe.src = photoUrl(r.base, r.key, r.items[0].id, 'thumbnail');
     } catch (e) { grid.replaceWith(h('p.status.bad', null, '○ ' + e.message)); }
   })();
   return page;

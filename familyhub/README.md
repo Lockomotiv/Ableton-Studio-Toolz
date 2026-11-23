@@ -123,6 +123,10 @@ Hinweis zu Cookidoo und Lifesum: Beide bieten keine offene Schnittstelle. Öffen
 - **Sterne für Aufgaben:** im Aufgaben-Editor „Sterne bei Erledigung“ – beim Abhaken (auch per Sprache/Siri über den Pi) bekommen die eingetragenen Personen die Sterne; Wiederöffnen bucht sie zurück.
 - **Animationen:** Sterne fliegen vom abgehakten Amt zum Sternezähler (oder zum Aufgaben-Tab), der Zähler zählt hoch, Ringe und Balken wachsen. Wird eine Belohnung erreichbar, erscheint „Ziel erreicht“ mit Konfetti. Belohnungen, die eingelöst werden können, leuchten. Der Aufgaben-Tab zeigt, wie viel heute noch offen ist; Kinder landen dort direkt bei ihren Ämtern. Bei „Bewegung reduzieren“ entfallen die Animationen.
 
+### 4.6.1: Fotos in der Android-App
+- Fotos und Diashow laden in der Android-App jetzt über die App selbst. Vorher blieben die Kacheln leer, weil die App-Oberfläche (https) Bilder vom Pi (http) nicht direkt laden durfte.
+- Kommen Bilder trotzdem nicht an, sagt die Fotoseite warum – z. B. wenn dem Immich-API-Schlüssel das Recht „asset.view“ fehlt (nötig für Vorschaubilder).
+
 ### Sprachsteuerung – Beispiele
 
 * „Morgen um halb vier Zahnarzt mit Lena, erinnere mich eine Stunde vorher“
@@ -136,7 +140,7 @@ Unter *Einstellungen* lässt sich „Direkt speichern“ einschalten – dann wi
 
 ## Installation auf dem Handy
 
-1. `release/FamilyHub-4.6.0.apk` aufs Handy und installieren.
+1. `release/FamilyHub-4.6.1.apk` aufs Handy und installieren.
    Die neue App hat eine eigene Paket-ID (`de.familyhub.app`) und läuft **neben** der alten App. Die alte kann gelöscht werden, sobald alles passt.
 2. Beim ersten Start „Familie anlegen“.
 3. Optional: Mehr → Synchronisierung → mit dem Pi verbinden (siehe unten).

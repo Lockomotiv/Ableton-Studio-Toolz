@@ -27,7 +27,7 @@ export class Immich {
       const msg = /self.signed|certificate|CERT/i.test(e.message) ? 'Zertifikat von Immich wird nicht vertraut – „Selbstsigniertes Zertifikat erlauben“ aktivieren' : `Immich nicht erreichbar (${e.message})`;
       throw Object.assign(new Error(msg), { status: 502 });
     }
-    if (r.status === 401 || r.status === 403) throw Object.assign(new Error('Immich lehnt den API-Schlüssel ab (fehlende Rechte?)'), { status: 502 });
+    if (r.status === 401 || r.status === 403) throw Object.assign(new Error(binary ? 'Immich gibt die Bilder nicht heraus – dem API-Schlüssel fehlt das Recht „asset.view“.' : 'Immich lehnt den API-Schlüssel ab (fehlende Rechte?)'), { status: 502 });
     if (r.status >= 400) throw Object.assign(new Error(`Immich antwortet mit HTTP ${r.status} auf ${path}`), { status: 502, code: r.status });
     if (binary) return r;
     try { return JSON.parse(r.body.toString('utf8')); } catch { throw Object.assign(new Error('Unerwartete Antwort von Immich'), { status: 502 }); }

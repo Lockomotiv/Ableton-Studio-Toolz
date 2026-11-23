@@ -1,6 +1,8 @@
 // Brücke zur Android-App. Im Browser fällt alles auf Web-APIs zurück.
 const N = typeof window !== 'undefined' ? window.FHNative : undefined;
 export const isApp = !!N;
+/** In der App: Bilder vom Pi über die App laden (sonst blockiert die WebView http-Bilder auf der https-Seite). */
+export const viaApp = (url) => (isApp && /^https?:/.test(url) ? 'https://appassets.androidplatform.net/remote?u=' + encodeURIComponent(url) : url);
 
 let seq = 0;
 const pending = new Map();

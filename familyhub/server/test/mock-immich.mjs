@@ -41,6 +41,7 @@ export function startMockImmich() {
       return json({ assets: { items: items.slice(0, body.size || 250), nextPage: null } });
     }
     const m = u.pathname.match(/^\/api\/assets\/([0-9a-f-]+)\/thumbnail$/);
+    if (m && m[1].endsWith('0999')) return json({ message: 'Missing required permission: asset.view' }, 403); // Schlüssel ohne asset.view
     if (m) { res.writeHead(200, { 'Content-Type': 'image/png' }); return res.end(pngFor(parseInt(m[1].slice(-4), 10) || 0)); }
     json({ message: 'not found' }, 404);
   });

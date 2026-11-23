@@ -3,7 +3,7 @@
 import { h, icon, toast, sheet, confirmSheet, mono } from './ui.js';
 import { store } from './store.js';
 import { members, childMode } from './domain.js';
-import { openUrl } from './native.js';
+import { openUrl, viaApp } from './native.js';
 import { avatars } from './views.js';
 
 const CATS = [['id', '🪪 Ausweise & Urkunden'], ['health', '💉 Gesundheit & Impfpass'], ['school', '🏫 Schule & Kita'], ['contracts', '📄 Verträge & Versicherungen'], ['receipts', '🧾 Rechnungen & Garantien'], ['other', '📁 Sonstiges']];
@@ -80,7 +80,7 @@ function details({ name, file, doc }) {
 function showDoc(d) {
   sheet((s) => {
     const preview = h('div.doc-preview');
-    if (/image/.test(d.type)) fileUrl(d).then((u) => preview.append(h('img', { src: u, alt: d.name }))).catch(() => {});
+    if (/image/.test(d.type)) fileUrl(d).then((u) => preview.append(h('img', { src: viaApp(u), alt: d.name }))).catch(() => {});
     return h('div.sheet-body', null, h('h2.sheet-title', null, d.name), d.note ? h('p.muted', null, d.note) : null, preview,
       h('div.btn-col', null,
         h('button.btn.primary', { onclick: async () => openUrl(await fileUrl(d)) }, icon('external', 18), 'Öffnen'),
