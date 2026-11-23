@@ -10,7 +10,7 @@ import { calendars, refreshCalendar, calStatus } from './extcal.js';
 import { openWall } from './wall.js';
 import { MEMBER_COLORS } from './domain.js';
 
-const APP_VERSION = '3.2.0';
+const APP_VERSION = '3.3.0';
 
 function row(ic, title, sub, onclick, right) {
   return h(onclick ? 'button.menu-row' : 'div.menu-row', { onclick }, h('span.mi', null, icon(ic, 20)), h('span.mt', null, h('b', null, title), sub ? h('small', null, sub) : null), right || (onclick ? icon('right', 18) : null));
@@ -304,6 +304,9 @@ export function viewHelp() {
   const ex = [
     ['Termine', ['Morgen um 15 Uhr Zahnarzt mit Lena', 'Elternabend am 3.12. um halb acht abends', 'Fußball jeden Dienstag von 17 bis 18:30 Uhr für Ben', 'Oma Geburtstag am 14. März', 'Arzt am Montag um 8, erinnere mich eine Stunde vorher']],
     ['Aufgaben', ['Papa muss morgen den Müll rausbringen', 'Erinnere mich Freitag an die Brotdosen', 'Pflanzen gießen alle 3 Tage', 'Neue Aufgabe: Steuererklärung abgeben, wichtig']],
+    ['Fragen', ['Was steht heute an?', 'Was hat Lena morgen?', 'Wann ist der Elternabend?', 'Was gibt es heute zu essen?', 'Was steht auf der Einkaufsliste?', 'Wie viele Sterne hat Ben?', 'Was muss Ben heute noch machen?']],
+    ['Erledigt melden', ['Lena hat den Tisch gedeckt', 'Ben hat den Müll rausgebracht', 'Steuererklärung ist erledigt', 'Milch ist gekauft']],
+    ['Essensplan', ['Am Freitag gibt es Pizza zum Abendessen', 'Morgen essen wir Spaghetti zum Mittag']],
     ['Einkauf', ['Milch, Eier und Brot auf die Einkaufsliste', 'Wir brauchen noch Waschmittel', 'Kaufe zwei Gurken und Tomaten']],
   ];
   return h('div.page', null,

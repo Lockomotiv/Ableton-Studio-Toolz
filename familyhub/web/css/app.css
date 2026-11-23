@@ -558,3 +558,8 @@ body.child .check { width: 38px; height: 38px; }
 @media (max-width: 380px) { .coach-stats { grid-template-columns: repeat(3, 1fr); } }
 .btn-col .btn, .card .btn { white-space: normal; text-align: center; height: auto; min-height: 48px; padding-top: 10px; padding-bottom: 10px; }
 .btn.small { min-height: 36px; padding-top: 6px; padding-bottom: 6px; }
+
+/* Sprach-Antworten */
+.pv-card.answer { border-left: 4px solid var(--primary); }
+.answer-kind { color: var(--muted); font-weight: 700; font-size: 13px; }
+.answer-text { font-size: 19px; font-weight: 600; margin: 6px 0 2px; line-height: 1.4; }

@@ -75,3 +75,16 @@ test('Neue Sammlungen, Essensplan per Schnelleingabe, Fotos ohne Immich', async 
   assert.equal(r.body.chores.length, 1); assert.equal(r.body.meals.length, 1);
   assert.equal((await call('/api/v2/photos')).status, 404);
 });
+
+test('Sprachassistent: Fragen und Erledigt über /quick', async () => {
+  await call('/api/v2/batch', { method: 'POST', body: { ops: [
+    { op: 'put', col: 'members', item: { id: 'kid1', name: 'Mia', role: 'child', updatedAt: 1 } },
+    { op: 'put', col: 'chores', item: { id: 'chz', title: 'Blumen gießen', points: 4, memberIds: ['kid1'], days: [], updatedAt: 1 } },
+  ] } });
+  let r = await call('/api/v2/quick', { method: 'POST', body: { text: 'Was steht auf der Einkaufsliste?' } });
+  assert.equal(r.body.command, 'answer'); assert.match(r.body.summary, /Milch/);
+  r = await call('/api/v2/quick', { method: 'POST', body: { text: 'Mia hat die Blumen gegossen' } });
+  assert.equal(r.body.command, 'action');
+  r = await call('/api/v2/quick', { method: 'POST', body: { text: 'Wie viele Sterne hat Mia?' } });
+  assert.equal(r.body.summary, 'Mia hat 4 Sterne.');
+});

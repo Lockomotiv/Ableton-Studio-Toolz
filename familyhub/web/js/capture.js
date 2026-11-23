@@ -2,10 +2,30 @@
 import { h, icon, sheet, toast, fmt, fill } from './ui.js';
 import { parse, describe, repeatLabel, shoppingCategory } from './nlp.js';
 import { store } from './store.js';
-import { members, refreshNative, childMode } from './domain.js';
+import { members, refreshNative, childMode, completeTask } from './domain.js';
 import { listen, stop as stopVoice, cancel as cancelVoice, voiceAvailable } from './voice.js';
 import { haptic, speak } from './native.js';
 import { openEditor } from './editors.js';
+import { detectCommand } from './commands.js';
+import { agenda, openTasks, today } from './domain.js';
+import { choresFor, balance, toggleChore } from './household.js';
+import { mealsOn } from './kitchen.js';
+import { ymd, addDays } from './nlp.js';
+
+/** Daten für Sprachfragen ("Was steht heute an?") */
+function commandContext() {
+  const now = new Date(); const d = (n) => ymd(addDays(now, n));
+  const kid = childMode();
+  return {
+    members: kid ? [kid] : members(), meId: kid?.id || store.config.meId,
+    today: today(), tomorrow: d(1), dayAfter: d(2), weekEnd: d(6), yearEnd: d(365),
+    dayLabel: (x) => fmt.dayLabel(x).replace(/^(Heute|Morgen|Übermorgen)$/, (m) => m.toLowerCase()),
+    events: (a, b) => agenda(a, b, { filter: false }),
+    openTasks: openTasks({ filter: false }),
+    shopping: store.list('shopping').filter((x) => !x.done),
+    meals: (x) => mealsOn(x), choresFor: (x, mid) => choresFor(x, mid), balance: (mid) => balance(mid),
+  };
+}
 
 const EXAMPLES = [
   'Morgen um 15 Uhr Zahnarzt mit Lena',
@@ -13,6 +33,8 @@ const EXAMPLES = [
   'Fußball jeden Dienstag um 17 Uhr für Ben',
   'Erinnere mich Freitag an die Brotdosen',
   'Am Freitag gibt es Pizza zum Abendessen',
+  'Was steht heute an?',
+  'Lena hat den Tisch gedeckt',
   'Elternabend am 3.12. um 19:30 Uhr',
   'Papa muss morgen den Müll rausbringen',
   'Oma Geburtstag am 14. März',
@@ -30,7 +52,11 @@ export function openCapture({ mode = voiceAvailable() ? 'voice' : 'text', text =
 
   const ctx = () => ({ members: members(), meId: store.config.meId, now: new Date() });
 
+  let command = null;
   function reparse(t) {
+    command = !kind && t.trim() ? detectCommand(t, commandContext()) : null;
+    if (command && childMode() && command.type === 'action' && !(command.action.kind === 'chore' && command.action.memberId === childMode().id)) command = null;
+    if (command) { parsed = null; renderCommand(); return; }
     parsed = t.trim() ? parse(t, ctx()) : null;
     if (parsed && kind) parsed = coerceKind(parsed, kind);
     if (parsed && date && !/\d|heute|morgen|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag/i.test(t) && parsed.kind !== 'shopping') parsed.date = date;
@@ -41,10 +67,30 @@ export function openCapture({ mode = voiceAvailable() ? 'voice' : 'text', text =
 
   function current() { return parsed ? { ...parsed, ...overrides } : null; }
 
+  function renderCommand() {
+    ui.save.disabled = false;
+    ui.save.replaceChildren(icon('check', 20), command.type === 'answer' ? 'OK' : 'Abhaken');
+    fill(ui.preview, h('div.pv-card.answer', null,
+      h('small.answer-kind', null, command.type === 'answer' ? '💬 ' + command.title : '✅ ' + command.title),
+      h('p.answer-text', null, command.type === 'answer' ? command.text : command.label)));
+  }
+
+  function runCommand() {
+    const c = command; api.close();
+    if (c.type === 'answer') return;
+    const a = c.action;
+    if (a.kind === 'chore') { const ch = store.get('chores', a.choreId); if (ch) toggleChore(ch, a.memberId, today()); }
+    else if (a.kind === 'task') { const tk = store.get('tasks', a.taskId); if (tk) { const r = completeTask(tk); toast('Erledigt 🎉', { label: 'Rückgängig', run: () => { r.undo(); refreshNative(); } }); } }
+    else if (a.kind === 'shopping') { const before = a.ids.map((id) => store.get('shopping', id)).filter(Boolean); for (const it of before) store.put('shopping', { ...it, done: true, doneAt: Date.now() }); toast('Abgehakt 🛒', { label: 'Rückgängig', run: () => before.forEach((it) => store.put('shopping', it)) }); }
+    refreshNative(); haptic('success');
+    if (store.config.voiceSpeak && mode === 'voice') speak(c.speak);
+  }
+
   function renderPreview() {
     const p = current();
-    if (!p) { ui.preview.replaceChildren(h('div.examples', null, h('div.examples-title', null, 'Zum Beispiel'), ...EXAMPLES.slice(0, 4).map((ex) => h('button.example', { onclick: () => { ui.input.value = ex; reparse(ex); ui.input.focus(); } }, '„' + ex + '“')))); ui.save.disabled = true; return; }
+    if (!p) { ui.preview.replaceChildren(h('div.examples', null, h('div.examples-title', null, 'Zum Beispiel'), ...EXAMPLES.slice(0, 4).map((ex) => h('button.example', { onclick: () => { ui.input.value = ex; reparse(ex); ui.input.focus(); } }, '„' + ex + '“')))); ui.save.disabled = true; ui.save.replaceChildren(icon('check', 20), 'Speichern'); return; }
     ui.save.disabled = false;
+    if (ui.save.textContent !== 'Speichern') ui.save.replaceChildren(icon('check', 20), 'Speichern');
     const kindRow = h('div.seg', { role: 'tablist' }, ...Object.entries(KIND).map(([k, [label, ic]]) => h('button.seg-btn' + (p.kind === k ? '.on' : ''), { role: 'tab', 'aria-selected': p.kind === k, onclick: () => { haptic(); parsed = coerceKind(parsed, k); overrides = {}; renderPreview(); } }, icon(ic, 18), label)));
     const chips = [];
     if (p.kind === 'meal') {
@@ -97,6 +143,7 @@ export function openCapture({ mode = voiceAvailable() ? 'voice' : 'text', text =
   }
 
   function save() {
+    if (command) return runCommand();
     const p = current();
     if (!p) return;
     const created = commit(p);
@@ -118,13 +165,15 @@ export function openCapture({ mode = voiceAvailable() ? 'voice' : 'text', text =
       onPartial: (t) => { ui.transcript.textContent = t; ui.input.value = t; reparse(t); },
       onFinal: (t) => {
         ui.transcript.textContent = t; ui.input.value = t; reparse(t);
-        if (store.config.voiceAutoSave && current() && current().title) setTimeout(save, 350);
+        if (command?.type === 'answer' && store.config.voiceSpeak !== false) speak(command.speak);
+        else if (store.config.voiceAutoSave && (command || (current() && current().title))) setTimeout(save, 350);
       },
       onError: (msg) => { if (msg) ui.status.textContent = msg; },
       onLevel: (lv) => ui.orb.style.setProperty('--lv', Math.min(1, lv).toFixed(2)),
       onEnd: () => {
         listening = false; ui.orb.classList.remove('live'); ui.orb.style.setProperty('--lv', 0);
-        if (current()) ui.status.textContent = 'Passt das so? Tippe zum Ändern.';
+        if (command) ui.status.textContent = command.type === 'answer' ? 'Noch eine Frage? Einfach aufs Mikrofon tippen.' : 'Stimmt das? Dann „Abhaken“ tippen.';
+        else if (current()) ui.status.textContent = 'Passt das so? Tippe zum Ändern.';
         else if (!ui.status.textContent.includes('.')) ui.status.textContent = 'Tippe aufs Mikrofon und sprich los.';
       },
     });

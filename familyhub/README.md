@@ -54,6 +54,13 @@ familyhub/
 Hinweis zu Cookidoo und Lifesum: Beide bieten keine offene Schnittstelle. Öffentliche Cookidoo-Rezeptseiten lassen sich importieren
 (Zutaten zeigt Cookidoo teils nur angemeldet), „In Cookidoo öffnen“ springt zurück ins Original. Lifesum ersetzt der eingebaute Coach.
 
+### Neu in 3.3: Sprachsteuerung beantwortet Fragen und hakt ab
+
+* Fragen: „Was steht heute an?“, „Was hat Lena morgen?“, „Wann ist der Elternabend?“, „Was gibt es heute zu essen?“,
+  „Was steht auf der Einkaufsliste?“, „Wie viele Sterne hat Ben?“, „Was muss Ben heute noch machen?“ – Antwort wird vorgelesen
+* Erledigt melden: „Lena hat den Tisch gedeckt“ (+ Sterne), „Steuererklärung ist erledigt“, „Milch ist gekauft“
+* Dasselbe über die Server-API `POST /api/v2/quick` – z. B. für Home Assistant, Google-Routinen oder Siri-Kurzbefehle
+
 ### Sprachsteuerung – Beispiele
 
 * „Morgen um halb vier Zahnarzt mit Lena, erinnere mich eine Stunde vorher“
@@ -67,7 +74,7 @@ Unter *Einstellungen* lässt sich „Direkt speichern“ einschalten – dann wi
 
 ## Installation auf dem Handy
 
-1. `release/FamilyHub-3.2.0.apk` aufs Handy und installieren.
+1. `release/FamilyHub-3.3.0.apk` aufs Handy und installieren.
    Die neue App hat eine eigene Paket-ID (`de.familyhub.app`) und läuft **neben** der alten App. Die alte kann gelöscht werden, sobald alles passt.
 2. Beim ersten Start „Familie anlegen“.
 3. Optional: Mehr → Synchronisierung → mit dem Pi verbinden (siehe unten).
@@ -94,6 +101,7 @@ Bisher nur lokal erfasste Einträge werden dabei automatisch hochgeladen.
 
 ```
 POST /api/v2/quick      {"text": "Morgen 15 Uhr Zahnarzt mit Lena"}   → legt den Eintrag an
+                        {"text": "Was steht heute an?"}              → {command:'answer', speak:'Heute sind …'}
 POST /api/v2/parse      {"text": "…"}                                  → nur verstehen, nichts speichern
 GET  /api/v2/state      ?since=<rev>                                   → alle Daten
 POST /api/v2/batch      {"ops":[{"op":"put","col":"tasks","item":{…}}]}

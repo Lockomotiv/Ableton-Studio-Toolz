@@ -8,10 +8,12 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { Db, COLLECTIONS } from './lib/db.js';
 import { buildIcs } from './lib/ics.js';
-import { parse as parseText, describe as describeEntry } from '../web/js/nlp.js';
+import { parse as parseText, describe as describeEntry, ymd as ymdOf, addDays as addDaysOf, relativeDay } from '../web/js/nlp.js';
+import { detectCommand } from '../web/js/commands.js';
+import { occurrences } from '../web/js/recur.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const VERSION = '3.2.0';
+const VERSION = '3.3.0';
 const cfg = {
   port: +(process.env.PORT || 8080),
   host: process.env.HOST || '0.0.0.0',
@@ -153,6 +155,43 @@ export function createApp(options = {}) {
 
   function newId() { return crypto.randomBytes(9).toString('base64url'); }
 
+  /** Sprachfragen & Erledigt-Meldungen serverseitig (für Sprachassistenten) */
+  function commandFor(text, meId) {
+    const list = (c) => Object.values(db.data[c]).filter((x) => !x.deleted);
+    const members = list('members');
+    const now = new Date(); const d = (n) => ymdOf(addDaysOf(now, n));
+    const today = d(0);
+    const pointsOf = (mid) => list('points').filter((p) => p.memberId === mid).reduce((a, p) => a + (p.delta || 0), 0);
+    const safe = (x) => String(x).replace(/[^A-Za-z0-9_-]/g, '');
+    const choreKey = (cid, mid, date) => `c_${safe(cid)}_${safe(mid)}_${date.replace(/-/g, '')}`.slice(0, 64); // wie household.js
+    const choresFor = (date, mid) => {
+      const [y, m, dd] = date.split('-').map(Number); const wd = new Date(y, m - 1, dd).getDay();
+      return list('chores').filter((c) => (!c.days?.length || c.days.includes(wd)) && (c.memberIds || []).includes(mid))
+        .map((c) => { const p = db.data.points[choreKey(c.id, mid, date)]; return { chore: c, memberId: mid, done: !!p && !p.deleted }; });
+    };
+    const ctx = {
+      members, meId, today, tomorrow: d(1), dayAfter: d(2), weekEnd: d(6), yearEnd: d(365),
+      dayLabel: (x) => relativeDay(x, now),
+      events: (a, b) => list('events').flatMap((e) => occurrences(e, a, b)).sort((x, y) => (x.date + (x.time || '')).localeCompare(y.date + (y.time || ''))),
+      openTasks: list('tasks').filter((t) => !t.done), shopping: list('shopping').filter((s) => !s.done),
+      meals: (x) => list('meals').filter((m) => m.date === x), choresFor, balance: pointsOf,
+    };
+    const c = detectCommand(text, ctx);
+    if (!c || c.type === 'answer') return c;
+    const ts = Date.now(); const a = c.action; const ops = [];
+    if (a.kind === 'chore') {
+      const ch = db.data.chores[a.choreId];
+      ops.push({ op: 'put', col: 'points', item: { id: choreKey(ch.id, a.memberId, today), memberId: a.memberId, delta: ch.points || 1, reason: ch.title, date: today, kind: 'chore', ref: ch.id, updatedAt: ts, createdAt: ts } });
+    } else if (a.kind === 'task') {
+      const t = db.data.tasks[a.taskId];
+      ops.push({ op: 'put', col: 'tasks', item: { ...t, done: true, doneAt: ts, updatedAt: ts } });
+    } else if (a.kind === 'shopping') {
+      for (const id of a.ids) ops.push({ op: 'put', col: 'shopping', item: { ...db.data.shopping[id], done: true, doneAt: ts, updatedAt: ts } });
+    }
+    db.apply(ops);
+    return { ...c, done: true };
+  }
+
   function quickAdd(text, meId) {
     const members = Object.values(db.data.members).filter((m) => !m.deleted);
     const p = parseText(text, { members, meId });
@@ -262,6 +301,8 @@ export function createApp(options = {}) {
       const b = await readJson(req);
       const text = String(b.text || '').trim();
       if (!text) return send(res, 400, { error: 'text fehlt' });
+      const cmd = b.noCommands ? null : commandFor(text, b.memberId);
+      if (cmd) return send(res, 200, { command: cmd.type, title: cmd.title, summary: cmd.type === 'answer' ? cmd.text : cmd.speak, speak: cmd.speak, created: [] });
       return send(res, 200, quickAdd(text, b.memberId));
     }
     if (p === '/api/v2/photos' && req.method === 'GET') {
