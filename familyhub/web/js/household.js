@@ -12,7 +12,9 @@ import { h, icon, toast, sheet, confirmSheet, promptSheet, fmt, mono } from './u
 import { store } from './store.js';
 import { members, member, childMode, today } from './domain.js';
 import { ymd, addDays } from './nlp.js';
-import { haptic, speak } from './native.js';
+import { haptic } from './native.js';
+import { celebrate, confetti, counter, progressVar } from './fx.js';
+export { confetti };
 
 const DAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 const PERIODS = { morning: ['Morgens', '🌅'], day: ['Tagsüber', '☀️'], evening: ['Abends', '🌙'] };
@@ -58,12 +60,12 @@ export function choresFor(date, memberId = null) {
   return out;
 }
 
-export function toggleChore(chore, memberId, date) {
+export function toggleChore(chore, memberId, date, fromEl) {
   const key = choreKey(chore.id, memberId, date);
   if (store.get('points', key)) { store.del('points', key); haptic(); return false; }
+  const rect = fromEl?.getBoundingClientRect?.();
   store.put('points', { id: key, memberId, delta: chore.points || 1, reason: chore.title, date, kind: 'chore', ref: chore.id });
-  haptic('success');
-  celebrate(memberId, chore.points || 1);
+  celebrate(memberId, chore.points || 1, null, rect);
   return true;
 }
 
@@ -81,7 +83,7 @@ export function routinesFor(date, memberId = null) {
   return out.sort((a, b) => (order[a.routine.period] ?? 1) - (order[b.routine.period] ?? 1));
 }
 
-export function toggleStep(routine, memberId, date, idx) {
+export function toggleStep(routine, memberId, date, idx, fromEl) {
   const key = routineKey(routine.id, memberId, date);
   const log = store.get('routinelog', key) || { id: key, routineId: routine.id, memberId, date, done: [] };
   const done = new Set(log.done);
@@ -91,32 +93,14 @@ export function toggleStep(routine, memberId, date, idx) {
   const bonusKey = routineBonusKey(routine.id, memberId, date);
   if (complete && !store.get('points', bonusKey) && routine.points) {
     store.put('points', { id: bonusKey, memberId, delta: routine.points, reason: routine.title, date, kind: 'routine', ref: routine.id });
-    celebrate(memberId, routine.points, `${routine.title} geschafft!`);
+    celebrate(memberId, routine.points, `${routine.title} geschafft!`, fromEl?.getBoundingClientRect?.());
   } else if (!complete && store.get('points', bonusKey)) store.del('points', bonusKey);
   else haptic();
 }
 
-function celebrate(memberId, pts, text) {
-  const m = member(memberId);
-  toast(`${text || 'Super'}${m ? ', ' + m.name : ''}! +${pts} ⭐`);
-  confetti();
-  if (childMode() && store.config.voiceSpeak) speak(`${text || 'Super gemacht'}! Plus ${pts} Sterne.`);
-}
-
-export function confetti() {
-  const host = document.body;
-  const box = h('div.confetti', { 'aria-hidden': 'true' });
-  const colors = ['#EE6C4D', '#F2B544', '#1F6F66', '#2E86AB', '#9B5DE5', '#7A9E3B'];
-  for (let i = 0; i < 28; i++) {
-    box.append(h('i', { style: { left: Math.random() * 100 + '%', background: colors[i % colors.length], animationDelay: Math.random() * 0.25 + 's', transform: `rotate(${Math.random() * 360}deg)` } }));
-  }
-  host.append(box);
-  setTimeout(() => box.remove(), 1600);
-}
-
 // ---------------- Ansichten ----------------
 function memberHead(m, extra) {
-  return h('div.kid-head', { style: { '--c': m.color } }, h('span.av.lg', { style: { '--c': m.color } }, mono(m)), h('div', null, h('b', null, m.name), extra ? h('small', null, extra) : null), h('span.stars', null, '⭐ ', balance(m.id)));
+  return h('div.kid-head', { style: { '--c': m.color } }, h('span.av.lg', { style: { '--c': m.color } }, mono(m)), h('div', null, h('b', null, m.name), extra ? h('small', null, extra) : null), starBadge(m));
 }
 
 function dateSwitch(state, rerender) {
@@ -150,7 +134,7 @@ export function viewChores() {
       memberHead(m, `${doneN} von ${items.length} erledigt`),
       h('div.progress', null, h('i', { style: { width: (doneN / items.length) * 100 + '%' } })),
       h('div.chore-grid', null, ...items.map((it) => h('button.chore' + (it.done ? '.done' : ''), {
-        onclick: () => { toggleChore(it.chore, m.id, choreState.date); },
+        onclick: (e) => { toggleChore(it.chore, m.id, choreState.date, e.currentTarget); },
         oncontextmenu: (e) => { e.preventDefault(); if (!kid) editChore(it.chore); },
       }, h('span.ce', null, it.chore.emoji || '⭐'), h('span.ct', null, it.chore.title), h('span.cp', null, it.done ? '✓' : '+' + (it.chore.points || 1)))))));
   }
@@ -247,7 +231,7 @@ export function viewRoutines() {
         h('div', null, h('b', null, r.title), h('small', null, `${m.name} · ${PERIODS[r.period]?.[0] || ''}${r.points ? ' · +' + r.points + ' ⭐' : ''}`)),
         h('span.ring', { style: { '--p': pct } }, h('span', null, `${done.length}/${r.steps.length}`)),
         kid ? null : h('button.icon-btn', { 'aria-label': 'Bearbeiten', onclick: () => editRoutine(r) }, icon('edit', 18))),
-      h('div.steps-list', null, ...r.steps.map((st, i) => h('button.step-btn' + (done.includes(i) ? '.on' : ''), { onclick: () => toggleStep(r, memberId, routineState.date, i) },
+      h('div.steps-list', null, ...r.steps.map((st, i) => h('button.step-btn' + (done.includes(i) ? '.on' : ''), { onclick: (e) => toggleStep(r, memberId, routineState.date, i, e.currentTarget) },
         h('span.se', null, st.e || '•'), h('span.st', null, st.t), h('span.check' + (done.includes(i) ? '.on' : ''), null, icon('check', 16)))))));
   }
   if (!kid) page.append(h('button.btn.tonal.more-btn', { onclick: () => editRoutine(null) }, icon('plus', 18), 'Routine hinzufügen'));
@@ -298,31 +282,201 @@ export function editRoutine(r, preset = {}) {
 }
 
 // ---------- Sterne & Belohnungen ----------
+/** Sternezähler einer Person – Ziel der fliegenden Sterne, zählt beim Neuzeichnen hoch. */
+export function starBadge(m, big = false) {
+  return h('span.stars' + (big ? '.big' : ''), { 'data-stars': m.id, 'aria-label': `${balance(m.id)} Sterne` }, '⭐ ', counter('bal:' + m.id + (big ? ':b' : ''), balance(m.id)));
+}
+/** Sterne pro Tag einer Woche (Montag zuerst). */
+export function weekPoints(memberId, start = weekStart(today())) {
+  const days = [...Array(7)].map((_, i) => ymd(addDays(fmt.parse(start), i)));
+  const pts = store.list('points').filter((p) => p.memberId === memberId && p.delta > 0);
+  return days.map((d) => ({ date: d, pts: pts.filter((p) => p.date === d).reduce((s, p) => s + p.delta, 0) }));
+}
+export function weekStart(date) { const d = fmt.parse(date); return ymd(addDays(d, -((d.getDay() + 6) % 7))); }
+/** Tage in Folge, an denen alle Ämter erledigt wurden (heute zählt, sobald fertig). */
+export function streakDays(memberId) {
+  let n = 0; let d = fmt.parse(today());
+  for (let i = 0; i < 90; i++, d = addDays(d, -1)) {
+    const list = choresFor(ymd(d), memberId);
+    if (!list.length) continue;
+    const all = list.every((c) => c.done);
+    if (all) n++; else if (i > 0) break;
+  }
+  return n;
+}
+/** Fortschritt heute: Ämter + Routinenschritte. */
+export function dayProgress(memberId, date = today()) {
+  const ch = choresFor(date, memberId); const rt = routinesFor(date, memberId);
+  const total = ch.length + rt.reduce((s, r) => s + r.routine.steps.length, 0);
+  const done = ch.filter((c) => c.done).length + rt.reduce((s, r) => s + r.done.length, 0);
+  return { done, total, chores: ch, routines: rt };
+}
+/** Nächstes Ziel: günstigste Belohnung über dem Kontostand; „bereit“ = sofort einlösbar. */
+export function rewardGoal(memberId) {
+  const bal = balance(memberId);
+  const rewards = store.list('rewards').sort((a, b) => (a.cost || 0) - (b.cost || 0));
+  const ready = rewards.filter((r) => r.cost <= bal);
+  const next = rewards.find((r) => r.cost > bal) || null;
+  return { bal, next, ready: ready[ready.length - 1] || null, p: next ? Math.min(1, bal / next.cost) : ready.length ? 1 : 0 };
+}
+
+/** Mini-Balken: Sterne je Wochentag (eine Reihe, Farbe = Person, heute hervorgehoben). */
+export function weekBars(m, { labels = true } = {}) {
+  const wk = weekPoints(m.id);
+  const max = Math.max(4, ...wk.map((d) => d.pts));
+  const td = today();
+  const sum = wk.reduce((s, d) => s + d.pts, 0);
+  return h('div.week-bars', { style: { '--c': m.color }, role: 'img', 'aria-label': `${m.name} diese Woche ${sum} Sterne: ` + wk.map((d) => `${fmt.WD[fmt.parse(d.date).getDay()]} ${d.pts}`).join(', ') },
+    ...wk.map((d) => {
+      const bar = h('i', { title: `${fmt.dayLabel(d.date)}: ${d.pts} Sterne` });
+      progressVar(bar, `wk:${m.id}:${d.date}`, d.pts / max);
+      return h('span.wb' + (d.date === td ? '.today' : '') + (d.date > td ? '.future' : ''), null,
+        h('span.wb-track', null, bar),
+        labels ? h('small', null, fmt.WD[fmt.parse(d.date).getDay()].slice(0, 2)) : null);
+    }));
+}
+
+/** Ring um den Avatar: Tagesfortschritt. */
+function ringAvatar(m, done, total, size = 'md') {
+  const el = h('span.ring-av.' + size, { style: { '--c': m.color } }, h('span.av', { style: { '--c': m.color } }, mono(m)));
+  progressVar(el, `day:${m.id}`, total ? done / total : 0);
+  if (total && done === total) el.classList.add('full');
+  return el;
+}
+
+/** Zielbalken zur nächsten Belohnung. */
+function goalBar(m, g, big = false) {
+  const fillEl = h('i');
+  progressVar(fillEl, `goal:${m.id}`, g.p);
+  const label = g.next ? h('span', null, 'Noch ', h('b', null, g.next.cost - g.bal), ` bis `, g.next.emoji || '🎁', ' ', g.next.title)
+    : g.ready ? h('span', null, h('b', null, 'Einlösbar: '), g.ready.emoji || '🎁', ' ', g.ready.title) : h('span', null, 'Noch keine Belohnung festgelegt');
+  return h('div.goal' + (big ? '.big' : '') + (!g.next && g.ready ? '.ready' : ''), { style: { '--c': m.color } },
+    h('div.goal-track', null, fillEl), h('div.goal-label', null, label, g.next ? h('small', null, `${g.bal}/${g.next.cost}`) : null));
+}
+
+const kidsOf = () => members().filter((m) => m.role === 'child');
+
+/** „Heute“ der Eltern: Sterne, Tagesfortschritt, Ziel und Woche je Kind. */
+export function familyStarsCard() {
+  const ms = kidsOf().concat(members().filter((m) => m.role !== 'child' && (balance(m.id) || dayProgress(m.id).total)));
+  if (!ms.length || (!store.list('chores').length && !store.list('routines').length && !store.list('rewards').length && !store.list('points').length)) return null;
+  return h('section.section', null,
+    h('div.section-head', null, h('h3.section-title', null, '⭐ Ämter & Sterne'), h('a.link', { href: '#plan' }, 'Wochenplan')),
+    h('div.card.stars-board', null, ...ms.map((m) => {
+      const pr = dayProgress(m.id); const g = rewardGoal(m.id); const st = streakDays(m.id);
+      return h('a.sb-row', { href: '#aemter', style: { '--c': m.color } },
+        h('div.sb-top', null,
+          ringAvatar(m, pr.done, pr.total),
+          h('div.sb-main', null, h('b', null, m.name), h('small', null, pr.total ? `${pr.done} von ${pr.total} erledigt` : 'Heute nichts zu tun', st > 1 ? h('span.streak', null, ' · 🔥 ', st, ' Tage') : null)),
+          starBadge(m)),
+        h('div.sb-bottom', null, goalBar(m, g), weekBars(m, { labels: false })));
+    })));
+}
+
+/** „Heute“ des Kindes: großer Sternezähler, Ziel, Ämter zum direkten Abhaken. */
+export function kidHero(kid) {
+  const pr = dayProgress(kid.id); const g = rewardGoal(kid.id); const st = streakDays(kid.id);
+  const td = today();
+  return h('div.kid-hero-wrap', null,
+    h('section.kid-hero', { style: { '--c': kid.color } },
+      h('div.kh-top', null,
+        h('div.kh-count', null, starBadge(kid, true), h('small', null, 'Sterne')),
+        h('div.kh-side', null,
+          st > 0 ? h('span.kh-chip', null, '🔥 ', st, st === 1 ? ' Tag' : ' Tage') : null,
+          h('span.kh-chip', null, '+', earnedOn(kid.id, td), ' heute'))),
+      h('div.kh-goal', null,
+        g.next || g.ready ? h('span.kh-reward', null, (g.next || g.ready).emoji || '🎁') : null,
+        goalBar(kid, g, true)),
+      weekBars(kid)),
+    pr.chores.length ? h('section.section', null, h('h3.section-title', null, 'Deine Ämter heute', h('span.count-pill', null, `${pr.chores.filter((c) => c.done).length}/${pr.chores.length}`)),
+      h('div.chore-grid.big', null, ...pr.chores.map((it) => h('button.chore' + (it.done ? '.done' : ''), { style: { '--c': kid.color }, onclick: (e) => toggleChore(it.chore, kid.id, td, e.currentTarget) },
+        h('span.ce', null, it.chore.emoji || '⭐'), h('span.ct', null, it.chore.title), h('span.cp', null, it.done ? '✓' : '+' + (it.chore.points || 1) + ' ⭐'))))) : null,
+    pr.routines.length ? h('div.routine-chips', null, ...pr.routines.map(({ routine: r, done }) => {
+      const ring = h('span.ring', { style: { '--c': kid.color } }, h('span', null, `${done.length}/${r.steps.length}`));
+      progressVar(ring, `rt:${kid.id}:${r.id}`, r.steps.length ? done.length / r.steps.length : 0);
+      return h('a.routine-chip' + (done.length === r.steps.length ? '.complete' : ''), { href: '#routinen' }, ring, h('span', null, h('b', null, r.title), h('small', null, r.points ? `+${r.points} ⭐ wenn fertig` : '')));
+    })) : null);
+}
+
+/** Wochenplan: wer hat an welchem Tag welches Amt – auf einen Blick, abhakbar. */
+const planState = { start: null };
+export function viewPlan() {
+  if (!planState.start) planState.start = weekStart(today());
+  const page = h('div.subpage');
+  const rerender = () => page.replaceWith(viewPlan());
+  const kid = childMode();
+  const days = [...Array(7)].map((_, i) => ymd(addDays(fmt.parse(planState.start), i)));
+  const td = today();
+  const end = fmt.parse(days[6]);
+  page.append(h('div.date-switch', null,
+    h('button.icon-btn', { 'aria-label': 'Vorige Woche', onclick: () => { planState.start = ymd(addDays(fmt.parse(planState.start), -7)); rerender(); } }, icon('left')),
+    h('b', null, days[0] === weekStart(td) ? 'Diese Woche' : `${fmt.parse(days[0]).getDate()}.${fmt.parse(days[0]).getMonth() + 1}. – ${end.getDate()}.${end.getMonth() + 1}.`),
+    h('button.icon-btn', { 'aria-label': 'Nächste Woche', onclick: () => { planState.start = ymd(addDays(fmt.parse(planState.start), 7)); rerender(); } }, icon('right'))));
+  const chores = store.list('chores');
+  if (!chores.length) {
+    page.append(h('div.card.tip', null, h('b', null, 'Wochenplan'), h('p', null, 'Hier seht ihr auf einen Blick, wer an welchem Tag welches Amt hat – und was schon erledigt ist. Legt dazu Ämter an.'), kid ? null : h('button.btn.tonal', { onclick: () => editChore(null) }, icon('plus', 18), 'Erstes Amt anlegen')));
+    return page;
+  }
+  // Verteilung: Anteil der Ämter je Person in dieser Woche
+  const load = {}; const doneBy = {}; const ptsBy = {};
+  for (const d of days) for (const it of choresFor(d)) { load[it.memberId] = (load[it.memberId] || 0) + 1; if (it.done) doneBy[it.memberId] = (doneBy[it.memberId] || 0) + 1; ptsBy[it.memberId] = (ptsBy[it.memberId] || 0) + (it.chore.points || 1); }
+  const ms = members().filter((m) => load[m.id]);
+  const total = Object.values(load).reduce((s, n) => s + n, 0);
+  page.append(h('section.card.share', null,
+    h('div.share-bar', { role: 'img', 'aria-label': 'Verteilung: ' + ms.map((m) => `${m.name} ${load[m.id]}`).join(', ') }, ...ms.map((m) => h('i', { style: { '--c': m.color, flex: load[m.id] } }))),
+    h('div.share-legend', null, ...ms.map((m) => {
+      const pct = load[m.id] ? (doneBy[m.id] || 0) / load[m.id] : 0;
+      return h('div.sl', { style: { '--c': m.color } }, h('span.av', { style: { '--c': m.color } }, mono(m)),
+        h('span.sl-main', null, h('b', null, m.name), h('small', null, `${load[m.id]} Ämter · ${Math.round((load[m.id] / total) * 100)} %`)),
+        h('span.sl-done', null, `${doneBy[m.id] || 0}/${load[m.id]}`, h('small', null, `${ptsBy[m.id]} ⭐ möglich`)), h('span.sl-bar', null, h('i', { style: { width: pct * 100 + '%' } })));
+    }))));
+  // Raster: Ämter × Tage
+  const grid = h('div.plan-grid', { role: 'grid', style: { '--cols': 7 } },
+    h('span.pg-corner'),
+    ...days.map((d) => h('span.pg-day' + (d === td ? '.today' : ''), null, fmt.WD[fmt.parse(d).getDay()].slice(0, 2), h('b', null, fmt.parse(d).getDate()))));
+  for (const c of chores) {
+    grid.append(h('button.pg-chore', { onclick: () => (kid ? null : editChore(c)) }, h('span.pg-emo', null, c.emoji || '⭐'), h('span', null, c.title), h('small', null, `+${c.points || 1} ⭐`)));
+    for (const d of days) {
+      const cell = choresFor(d).filter((it) => it.chore.id === c.id);
+      grid.append(h('div.pg-cell' + (d === td ? '.today' : ''), null, ...cell.map((it) => {
+        const m = member(it.memberId);
+        const can = d <= td && (!kid || kid.id === it.memberId);
+        return h('button.pg-who' + (it.done ? '.done' : d < td ? '.missed' : ''), { style: { '--c': m.color }, disabled: !can, 'aria-label': `${c.title}, ${m.name}, ${fmt.dayLabel(d)}${it.done ? ', erledigt' : ''}`, onclick: (e) => toggleChore(c, m.id, d, e.currentTarget) }, it.done ? icon('check', 14) : mono(m));
+      })));
+    }
+  }
+  page.append(h('div.plan-scroll', null, grid),
+    h('p.hint', null, kid ? 'Tippe auf deinen Kreis, wenn du ein Amt erledigt hast.' : 'Kreis antippen = erledigt. Amt antippen = bearbeiten (Tage, Personen, wöchentlich abwechseln).'));
+  return page;
+}
+
 export function viewRewards() {
   const page = h('div.subpage');
   const kid = childMode();
-  const ms = kid ? [kid] : members().filter((m) => m.role === 'child').concat(members().filter((m) => m.role !== 'child' && balance(m.id) !== 0));
+  const ms = kid ? [kid] : kidsOf().concat(members().filter((m) => m.role !== 'child' && balance(m.id) !== 0));
   const rewards = store.list('rewards').sort((a, b) => (a.cost || 0) - (b.cost || 0));
   if (!ms.length) page.append(h('div.card.tip', null, h('p', null, 'Lege unter „Familie“ Kinder an (Rolle „Kind“), dann sammeln sie hier Sterne.'), h('a.btn.tonal', { href: '#familie' }, 'Zur Familie')));
   page.append(h('div.star-board', null, ...ms.map((m) => {
-    const bal = balance(m.id);
-    const next = rewards.find((r) => r.cost > bal);
+    const g = rewardGoal(m.id); const st = streakDays(m.id);
+    const wk = weekPoints(m.id).reduce((s, d) => s + d.pts, 0);
     return h('div.star-card', { style: { '--c': m.color } },
-      h('span.av.lg', { style: { '--c': m.color } }, mono(m)),
-      h('b', null, m.name),
-      h('div.star-count', null, '⭐ ', bal),
-      h('small', null, `heute +${earnedOn(m.id, today())}`),
-      next ? h('div.progress', { title: `bis ${next.title}` }, h('i', { style: { width: Math.min(100, (bal / next.cost) * 100) + '%' } })) : null,
-      next ? h('small.muted', null, `Noch ${next.cost - bal} bis ${next.emoji || ''} ${next.title}`) : null,
+      h('div.sc-head', null, h('span.av.lg', { style: { '--c': m.color } }, mono(m)), h('div', null, h('b', null, m.name), h('small', null, `diese Woche +${wk}`, st > 1 ? ` · 🔥 ${st} Tage` : ''))),
+      h('div.star-count', null, starBadge(m, true)),
+      goalBar(m, g),
+      weekBars(m),
       kid ? null : h('div.btn-row.wrap', null, h('button.btn.small.tonal', { onclick: () => bonus(m) }, '± Sterne'), h('button.btn.small.ghost', { onclick: () => history(m) }, 'Verlauf')));
   })));
-  page.append(h('h3.section-title', null, 'Belohnungen'));
+  page.append(h('h3.section-title', null, '🎁 Belohnungen'));
   if (!rewards.length) page.append(h('p.soft', null, kid ? 'Noch keine Belohnungen – frag Mama oder Papa!' : 'Lege fest, wofür Sterne eingetauscht werden können – z. B. „30 Min. Tablet = 10 ⭐“.'));
-  page.append(h('div.reward-grid', null, ...rewards.map((r) => h('div.reward', null,
-    h('span.re', null, r.emoji || '🎁'), h('b', null, r.title), h('span.cost', null, `${r.cost} ⭐`),
-    h('div.btn-row.wrap', null,
-      ...ms.map((m) => h('button.btn.small' + (balance(m.id) >= r.cost ? '.primary' : '.ghost'), { disabled: balance(m.id) < r.cost, onclick: () => redeem(r, m) }, ms.length > 1 ? m.name : 'Einlösen')),
-      kid ? null : h('button.icon-btn', { 'aria-label': 'Bearbeiten', onclick: () => editReward(r) }, icon('edit', 16)))))));
+  page.append(h('div.reward-grid', null, ...rewards.map((r) => {
+    const ok = ms.filter((m) => balance(m.id) >= r.cost);
+    return h('div.reward' + (ok.length ? '.ready' : ''), null,
+      h('span.re', null, r.emoji || '🎁'), h('b', null, r.title), h('span.cost', null, `${r.cost} ⭐`),
+      h('div.rw-progress', null, ...ms.map((m) => h('span.rwp', { style: { '--c': m.color }, title: `${m.name}: ${Math.min(balance(m.id), r.cost)}/${r.cost}` }, ms.length > 1 ? h('span.av', { style: { '--c': m.color } }, mono(m)) : null, h('span.rwp-track', null, h('i', { style: { width: Math.min(100, (Math.max(0, balance(m.id)) / r.cost) * 100) + '%' } }))))),
+      h('div.btn-row.wrap', null,
+        ...ms.map((m) => h('button.btn.small' + (balance(m.id) >= r.cost ? '.primary' : '.ghost'), { disabled: balance(m.id) < r.cost, onclick: () => redeem(r, m) }, ms.length > 1 ? m.name : 'Einlösen')),
+        kid ? null : h('button.icon-btn', { 'aria-label': 'Bearbeiten', onclick: () => editReward(r) }, icon('edit', 16))));
+  })));
   if (!kid) page.append(h('button.btn.tonal.more-btn', { onclick: () => editReward(null) }, icon('plus', 18), 'Belohnung hinzufügen'));
   return page;
 }
@@ -369,22 +523,5 @@ export function editReward(r) {
     h('button.btn.primary', { type: 'submit' }, 'Speichern'))), { label: 'Belohnung' });
 }
 
-/** Kompakte Übersicht für „Heute“: Fortschritt pro Kind. */
-export function todayKidsCard() {
-  const td = today();
-  const kid = childMode();
-  const ms = kid ? [kid] : members().filter((m) => m.role === 'child');
-  const rows = ms.map((m) => {
-    const ch = choresFor(td, m.id); const rt = routinesFor(td, m.id);
-    const total = ch.length + rt.reduce((s, r) => s + r.routine.steps.length, 0);
-    const done = ch.filter((c) => c.done).length + rt.reduce((s, r) => s + r.done.length, 0);
-    return { m, total, done };
-  }).filter((r) => r.total || balance(r.m.id));
-  if (!rows.length) return null;
-  return h('section.section', null, h('h3.section-title', null, kid ? 'Deine Sterne' : 'Kinder heute'),
-    h('a.card.kids-today', { href: '#aemter' }, ...rows.map(({ m, total, done }) => h('div.kt-row', { style: { '--c': m.color } },
-      h('span.av', { style: { '--c': m.color } }, mono(m)),
-      h('div.kt-main', null, h('b', null, m.name), h('div.progress', null, h('i', { style: { width: total ? (done / total) * 100 + '%' : '0' } }))),
-      h('span.kt-num', null, total ? `${done}/${total}` : ''),
-      h('span.stars', null, '⭐ ', balance(m.id))))));
-}
+/** Kompakte Übersicht für „Heute“ – Kinder sehen ihre Sterne groß, Eltern die Familienübersicht. */
+export function todayKidsCard() { const kid = childMode(); return kid ? kidHero(kid) : familyStarsCard(); }

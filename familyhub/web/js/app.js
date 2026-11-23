@@ -1,9 +1,9 @@
 // FamilyHub 3 – App-Rahmen: Navigation, Routing, Theme, Zurück-Taste.
 import { h, icon, closeTopSheet, sheet, fill, setEmojiMode } from './ui.js';
 import { store } from './store.js';
-import { childMode, refreshNative, members } from './domain.js';
+import { childMode, refreshNative, members, openTasks, today } from './domain.js';
 import { viewToday, viewCalendar, viewTasks, viewShopping, hubPage, TASK_TABS, KITCHEN_TABS } from './views.js';
-import { viewChores, viewRoutines, viewRewards } from './household.js';
+import { viewChores, viewRoutines, viewRewards, viewPlan, choresFor } from './household.js';
 import { viewMeals, viewRecipes, viewCoach, importRecipe } from './kitchen.js';
 import { openWall, closeWall, wallActive, armScreensaver } from './wall.js';
 import { refreshAll as refreshCalendars } from './extcal.js';
@@ -25,15 +25,16 @@ const ROUTES = {
   aemter: () => hubPage('Aufgaben', TASK_TABS, 'aemter', viewChores()),
   routinen: () => hubPage('Aufgaben', TASK_TABS, 'routinen', viewRoutines()),
   sterne: () => hubPage('Aufgaben', TASK_TABS, 'sterne', viewRewards()),
+  plan: () => hubPage('Aufgaben', TASK_TABS, 'plan', viewPlan()),
   essen: () => hubPage('Essen', KITCHEN_TABS, 'essen', viewMeals()),
   rezepte: () => hubPage('Rezepte', KITCHEN_TABS, 'rezepte', viewRecipes()),
   coach: () => hubPage('Ernährung', KITCHEN_TABS, 'coach', viewCoach()),
   familie: viewFamily, kinder: viewChild, extern: viewExternal, diashow: viewSlideshow,
   wetter: viewWeather, iphone: viewIphone, abfall: viewWaste, pinnwand: viewBoard, kontakte: viewContacts, listen: viewLists, budget: viewBudget, stundenplan: viewTimetable, dokumente: viewDocuments, fotos: viewPhotos, pi: viewPi, sync: viewSync, einstellungen: viewSettings, hilfe: viewHelp,
 };
-const CHILD_ROUTES = new Set(['wetter', 'abfall', 'heute', 'kalender', 'aufgaben', 'aemter', 'routinen', 'sterne', 'hilfe', 'pinnwand', 'stundenplan']);
+const CHILD_ROUTES = new Set(['wetter', 'abfall', 'heute', 'kalender', 'aufgaben', 'aemter', 'plan', 'routinen', 'sterne', 'hilfe', 'pinnwand', 'stundenplan']);
 const TABS = [['heute', 'Heute', 'home'], ['kalender', 'Kalender', 'calendar'], ['aufgaben', 'Aufgaben', 'tasks'], ['einkauf', 'Einkauf', 'cart'], ['mehr', 'Mehr', 'menu']];
-const PARENT = { wetter: 'heute', iphone: 'mehr', abfall: 'mehr', pinnwand: 'mehr', kontakte: 'mehr', listen: 'mehr', budget: 'mehr', stundenplan: 'mehr', dokumente: 'mehr', diashow: 'fotos', extern: 'mehr', aemter: 'aufgaben', routinen: 'aufgaben', sterne: 'aufgaben', essen: 'einkauf', rezepte: 'einkauf', coach: 'einkauf', familie: 'mehr', kinder: 'mehr', fotos: 'mehr', pi: 'mehr', sync: 'mehr', einstellungen: 'mehr', hilfe: 'mehr' };
+const PARENT = { wetter: 'heute', iphone: 'mehr', abfall: 'mehr', pinnwand: 'mehr', kontakte: 'mehr', listen: 'mehr', budget: 'mehr', stundenplan: 'mehr', dokumente: 'mehr', diashow: 'fotos', extern: 'mehr', aemter: 'aufgaben', plan: 'aufgaben', routinen: 'aufgaben', sterne: 'aufgaben', essen: 'einkauf', rezepte: 'einkauf', coach: 'einkauf', familie: 'mehr', kinder: 'mehr', fotos: 'mehr', pi: 'mehr', sync: 'mehr', einstellungen: 'mehr', hilfe: 'mehr' };
 
 const app = document.getElementById('app');
 const view = h('main', { id: 'view', tabindex: -1 });
@@ -75,7 +76,12 @@ function render(reason) {
   );
   // Tabs
   const active = r.startsWith('liste-') ? 'mehr' : PARENT[r] || r;
-  nav.replaceChildren(...TABS.filter(([k]) => !kid || CHILD_ROUTES.has(k)).map(([k, label, ic]) => h('a.tab' + (active === k ? '.on' : ''), { href: '#' + k, 'aria-current': active === k ? 'page' : null, onclick: () => haptic() }, icon(ic, 24), h('span', null, label))));
+  const todo = openToday(kid);
+  nav.replaceChildren(...TABS.filter(([k]) => !kid || CHILD_ROUTES.has(k)).map(([k, label, ic]) => {
+    const tasks = k === 'aufgaben';
+    return h('a.tab' + (active === k ? '.on' : ''), { href: '#' + (tasks && kid ? 'aemter' : k), 'aria-current': active === k ? 'page' : null, 'data-stars': tasks ? '*' : null, 'aria-label': tasks && todo ? `${label}, ${todo} offen heute` : null, onclick: () => haptic() },
+      h('span.tab-ic', null, icon(ic, 24), tasks && todo ? h('span.tab-badge', null, todo > 9 ? '9+' : todo) : null), h('span', null, label));
+  }));
   // Inhalt
   const scroll = r === lastRoute ? view.scrollTop : 0;
   const page = r.startsWith('liste-') ? viewList(r.slice(6)) : ROUTES[r]();
@@ -83,6 +89,14 @@ function render(reason) {
   if (r === lastRoute && reason) view.scrollTop = scroll; else view.scrollTop = 0;
   if (r !== lastRoute) view.focus({ preventScroll: true });
   lastRoute = r;
+}
+
+/** Was heute noch offen ist (Ämter + fällige Aufgaben) – Zahl am Aufgaben-Tab. */
+function openToday(kid) {
+  const td = today();
+  const ch = choresFor(td, kid?.id).filter((c) => !c.done).length;
+  const ts = openTasks().filter((t) => t.date && t.date <= td && (!kid || (t.memberIds || []).includes(kid.id))).length;
+  return ch + ts;
 }
 
 // Bei Datenänderungen neu zeichnen, aber nicht während getippt wird.

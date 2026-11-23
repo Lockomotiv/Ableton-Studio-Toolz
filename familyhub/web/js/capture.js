@@ -9,6 +9,7 @@ import { openEditor } from './editors.js';
 import { detectCommand } from './commands.js';
 import { agenda, openTasks, today } from './domain.js';
 import { choresFor, balance, toggleChore } from './household.js';
+import { celebrate } from './fx.js';
 import { mealsOn } from './kitchen.js';
 import { guessCategory } from './budget.js';
 import { lessonsOn } from './family.js';
@@ -86,7 +87,7 @@ export function openCapture({ mode = voiceAvailable() ? 'voice' : 'text', text =
     if (c.type === 'answer') return;
     const a = c.action;
     if (a.kind === 'chore') { const ch = store.get('chores', a.choreId); if (ch) toggleChore(ch, a.memberId, today()); }
-    else if (a.kind === 'task') { const tk = store.get('tasks', a.taskId); if (tk) { const r = completeTask(tk); toast('Erledigt 🎉', { label: 'Rückgängig', run: () => { r.undo(); refreshNative(); } }); } }
+    else if (a.kind === 'task') { const tk = store.get('tasks', a.taskId); if (tk) { const r = completeTask(tk); if (r.earned?.length) r.earned.forEach((x) => celebrate(x.memberId, x.pts, tk.title)); toast('Erledigt 🎉', { label: 'Rückgängig', run: () => { r.undo(); refreshNative(); } }); } }
     else if (a.kind === 'budget') { const it = store.put('budget', { kind: 'entry', type: a.type, amount: a.amount, category: a.category, note: a.note, date: today(), memberId: store.config.meId || null }); toast('Im Haushaltsbuch eingetragen 💶', { label: 'Rückgängig', run: () => store.del('budget', it.id) }); }
     else if (a.kind === 'message') { const author = childMode() || members().find((m) => m.id === store.config.meId); if (!author) { toast('Bitte unter „Familie“ festlegen, wer dieses Handy nutzt'); return; } store.put('messages', { text: a.text, authorId: author.id, reactions: {}, pinned: false }); toast('An die Pinnwand geschrieben 💬'); }
     else if (a.kind === 'shopping') { const before = a.ids.map((id) => store.get('shopping', id)).filter(Boolean); for (const it of before) store.put('shopping', { ...it, done: true, doneAt: Date.now() }); toast('Abgehakt 🛒', { label: 'Rückgängig', run: () => before.forEach((it) => store.put('shopping', it)) }); }

@@ -1,13 +1,14 @@
 // Hauptbereiche: Heute, Kalender, Aufgaben, Einkauf.
 import { h, icon, fmt, toast, mono } from './ui.js';
 import { store } from './store.js';
-import { agenda, openTasks, doneTasks, taskBucket, BUCKETS, sortTasks, completeTask, nextUp, members, member, childMode, refreshNative, today } from './domain.js';
+import { agenda, openTasks, doneTasks, taskBucket, BUCKETS, sortTasks, completeTask, reopenTask, nextUp, members, member, childMode, refreshNative, today } from './domain.js';
 import { ymd, addDays, repeatLabel, SHOPPING_CATEGORY_ORDER, shoppingCategory, parse } from './nlp.js';
 import { openEditor } from './editors.js';
 import { openCapture, commit } from './capture.js';
 import { haptic } from './native.js';
 import { minutesOf } from './recur.js';
-import { todayKidsCard } from './household.js';
+import { familyStarsCard, kidHero, choresFor, toggleChore, dayProgress } from './household.js';
+import { celebrate } from './fx.js';
 import { todayMealsCard } from './kitchen.js';
 import { boardTeaser, todaySchoolCard } from './family.js';
 import { todayWasteCard } from './waste.js';
@@ -15,7 +16,7 @@ import { installBanner } from './iphone.js';
 import { todayWeatherCard } from './weather.js';
 import { sheet } from './ui.js';
 
-export const TASK_TABS = [['aufgaben', 'To-dos'], ['aemter', 'Ämter'], ['routinen', 'Routinen'], ['sterne', 'Sterne']];
+export const TASK_TABS = [['aufgaben', 'To-dos'], ['aemter', 'Ämter'], ['plan', 'Wochenplan'], ['routinen', 'Routinen'], ['sterne', 'Sterne']];
 export const KITCHEN_TABS = [['einkauf', 'Einkauf'], ['essen', 'Essensplan'], ['rezepte', 'Rezepte'], ['coach', 'Coach']];
 export function subnav(tabs, active) {
   return h('nav.subnav', { 'aria-label': 'Bereich' }, ...tabs.map(([k, l]) => h('a.sub' + (k === active ? '.on' : ''), { href: '#' + k, 'aria-current': k === active ? 'page' : null }, l)));
@@ -69,10 +70,12 @@ function taskRow(t, { showDate = true } = {}) {
   const check = h('button.check' + (t.done ? '.on' : ''), { 'aria-label': t.done ? 'Als offen markieren' : 'Erledigt', onclick: (e) => {
     e.stopPropagation();
     haptic('success');
-    if (t.done) { store.put('tasks', { ...t, done: false, doneAt: null }); return; }
+    if (t.done) { reopenTask(t); return; }
     row.classList.add('completing');
+    const rect = check.getBoundingClientRect();
     setTimeout(() => {
       const r = completeTask(t);
+      if (r.earned.length) { r.earned.forEach((x) => celebrate(x.memberId, x.pts, t.title, rect)); refreshNative(); return; }
       refreshNative();
       toast(r.next ? `Erledigt · nächstes Mal ${fmt.dayLabel(r.next)}` : 'Erledigt 🎉', { label: 'Rückgängig', run: () => { r.undo(); refreshNative(); } });
     }, 280);
@@ -85,9 +88,33 @@ function taskRow(t, { showDate = true } = {}) {
         showDate && t.date ? h('span' + (bucket === 'overdue' && !t.done ? '.warn' : ''), null, icon('calendar', 13), fmt.dayLabel(t.date) + (t.time ? ', ' + fmt.time(t.time) : '')) : null,
         t.repeat ? h('span', null, icon('repeat', 13), repeatLabel(t.repeat)) : null,
         t.priority ? h('span.warn', null, icon('flag', 13), 'wichtig') : null,
-        t.streak > 1 ? h('span', null, `🔥 ${t.streak}×`) : null)),
+        t.streak > 1 ? h('span', null, `🔥 ${t.streak}×`) : null,
+        t.points > 0 ? h('span.pts', null, `+${t.points} ⭐`) : null)),
     avatars(t.memberIds));
   return row;
+}
+
+// ---------- Ämter im Kalender ----------
+function choreSummary(date) {
+  const by = {};
+  for (const it of choresFor(date)) { const x = (by[it.memberId] ||= { m: member(it.memberId), done: 0, total: 0 }); x.total++; if (it.done) x.done++; }
+  return Object.values(by).filter((x) => x.m && (!childMode() || x.m.id === childMode().id));
+}
+function choreMeter(date) {
+  const s = choreSummary(date); const total = s.reduce((a, x) => a + x.total, 0);
+  if (!total) return null;
+  const done = s.reduce((a, x) => a + x.done, 0);
+  return h('span.day-ch' + (done === total ? '.full' : '') + (date > today() ? '.future' : ''), { style: { '--p': done / total }, title: `Ämter ${done}/${total}` });
+}
+function dayChores(date) {
+  const kid = childMode();
+  const list = choresFor(date, kid?.id);
+  if (!list.length) return null;
+  const can = date <= today();
+  return h('div.day-chores', null,
+    h('div.section-head', null, h('h3.section-title', null, 'Ämter', h('span.count-pill', null, `${list.filter((x) => x.done).length}/${list.length}`)), h('a.link', { href: '#plan' }, 'Wochenplan')),
+    h('div.chore-chips', null, ...list.map((it) => { const m = member(it.memberId); return h('button.chore-chip' + (it.done ? '.done' : ''), { style: { '--c': m.color }, disabled: !can, onclick: (e) => toggleChore(it.chore, m.id, date, e.currentTarget) },
+      h('span.av', { style: { '--c': m.color } }, it.done ? icon('check', 14) : mono(m)), h('span.cc-emo', null, it.chore.emoji || '⭐'), h('span', null, it.chore.title), h('small', null, `+${it.chore.points || 1}`)); })));
 }
 
 function section(title, ...children) { return h('section.section', null, title ? h('h3.section-title', null, title) : null, ...children); }
@@ -137,12 +164,14 @@ export function viewToday() {
     h('header.greet', null,
       h('p.date', null, fmt.longDate(now)),
       h('h1', null, `${greet}${me ? ', ' + me.name : ''}`, kid ? ' ' + (kid.emoji || '👋') : '')),
+    kid ? kidHero(kid) : null,
     installBanner(),
     todayWeatherCard(),
     quick,
     personFilter(),
     stats,
     hero,
+    kid ? null : familyStarsCard(),
     section('Heute',
       todays.length ? h('div.list', null, ...todays.map((e) => eventRow(e))) : h('p.soft', null, 'Heute keine Termine. 🌤'),
     ),
@@ -150,7 +179,6 @@ export function viewToday() {
     todayWasteCard(),
     boardTeaser(),
     todaySchoolCard(),
-    todayKidsCard(),
     todayMealsCard(),
     tomorrows.length ? section('Morgen', h('div.list', null, ...tomorrows.map((e) => eventRow(e)))) : null,
     !kid && shop.length ? section('Einkaufsliste', h('a.card.shop-teaser', { href: '#einkauf' },
@@ -200,9 +228,10 @@ export function viewCalendar() {
         h('button.wd-head', { onclick: () => openCapture({ mode: 'text', kind: 'event', date: d }), 'aria-label': 'Termin am ' + fmt.longDate(dt) }, h('span', null, fmt.WD[dt.getDay()]), h('b', null, dt.getDate()), icon('plus', 14)),
         h('div.wd-items', null,
           ...dayEv.map((e) => h('button.wchip', { style: { '--c': e.calColor || (e.memberIds?.length ? member(e.memberIds[0])?.color : 'var(--primary)') }, onclick: () => (e.readOnly ? showExternal(e) : openEditor('events', e)) }, e.allDay ? '' : h('b', null, fmt.time(e.time) + ' '), e.title)),
-          ...dayT.map((t) => h('button.wchip.task', { onclick: () => openEditor('tasks', t) }, '☐ ', t.title)),
-          !dayEv.length && !dayT.length ? h('span.wd-free', null, 'frei') : null));
-    })));
+          ...dayT.map((t) => h('button.wchip.task', { onclick: () => openEditor('tasks', t) }, icon('check', 13), t.title, t.points ? h('small', null, ` +${t.points} ⭐`) : null)),
+          ...choreSummary(d).map(({ m, done, total }) => h('a.wchip.chores' + (done === total ? '.full' : ''), { href: '#plan', style: { '--c': m.color } }, h('span.av', { style: { '--c': m.color } }, mono(m)), `${done}/${total} Ämter`)),
+          !dayEv.length && !dayT.length && !choreSummary(d).length ? h('span.wd-free', null, 'frei') : null));
+    })), h('a.btn.ghost.more-btn', { href: '#plan' }, icon('list-checks', 18), 'Ämter-Wochenplan öffnen'));
   } else if (cal.mode === 'month') {
     const first = cal.cursor;
     const startOffset = (first.getDay() + 6) % 7; // Montag zuerst
@@ -224,7 +253,8 @@ export function viewCalendar() {
       const cls = ['day', d.getMonth() !== first.getMonth() ? 'out' : '', key === today() ? 'today' : '', key === cal.selected ? 'sel' : '', d.getDay() === 0 || d.getDay() === 6 ? 'we' : ''].filter(Boolean).join('.');
       grid.append(h('button.' + cls, { onclick: () => { haptic(); cal.selected = key; rerender(); }, 'aria-label': fmt.longDate(d) + (list.length ? `, ${list.length} Termine` : '') },
         h('span.num', null, d.getDate()),
-        h('span.dots', null, ...list.slice(0, 3).map((e) => h('i', { style: { background: e.calColor || (e.memberIds?.length ? member(e.memberIds[0])?.color : 'var(--primary)') } })), list.length > 3 ? h('i.plus') : null, taskDays.has(key) ? h('i.task') : null)));
+        h('span.dots', null, ...list.slice(0, 3).map((e) => h('i', { style: { background: e.calColor || (e.memberIds?.length ? member(e.memberIds[0])?.color : 'var(--primary)') } })), list.length > 3 ? h('i.plus') : null, taskDays.has(key) ? h('i.task') : null),
+        choreMeter(key)));
     }
     page.append(grid);
     const sel = cal.selected;
@@ -232,15 +262,17 @@ export function viewCalendar() {
     const dayTasks = sortTasks(openTasks().filter((t) => t.date === sel));
     page.append(section(fmt.longDate(fmt.parse(sel)),
       dayEvents.length || dayTasks.length ? h('div.list', null, ...dayEvents.map((e) => eventRow(e)), ...dayTasks.map((t) => taskRow(t, { showDate: false }))) : h('p.soft', null, 'Nichts geplant.'),
+      dayChores(sel),
       h('button.btn.tonal.add-here', { onclick: () => openCapture({ mode: 'text', kind: 'event', date: sel }) }, icon('plus', 18), 'Termin an diesem Tag')));
   } else {
     const from = today();
     const to = ymd(addDays(new Date(), cal.listDays || 60));
     const evs = agenda(from, to);
     const groups = {};
-    for (const e of evs) (groups[e.date] ||= []).push(e);
-    const keys = Object.keys(groups);
-    page.append(keys.length ? h('div', null, ...keys.map((k) => section(fmt.dayLabel(k) + (fmt.dayDiff(k) < 7 && fmt.dayDiff(k) > 1 ? '' : ''), h('div.list', null, ...groups[k].map((e) => eventRow(e)))))) : empty('calendar', 'In den nächsten Wochen ist nichts geplant.'),
+    for (const e of evs) (groups[e.date] ||= []).push(eventRow(e));
+    for (const tk of sortTasks(openTasks().filter((x) => x.date && x.date <= to))) (groups[tk.date < from ? from : tk.date] ||= []).push(taskRow(tk, { showDate: tk.date < from }));
+    const keys = Object.keys(groups).sort();
+    page.append(keys.length ? h('div', null, ...keys.map((k) => section(fmt.dayLabel(k), h('div.list', null, ...groups[k])))) : empty('calendar', 'In den nächsten Wochen ist nichts geplant.'),
       h('button.btn.ghost.more-btn', { onclick: () => { cal.listDays = (cal.listDays || 60) + 90; rerender(); } }, 'Weitere Termine laden'));
   }
   return page;

@@ -64,15 +64,26 @@ export function sortTasks(list) {
 /** Aufgabe abhaken. Bei Wiederholung wird sie aufs nächste Datum verschoben. Gibt Undo-Funktion zurück. */
 export function completeTask(t) {
   const before = { ...t };
+  // Sterne für die eingetragenen Personen (feste IDs → mehrfaches Abhaken bucht nicht doppelt)
+  const day = t.date && t.date < today() ? today() : (t.date || today());
+  const earned = (t.points > 0 ? (t.memberIds || []).filter((id) => member(id)) : []).map((memberId) => ({ memberId, pts: t.points }));
+  const keys = earned.map((e) => `t_${String(t.id).replace(/[^A-Za-z0-9_-]/g, '')}_${e.memberId}_${day.replace(/-/g, '')}`.slice(0, 64));
+  earned.forEach((e, i) => store.put('points', { id: keys[i], memberId: e.memberId, delta: e.pts, reason: t.title, date: day, kind: 'task', ref: t.id }));
+  const unbook = () => keys.forEach((k) => store.del('points', k));
   if (t.repeat && t.date) {
     let next = nextDate(t.date, t.repeat);
     const td = today();
     while (next && next < td) next = nextDate(next, t.repeat);
     store.put('tasks', { ...t, date: next, lastDoneAt: Date.now(), lastDoneBy: store.config.meId || null, streak: (t.streak || 0) + 1 });
-    return { next, undo: () => store.put('tasks', before) };
+    return { next, earned, undo: () => { unbook(); store.put('tasks', before); } };
   }
-  store.put('tasks', { ...t, done: true, doneAt: Date.now(), doneBy: store.config.meId || null });
-  return { undo: () => store.put('tasks', { ...before, done: false }) };
+  store.put('tasks', { ...t, done: true, doneAt: Date.now(), doneBy: store.config.meId || null, pointKeys: keys });
+  return { earned, undo: () => { unbook(); store.put('tasks', { ...before, done: false }); } };
+}
+/** Erledigte Aufgabe wieder öffnen – gebuchte Sterne zurücknehmen. */
+export function reopenTask(t) {
+  (t.pointKeys || []).forEach((k) => store.del('points', k));
+  store.put('tasks', { ...t, done: false, doneAt: null, pointKeys: [] });
 }
 
 /** Termin löschen – bei Serien nur ein Vorkommen oder alle. */

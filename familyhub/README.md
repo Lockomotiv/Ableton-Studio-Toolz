@@ -115,6 +115,14 @@ Hinweis zu Cookidoo und Lifesum: Beide bieten keine offene Schnittstelle. Öffen
 - **Ruhigere Gestaltung:** kühles Neutral statt Creme, Spreewald-Petrol nur für Aktionen und Status, Koralle ausschließlich für die Sprachtaste. Überschriften in Satzschreibung mit Zähl-Pillen statt VERSALIEN, feine Kanten statt Farbflächen, gruppierte Menüs wie in den Systemeinstellungen, Glas-Effekt nur für Kopf- und Tab-Leiste.
 - **Schrift:** Manrope (OFL, liegt in der App) für Überschriften und Zahlen, Systemschrift für Text und Bedienelemente. Hell & Dunkel geprüft, Kontraste ≥ 4,5:1 für Text.
 
+### Neu in 4.6: Aufgaben & Belohnungen im Vordergrund
+- **Dashboard der Eltern:** Karte „Ämter & Sterne“ direkt unter den Kennzahlen – je Kind ein Ring mit dem Tagesfortschritt, der Sternestand, ein Zielbalken zur nächsten Belohnung („Noch 2 bis Eis essen gehen“), eine Mini-Wochenkurve und die Serie (🔥 Tage in Folge alles erledigt).
+- **Dashboard des Kindes:** großer Sternezähler ganz oben, Belohnungsziel mit Bild und dickem Fortschrittsbalken, Sterne der Woche als Balken, die heutigen Ämter als große Kacheln zum direkten Abhaken und die Routinen mit Fortschrittsring.
+- **Wochenplan (neuer Reiter unter Aufgaben):** wer an welchem Tag welches Amt hat – als Raster Ämter × Wochentage, abhakbar; oben die Verteilung der Woche (Anteil je Person, erledigt, mögliche Sterne). Verpasste Ämter erscheinen gestrichelt.
+- **Im Kalender:** Monatsansicht mit kleinem Ämter-Balken je Tag (gelb = teilweise, grün = alles erledigt), Tagesansicht mit den Ämtern zum Abhaken, Wochenansicht mit „2/3 Ämter“ je Person und Aufgaben samt Sternen; die Listenansicht zeigt jetzt auch Aufgaben.
+- **Sterne für Aufgaben:** im Aufgaben-Editor „Sterne bei Erledigung“ – beim Abhaken (auch per Sprache/Siri über den Pi) bekommen die eingetragenen Personen die Sterne; Wiederöffnen bucht sie zurück.
+- **Animationen:** Sterne fliegen vom abgehakten Amt zum Sternezähler (oder zum Aufgaben-Tab), der Zähler zählt hoch, Ringe und Balken wachsen. Wird eine Belohnung erreichbar, erscheint „Ziel erreicht“ mit Konfetti. Belohnungen, die eingelöst werden können, leuchten. Der Aufgaben-Tab zeigt, wie viel heute noch offen ist; Kinder landen dort direkt bei ihren Ämtern. Bei „Bewegung reduzieren“ entfallen die Animationen.
+
 ### Sprachsteuerung – Beispiele
 
 * „Morgen um halb vier Zahnarzt mit Lena, erinnere mich eine Stunde vorher“
@@ -128,7 +136,7 @@ Unter *Einstellungen* lässt sich „Direkt speichern“ einschalten – dann wi
 
 ## Installation auf dem Handy
 
-1. `release/FamilyHub-4.5.0.apk` aufs Handy und installieren.
+1. `release/FamilyHub-4.6.0.apk` aufs Handy und installieren.
    Die neue App hat eine eigene Paket-ID (`de.familyhub.app`) und läuft **neben** der alten App. Die alte kann gelöscht werden, sobald alles passt.
 2. Beim ersten Start „Familie anlegen“.
 3. Optional: Mehr → Synchronisierung → mit dem Pi verbinden (siehe unten).

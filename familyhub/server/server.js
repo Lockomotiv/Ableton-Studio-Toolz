@@ -19,7 +19,7 @@ import { wasteType } from '../web/js/wastetypes.js';
 import { DEFAULT_PLACE, forecastUrl, buildModel } from '../web/js/weathercore.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const VERSION = '4.5.0';
+const VERSION = '4.6.0';
 const cfg = {
   port: +(process.env.PORT || 8080),
   host: process.env.HOST || '0.0.0.0',
@@ -209,7 +209,12 @@ export function createApp(options = {}) {
       ops.push({ op: 'put', col: 'points', item: { id: choreKey(ch.id, a.memberId, today), memberId: a.memberId, delta: ch.points || 1, reason: ch.title, date: today, kind: 'chore', ref: ch.id, updatedAt: ts, createdAt: ts } });
     } else if (a.kind === 'task') {
       const t = db.data.tasks[a.taskId];
-      ops.push({ op: 'put', col: 'tasks', item: { ...t, done: true, doneAt: ts, updatedAt: ts } });
+      const keys = [];
+      if (t.points > 0) for (const mid of (t.memberIds || []).filter((id) => db.data.members[id] && !db.data.members[id].deleted)) {
+        const id = `t_${String(t.id).replace(/[^A-Za-z0-9_-]/g, '')}_${mid}_${today.replace(/-/g, '')}`.slice(0, 64); keys.push(id);
+        ops.push({ op: 'put', col: 'points', item: { id, memberId: mid, delta: t.points, reason: t.title, date: today, kind: 'task', ref: t.id, updatedAt: ts, createdAt: ts } });
+      }
+      ops.push({ op: 'put', col: 'tasks', item: { ...t, done: true, doneAt: ts, updatedAt: ts, pointKeys: keys } });
     } else if (a.kind === 'budget') {
       ops.push({ op: 'put', col: 'budget', item: { id: newId(), kind: 'entry', type: a.type, amount: a.amount, category: a.category, note: a.note, date: today, memberId: meId || null, createdAt: ts, updatedAt: ts } });
     } else if (a.kind === 'message') {

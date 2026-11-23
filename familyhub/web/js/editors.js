@@ -92,6 +92,7 @@ export function editTask(t, d = {}) {
         field('Wiederholen', f.repeat = select(REPEATS, repeatToValue(v.repeat))),
         field('Erinnern', f.remind = select(REMINDERS, v.remindMin ?? ''))),
       h('label.switch', null, f.prio = h('input', { type: 'checkbox', checked: !!v.priority }), h('span.track'), h('span', null, 'Wichtig')),
+      childMode() ? null : field('Sterne bei Erledigung (für die eingetragenen Personen)', f.points = h('input', { type: 'number', min: 0, max: 50, value: v.points || 0, inputmode: 'numeric' })),
       field('Notiz', f.notes = h('textarea', { rows: 2, value: v.notes || '', placeholder: 'optional' })),
       h('div.btn-row', null,
         base && !childMode() ? h('button.btn.danger-ghost', { type: 'button', onclick: remove }, icon('trash', 18), 'Löschen') : h('span'),
@@ -99,7 +100,7 @@ export function editTask(t, d = {}) {
     function save() {
       const title = f.title.value.trim(); if (!title) return f.title.focus();
       const rep = valueToRepeat(f.repeat.value);
-      store.put('tasks', { ...(base || {}), title, date: f.date.value || (rep ? ymd(new Date()) : null), time: f.time.value || null, memberIds: ppl.get(), repeat: rep, remindMin: f.remind.value === '' ? null : +f.remind.value, priority: f.prio.checked, notes: f.notes.value.trim(), done: base?.done || false, createdBy: base?.createdBy || store.config.meId });
+      store.put('tasks', { ...(base || {}), title, date: f.date.value || (rep ? ymd(new Date()) : null), time: f.time.value || null, memberIds: ppl.get(), repeat: rep, remindMin: f.remind.value === '' ? null : +f.remind.value, priority: f.prio.checked, notes: f.notes.value.trim(), points: f.points ? Math.max(0, Math.min(50, +f.points.value || 0)) : (base?.points || 0), done: base?.done || false, createdBy: base?.createdBy || store.config.meId });
       refreshNative(); s.close(); toast(base ? 'Aufgabe aktualisiert' : 'Aufgabe gespeichert');
     }
     function remove() {

@@ -87,6 +87,12 @@ test('Sprachassistent: Fragen und Erledigt über /quick', async () => {
   assert.equal(r.body.command, 'action');
   r = await call('/api/v2/quick', { method: 'POST', body: { text: 'Wie viele Sterne hat Mia?' } });
   assert.equal(r.body.summary, 'Mia hat 4 Sterne.');
+  // Aufgabe mit Sternen per Sprache erledigt → Sterne gebucht
+  await call('/api/v2/batch', { method: 'POST', body: { ops: [{ op: 'put', col: 'tasks', item: { id: 'tz', title: 'Vokabeln lernen', points: 3, memberIds: ['kid1'], done: false, updatedAt: 1 } }] } });
+  r = await call('/api/v2/quick', { method: 'POST', body: { text: 'Vokabeln lernen ist erledigt' } });
+  assert.equal(r.body.command, 'action');
+  r = await call('/api/v2/quick', { method: 'POST', body: { text: 'Wie viele Sterne hat Mia?' } });
+  assert.equal(r.body.summary, 'Mia hat 7 Sterne.');
 });
 
 test('Abfall-Frage über /quick (Termine aus importierter Datei)', async () => {
