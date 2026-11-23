@@ -3,17 +3,20 @@ import { h, icon, toast, sheet, fmt } from './ui.js';
 import { store, normalizeBase } from './store.js';
 import { openUrl, openApp, viaApp } from './native.js';
 
-export const SLIDE_DEFAULTS = { idleMin: 1, source: 'random', albums: [], interval: 12, effect: 'kenburns', overlay: 'agenda', captions: true };
+export const SLIDE_DEFAULTS = { idleMin: 1, source: 'family', albums: [], interval: 12, effect: 'kenburns', overlay: 'agenda', captions: true };
 export function slideCfg() {
   const c = store.config;
   const legacy = {};
   if (c.wallIdleMin != null && c.slideshow == null) legacy.idleMin = +c.wallIdleMin;
   if (c.wallSlideSec != null && c.slideshow == null) legacy.interval = +c.wallSlideSec;
-  return { ...SLIDE_DEFAULTS, ...legacy, ...(c.slideshow || {}) };
+  const cfg = { ...SLIDE_DEFAULTS, ...legacy, ...(c.slideshow || {}) };
+  // Solange auf diesem Gerät niemand bewusst eine Quelle gewählt hat, gilt der Familien-Standard
+  if (!cfg.sourceSet && !(cfg.source === 'albums' && cfg.albums.length)) cfg.source = 'family';
+  return cfg;
 }
 export function saveSlide(patch) { store.saveConfig({ slideshow: { ...slideCfg(), ...patch } }); }
 
-export const SOURCES = { random: '🎲 Zufällig aus allen', favorites: '⭐ Favoriten', memories: '📅 An diesem Tag', recent: '🆕 Neueste', albums: '🗂️ Ausgewählte Alben' };
+export const SOURCES = { family: '👪 Familien-Diashow', random: '🎲 Zufällig aus allen', favorites: '⭐ Favoriten', memories: '📅 An diesem Tag', recent: '🆕 Neueste', albums: '🗂️ Ausgewählte Alben' };
 export const EFFECTS = { kenburns: 'Sanfter Zoom (Ken Burns)', fade: 'Überblenden', slide: 'Schieben', zoom: 'Hineinzoomen', mix: 'Abwechselnd' };
 export const OVERLAYS = { agenda: 'Uhr + Tagesplan', clock: 'Nur Uhr & Datum', none: 'Nur Fotos' };
 
@@ -25,7 +28,7 @@ export async function loadPhotos({ source, albums, limit = 80 } = {}) {
   const ids = (albums || cfg.albums || []).join(',');
   const r = await store.request(`api/v2/photos?source=${src}&limit=${limit}${src === 'albums' ? '&albums=' + ids : ''}`, { timeout: 30000 });
   const base = await store.resolveBase();
-  return { items: r.items || [], base, key: r.key };
+  return { items: r.items || [], base, key: r.key, family: r.family || null, fallback: !!r.fallback };
 }
 export const photoUrl = (base, key, id, size = 'preview') => viaApp(`${base}api/v2/photos/${encodeURIComponent(id)}?key=${encodeURIComponent(key)}&size=${size}`);
 
@@ -38,7 +41,7 @@ export function caption(p) {
 }
 
 // ================= Galerie =================
-const gstate = { source: 'random', cache: null };
+const gstate = { source: 'family', cache: null };
 export function viewPhotos() {
   const page = h('div.page');
   const head = h('div.page-head', null, h('a.icon-btn', { href: '#mehr', 'aria-label': 'Zurück' }, icon('left')), h('h1', null, 'Fotos'),
@@ -66,6 +69,8 @@ export function viewPhotos() {
       const src = gstate.source.startsWith('album:') ? { source: 'albums', albums: [gstate.source.slice(6)] } : { source: gstate.source };
       const r = gstate.cache || await loadPhotos({ ...src, limit: 120 });
       gstate.cache = r;
+      if (r.fallback && gstate.source === 'family') grid.before(h('p.hint', null, 'Kein Album „Familien-Diashow“ in Immich gefunden – hier stehen zufällige Fotos. Album anlegen oder unter ', h('a', { href: '#diashow' }, 'Diashow-Einstellungen'), ' ein anderes wählen.'));
+      else if (r.family?.names?.length && gstate.source === 'family') grid.before(h('p.hint', null, `Album ${r.family.names.map((n) => `„${n}“`).join(', ')} · ${r.items.length} Fotos`));
       if (!r.items.length) { grid.replaceWith(h('p.soft', null, gstate.source === 'memories' ? 'An diesem Tag gibt es in früheren Jahren keine Fotos.' : 'Keine Fotos gefunden.')); return; }
       grid.append(...r.items.map((p, i) => h('button.photo', { 'aria-label': caption(p) || 'Foto', style: { backgroundImage: `url("${photoUrl(r.base, r.key, p.id, 'thumbnail')}")` }, onclick: () => viewer(r, i) })));
       // Prüfen, ob die Vorschaubilder wirklich ankommen – sonst verständlich sagen, woran es liegt
@@ -148,14 +153,15 @@ export function viewSlideshow() {
   const page = h('div.page');
   const rerender = () => page.replaceWith(viewSlideshow());
   const choice = (label, key, opts, onPick) => h('section.section', null, h('h3.section-title', null, label),
-    h('div.choice', null, ...Object.entries(opts).map(([k, l]) => h('button.choice-btn' + (String(c[key]) === String(k) ? '.on' : ''), { onclick: () => { saveSlide({ [key]: isNaN(+k) ? k : +k }); onPick?.(k); rerender(); } }, l))));
+    h('div.choice', null, ...Object.entries(opts).map(([k, l]) => h('button.choice-btn' + (String(c[key]) === String(k) ? '.on' : ''), { onclick: () => { saveSlide({ [key]: isNaN(+k) ? k : +k, ...(key === 'source' ? { sourceSet: true } : {}) }); onPick?.(k); rerender(); } }, l))));
   page.append(
     h('div.page-head', null, h('a.icon-btn', { href: '#fotos', 'aria-label': 'Zurück' }, icon('left')), h('h1', null, 'Diashow')),
     h('p.muted', null, 'Wird FamilyHub eine Weile nicht bedient, startet eine animierte Diashow mit euren Immich-Fotos – ideal für ein Tablet an der Wand. Antippen beendet sie.'),
     h('button.btn.primary.big.more-btn', { onclick: async () => { const { openWall } = await import('./wall.js'); openWall({ screensaver: true }); } }, icon('photo', 18), 'Vorschau starten'),
     choice('Starten nach Inaktivität', 'idleMin', { 0: 'Aus', 1: '1 Minute', 2: '2 Minuten', 5: '5 Minuten', 10: '10 Minuten', 30: '30 Minuten' }),
-    choice('Fotos', 'source', SOURCES, (k) => { if (k === 'albums') setTimeout(albumPicker, 50); }),
+    choice('Fotos auf diesem Gerät', 'source', SOURCES, (k) => { if (k === 'albums') setTimeout(albumPicker, 50); }),
     c.source === 'albums' ? h('button.btn.tonal', { onclick: albumPicker }, '🗂️ ', c.albums.length ? `${c.albums.length} Album/Alben gewählt – ändern` : 'Alben auswählen') : '',
+    familyCard(rerender),
     choice('Bildwechsel', 'interval', { 6: 'alle 6 s', 12: 'alle 12 s', 20: 'alle 20 s', 30: 'alle 30 s', 60: 'jede Minute' }),
     choice('Animation', 'effect', EFFECTS),
     choice('Anzeige', 'overlay', OVERLAYS),
@@ -165,8 +171,26 @@ export function viewSlideshow() {
   return page;
 }
 
-function albumPicker() {
-  const sel = new Set(slideCfg().albums);
+/** Familien-Standard: welches Immich-Album die Diashow auf allen Geräten zeigt (solange dort nichts anderes gewählt ist). */
+function familyCard(rerender) {
+  const box = h('section.section', null, h('h3.section-title', null, '👪 Familien-Diashow'), h('div.card.fam-album', null, h('p.soft', null, 'Wird geladen …')));
+  const card = box.lastChild;
+  store.request('api/v2/photo-albums').then((r) => {
+    const f = r.family || { ids: [], names: [] };
+    card.replaceChildren(
+      f.ids.length
+        ? h('div.fa-row', null, h('span.fa-ic', null, icon('photo', 22)), h('div', null, h('b', null, f.names.map((n) => `„${n}“`).join(', ')), h('small', null, `${f.count} Medien · ${f.auto ? 'automatisch erkannt' : 'für die Familie festgelegt'}`)))
+        : h('div', null, h('b', null, 'Kein Album „Familien-Diashow“ gefunden'), h('p.hint', null, 'Legt in Immich ein Album mit diesem Namen an – bis dahin zeigt die Diashow zufällige Fotos.')),
+      h('p.hint', null, 'Gilt für alle Geräte, auf denen oben „Familien-Diashow“ gewählt ist (Standard).'),
+      h('div.btn-row.wrap', null,
+        h('button.btn.small.tonal', { onclick: () => albumPicker({ title: 'Alben für die Familien-Diashow', initial: f.auto ? [] : f.ids, save: async (ids) => { await store.request('api/v2/photo-family', { method: 'POST', body: { albums: ids } }); toast(ids.length ? 'Familien-Diashow festgelegt' : 'Automatisch: Album „Familien-Diashow“'); rerender(); } }) }, icon('edit', 16), 'Album ändern'),
+        !f.auto ? h('button.btn.small.ghost', { onclick: async () => { await store.request('api/v2/photo-family', { method: 'POST', body: { albums: [] } }); rerender(); } }, 'Automatisch') : null));
+  }).catch((e) => card.replaceChildren(h('p.status.bad', null, '○ ' + e.message)));
+  return box;
+}
+
+function albumPicker(opts = {}) {
+  const sel = new Set(opts.initial || slideCfg().albums);
   sheet((s) => {
     const list = h('div.menu', null, h('p.soft', null, 'Alben werden geladen …'));
     store.request('api/v2/photo-albums').then((r) => {
@@ -174,7 +198,7 @@ function albumPicker() {
         h('span.check' + (sel.has(a.id) ? '.on' : ''), null, icon('check', 16)), h('span.mt', null, h('b', null, a.name), h('small', null, `${a.count} Medien`)))));
       if (!r.albums.length) list.replaceChildren(h('p.soft', null, 'Keine Alben in Immich.')); else draw();
     }).catch((e) => list.replaceChildren(h('p.status.bad', null, e.message)));
-    return h('div.sheet-body', null, h('h2.sheet-title', null, 'Alben für die Diashow'), list,
-      h('div.btn-row', null, h('button.btn.ghost', { onclick: () => s.close() }, 'Abbrechen'), h('button.btn.primary', { onclick: () => { saveSlide({ albums: [...sel], source: 'albums' }); s.close(); location.hash = 'diashow'; window.dispatchEvent(new HashChangeEvent('hashchange')); } }, 'Übernehmen')));
+    return h('div.sheet-body', null, h('h2.sheet-title', null, opts.title || 'Alben für dieses Gerät'), list,
+      h('div.btn-row', null, h('button.btn.ghost', { onclick: () => s.close() }, 'Abbrechen'), h('button.btn.primary', { onclick: () => { if (opts.save) { s.close(); opts.save([...sel]); return; } saveSlide({ albums: [...sel], source: 'albums', sourceSet: true }); s.close(); location.hash = 'diashow'; window.dispatchEvent(new HashChangeEvent('hashchange')); } }, 'Übernehmen')));
   }, { tall: true, label: 'Alben' });
 }

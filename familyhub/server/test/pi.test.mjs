@@ -48,7 +48,8 @@ test('Immich verbinden, Alben, Quellen, Bilder', async () => {
     r = await call('/api/v2/immich');
     assert.equal(r.body.configured, true); assert.equal(r.body.key, undefined);
     r = await call('/api/v2/photo-albums');
-    assert.deepEqual(r.body.albums.map((a) => a.name), ['Geteilt', 'Urlaub 2025']);
+    assert.deepEqual(r.body.albums.map((a) => a.name), ['Familien-Diashow', 'Geteilt', 'Urlaub 2025']);
+    assert.deepEqual(r.body.family, { ids: ['00000000-0000-4000-8000-000000000902'], names: ['Familien-Diashow'], count: 4, auto: true }); // automatisch erkannt
     r = await call('/api/v2/photos?source=random&limit=50');
     assert.equal(r.body.items.length, 28); // ohne Video und Archiv
     const key = r.body.key;
@@ -56,6 +57,14 @@ test('Immich verbinden, Alben, Quellen, Bilder', async () => {
     assert.equal(r.body.items.length, 5);
     r = await call(`/api/v2/photos?source=albums&albums=00000000-0000-4000-8000-000000000900,00000000-0000-4000-8000-000000000901`);
     assert.equal(r.body.items.length, 5); // 3 aus dem Album + 2 über die Suche (ältere/neuere API)
+    // Standard-Quelle „Familien-Diashow“: nur Fotos aus diesem Album
+    r = await call('/api/v2/photos?source=family&limit=50');
+    assert.equal(r.body.items.length, 4); assert.equal(r.body.family.names[0], 'Familien-Diashow'); assert.ok(!r.body.fallback);
+    // Familien-Standard bewusst auf ein anderes Album setzen – gilt dann für alle Geräte
+    r = await call('/api/v2/photo-family', { albums: ['00000000-0000-4000-8000-000000000900'] });
+    assert.deepEqual(r.body.family.names, ['Urlaub 2025']); assert.equal(r.body.family.auto, false);
+    r = await call('/api/v2/photos?source=family&limit=50'); assert.equal(r.body.items.length, 3);
+    await call('/api/v2/photo-family', { albums: [] }); // zurück auf automatisch
     r = await call('/api/v2/photos?source=memories');
     assert.ok(r.body.items.length > 0 && r.body.items.every((x) => x.date.slice(5, 7) === '11'));
     const img = await fetch(`${base}/api/v2/photos/00000000-0000-4000-8000-000000000001?key=${key}&size=thumbnail`);

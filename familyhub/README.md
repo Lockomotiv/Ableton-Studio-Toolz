@@ -127,6 +127,11 @@ Hinweis zu Cookidoo und Lifesum: Beide bieten keine offene Schnittstelle. Öffen
 - Fotos und Diashow laden in der Android-App jetzt über die App selbst. Vorher blieben die Kacheln leer, weil die App-Oberfläche (https) Bilder vom Pi (http) nicht direkt laden durfte.
 - Kommen Bilder trotzdem nicht an, sagt die Fotoseite warum – z. B. wenn dem Immich-API-Schlüssel das Recht „asset.view“ fehlt (nötig für Vorschaubilder).
 
+### 4.6.2: Familien-Diashow als Standard
+- Die Diashow zeigt standardmäßig das Immich-Album **„Familien-Diashow“** (wird automatisch gefunden; auch „Familie Diashow …“ o. ä.). Gibt es keins, laufen zufällige Fotos.
+- *Mehr → Fotos → Zahnrad (Diashow)*: unter „Familien-Diashow“ seht ihr, welches Album aktiv ist, und könnt für die ganze Familie andere Alben festlegen (oder zurück auf „Automatisch“).
+- Pro Gerät lässt sich weiterhin eine eigene Quelle wählen (Zufällig, Favoriten, An diesem Tag, Neueste, ausgewählte Alben). Solange auf einem Gerät nichts gewählt wurde, gilt der Familien-Standard.
+
 ### Sprachsteuerung – Beispiele
 
 * „Morgen um halb vier Zahnarzt mit Lena, erinnere mich eine Stunde vorher“
@@ -140,7 +145,7 @@ Unter *Einstellungen* lässt sich „Direkt speichern“ einschalten – dann wi
 
 ## Installation auf dem Handy
 
-1. `release/FamilyHub-4.6.1.apk` aufs Handy und installieren.
+1. `release/FamilyHub-4.6.2.apk` aufs Handy und installieren.
    Die neue App hat eine eigene Paket-ID (`de.familyhub.app`) und läuft **neben** der alten App. Die alte kann gelöscht werden, sobald alles passt.
 2. Beim ersten Start „Familie anlegen“.
 3. Optional: Mehr → Synchronisierung → mit dem Pi verbinden (siehe unten).

@@ -19,7 +19,7 @@ import { wasteType } from '../web/js/wastetypes.js';
 import { DEFAULT_PLACE, forecastUrl, buildModel } from '../web/js/weathercore.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const VERSION = '4.6.1';
+const VERSION = '4.6.2';
 let imgErrAt = 0; // Bild-Fehler höchstens einmal pro Minute ins Log
 const cfg = {
   port: +(process.env.PORT || 8080),
@@ -247,6 +247,15 @@ export function createApp(options = {}) {
     return { parsed: p, summary, speak: `Erledigt. ${summary}.`, created: ops.map((o) => ({ col: o.col, id: o.item.id })) };
   }
 
+  /** Familien-Standard der Diashow: festgelegte Alben oder automatisch erkanntes „Familien-Diashow“-Album. */
+  async function familyAlbums(list) {
+    const albums = list || await immich.albums();
+    const set = (db.data.settings.familyAlbums || []).filter((id) => albums.some((a) => a.id === id));
+    if (set.length) return { ids: set, names: set.map((id) => albums.find((a) => a.id === id).name), count: set.reduce((s, id) => s + (albums.find((a) => a.id === id).count || 0), 0), auto: false };
+    const f = Immich.familyAlbum(albums);
+    return f ? { ids: [f.id], names: [f.name], count: f.count, auto: true } : { ids: [], names: [], count: 0, auto: true };
+  }
+
   async function api(req, res, url) {
     const p = url.pathname;
     const ip = req.socket.remoteAddress || '';
@@ -403,10 +412,23 @@ export function createApp(options = {}) {
       const source = url.searchParams.get('source') || 'random';
       const albumIds = (url.searchParams.get('albums') || '').split(',').filter((x) => /^[0-9a-f-]{36}$/i.test(x));
       const limit = Math.min(500, +(url.searchParams.get('limit') || 80));
+      if (source === 'family') {
+        // Familien-Standard: festgelegte Alben – sonst automatisch das Album „Familien-Diashow“
+        const fam = await familyAlbums();
+        if (!fam.ids.length) return send(res, 200, { items: await immich.photos({ source: 'random', limit }), key: auth.photoKey, family: fam, fallback: true });
+        return send(res, 200, { items: await immich.photos({ source: 'albums', albumIds: fam.ids, limit }), key: auth.photoKey, family: fam });
+      }
       return send(res, 200, { items: await immich.photos({ source, albumIds, limit }), key: auth.photoKey });
     }
     if (p === '/api/v2/photo-albums' && req.method === 'GET') {
-      return send(res, 200, { albums: await immich.albums() });
+      const albums = await immich.albums();
+      return send(res, 200, { albums, family: await familyAlbums(albums) });
+    }
+    if (p === '/api/v2/photo-family' && req.method === 'POST') {
+      const b = await readJson(req);
+      const ids = (Array.isArray(b.albums) ? b.albums : []).filter((x) => /^[0-9a-f-]{36}$/i.test(x)).slice(0, 20);
+      db.data.settings.familyAlbums = ids; db.bump();
+      return send(res, 200, { ok: true, family: await familyAlbums() });
     }
     if (p === '/api/v2/immich' && req.method === 'GET') {
       const cfg = immichCfg();

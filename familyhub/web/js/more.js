@@ -10,7 +10,7 @@ import { calendars, refreshCalendar, calStatus } from './extcal.js';
 import { openWall } from './wall.js';
 import { MEMBER_COLORS } from './domain.js';
 
-const APP_VERSION = '4.6.1';
+const APP_VERSION = '4.6.2';
 
 function row(ic, title, sub, onclick, right) {
   return h(onclick ? 'button.menu-row' : 'div.menu-row', { onclick }, h('span.mi', null, icon(ic, 20)), h('span.mt', null, h('b', null, title), sub ? h('small', null, sub) : null), right || (onclick ? icon('right', 18) : null));

@@ -53,6 +53,13 @@ export class Immich {
     return [...all.values()].sort((a, b) => a.name.localeCompare(b.name));
   }
 
+  /** Album „Familien-Diashow“ (oder ähnlich: „Familie Diashow“, „Diashow Familie“, „Diashow“) finden. */
+  static familyAlbum(albums) {
+    const norm = (s) => String(s || '').toLowerCase().normalize('NFKD').replace(/[^a-z]/g, '');
+    const score = (a) => { const n = norm(a.name); return n === 'familiendiashow' ? 4 : n.includes('famil') && n.includes('diashow') ? 3 : n.includes('diashow') || n.includes('slideshow') ? 2 : 0; };
+    return albums.map((a) => [score(a), a]).filter(([s]) => s > 0).sort((x, y) => y[0] - x[0] || y[1].count - x[1].count)[0]?.[1] || null;
+  }
+
   static map(a) {
     return {
       id: a.id,

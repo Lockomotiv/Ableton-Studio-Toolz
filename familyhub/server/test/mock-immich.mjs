@@ -29,8 +29,9 @@ export function startMockImmich() {
     let body = ''; for await (const c of req) body += c; body = body ? JSON.parse(body) : {};
     if (u.pathname === '/api/server/version') return json({ major: 1, minor: 135, patch: 3 });
     if (u.pathname === '/api/users/me') return json({ name: 'Familie', email: 'f@x' });
-    if (u.pathname === '/api/albums') return json(u.searchParams.get('shared') ? [{ id: id(901), albumName: 'Geteilt', assetCount: 2 }] : [{ id: id(900), albumName: 'Urlaub 2025', assetCount: 3, albumThumbnailAssetId: id(1) }]);
+    if (u.pathname === '/api/albums') return json(u.searchParams.get('shared') ? [{ id: id(901), albumName: 'Geteilt', assetCount: 2 }] : [{ id: id(900), albumName: 'Urlaub 2025', assetCount: 3, albumThumbnailAssetId: id(1) }, { id: id(902), albumName: 'Familien-Diashow', assetCount: 4 }]);
     if (u.pathname === `/api/albums/${id(900)}`) return json({ id: id(900), assets: assets.slice(0, 3) });
+    if (u.pathname === `/api/albums/${id(902)}`) return json({ id: id(902), assets: assets.slice(3, 7) });
     if (u.pathname === `/api/albums/${id(901)}`) return json({ id: id(901), assets: [] });
     if (u.pathname === '/api/search/random') return json(assets.slice(0, Math.min(body.size || 10, 30)));
     if (u.pathname === '/api/search/metadata') {
