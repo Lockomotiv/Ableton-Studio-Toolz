@@ -16,9 +16,10 @@ import { guessCategory } from '../web/js/budgetcats.js';
 import { occurrences } from '../web/js/recur.js';
 import { parseIcs } from '../web/js/icsparse.js';
 import { wasteType } from '../web/js/wastetypes.js';
+import { DEFAULT_PLACE, forecastUrl, buildModel } from '../web/js/weathercore.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const VERSION = '4.3.0';
+const VERSION = '4.4.0';
 const cfg = {
   port: +(process.env.PORT || 8080),
   host: process.env.HOST || '0.0.0.0',
@@ -93,8 +94,16 @@ export function createApp(options = {}) {
   if (!options.noTimers) { setTimeout(refreshWaste, 2000).unref?.(); setInterval(refreshWaste, 3600e3).unref?.(); }
   db.listeners.add(() => { setTimeout(refreshWaste, 500); });
 
+  // Wetter (für Sprachassistenten und den morgendlichen Anziehtipp)
+  const wx = { model: null };
+  async function refreshWeatherServer() {
+    const p = db.data.settings.weatherPlace || DEFAULT_PLACE;
+    try { const r = await fetchRaw(forecastUrl(p), { headers: { Accept: 'application/json' } }); if (r.status === 200) wx.model = buildModel(p, JSON.parse(r.body.toString('utf8'))); } catch { /* später erneut */ }
+  }
+  if (!options.noTimers) { setTimeout(refreshWeatherServer, 3000).unref?.(); setInterval(refreshWeatherServer, 20 * 60e3).unref?.(); }
+
   // Push-Benachrichtigungen (iPhone-Web-App & Browser)
-  const notifier = new Notifier(db, fetchRaw, { wastePickups: (a, b) => wastePickups(a, b), log: (m) => console.log(m) });
+  const notifier = new Notifier(db, fetchRaw, { wastePickups: (a, b) => wastePickups(a, b), weather: () => wx.model, log: (m) => console.log(m) });
   if (!options.noTimers) setInterval(() => notifier.tick().catch((e) => console.error('Push:', e.message)), 60e3).unref?.();
 
   function setPassword(pw, bump = true) {
@@ -189,7 +198,7 @@ export function createApp(options = {}) {
       dayLabel: (x) => relativeDay(x, now),
       events: (a, b) => list('events').flatMap((e) => occurrences(e, a, b)).sort((x, y) => (x.date + (x.time || '')).localeCompare(y.date + (y.time || ''))),
       openTasks: list('tasks').filter((t) => !t.done), shopping: list('shopping').filter((s) => !s.done),
-      meals: (x) => list('meals').filter((m) => m.date === x), choresFor, balance: pointsOf, guessCategory, pickups: wastePickups,
+      meals: (x) => list('meals').filter((m) => m.date === x), choresFor, balance: pointsOf, guessCategory, pickups: wastePickups, weather: () => wx.model, hour: new Date().getHours(),
       lessons: (mid, date) => { const tt = db.data.timetable['tt_' + safe(mid)]; if (!tt || tt.deleted) return []; const [y, mo, dd] = date.split('-').map(Number); const wd = new Date(y, mo - 1, dd).getDay(); const per = tt.periods || []; return (tt.days?.[wd] || []).map((sub, i) => ({ subject: sub, ...(per[i] || {}) })).filter((x) => x.subject && x.subject !== 'Pause'); },
     };
     const c = detectCommand(text, ctx);
@@ -322,6 +331,8 @@ export function createApp(options = {}) {
       const b = await readJson(req);
       if (typeof b.familyName === 'string') db.data.settings.familyName = b.familyName.slice(0, 80);
       if (typeof b.immichUrl === 'string') db.data.settings.immichUrl = b.immichUrl.slice(0, 200);
+      if (b.weatherPlace && Number.isFinite(+b.weatherPlace.lat) && Number.isFinite(+b.weatherPlace.lon)) { db.data.settings.weatherPlace = { name: String(b.weatherPlace.name || 'Ort').slice(0, 80), lat: +b.weatherPlace.lat, lon: +b.weatherPlace.lon }; refreshWeatherServer(); }
+      if (/^\d{2}:\d{2}$/.test(b.dressPushTime || '')) db.data.settings.dressPushTime = b.dressPushTime;
       db.bump();
       return send(res, 200, { ok: true, settings: db.data.settings });
     }

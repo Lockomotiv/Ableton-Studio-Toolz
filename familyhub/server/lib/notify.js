@@ -4,14 +4,15 @@
 import crypto from 'node:crypto';
 import { generateVapid, sendPush } from './webpush.js';
 import { occurrences } from '../../web/js/recur.js';
+import { speakDress, wxEmoji } from '../../web/js/weathercore.js';
 
 const pad = (n) => String(n).padStart(2, '0');
 const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const at = (date, time) => { const [y, m, d] = date.split('-').map(Number); const [hh, mm] = (time || '09:00').split(':').map(Number); return new Date(y, m - 1, d, hh, mm).getTime(); };
 
 export class Notifier {
-  constructor(db, fetchRaw, { wastePickups = () => [], log = () => {} } = {}) {
-    this.db = db; this.fetchRaw = fetchRaw; this.wastePickups = wastePickups; this.log = log;
+  constructor(db, fetchRaw, { wastePickups = () => [], weather = () => null, log = () => {} } = {}) {
+    this.db = db; this.fetchRaw = fetchRaw; this.wastePickups = wastePickups; this.weather = weather; this.log = log;
     const s = db.data.secrets;
     if (!s.vapid) { s.vapid = generateVapid(); db.save(); }
     s.push = s.push || {}; s.pushSent = s.pushSent || {};
@@ -77,6 +78,7 @@ export class Notifier {
     if (!subs.length) return 0;
     const sent = this.db.data.secrets.pushSent;
     const due = []; // [key, msg, forMembers]
+    let n0 = 0;
     const d0 = new Date(now); const today = ymd(d0);
     const yest = ymd(new Date(now - 864e5)); const in2 = ymd(new Date(now + 2 * 864e5));
     for (const ev of Object.values(this.db.data.events)) {
@@ -103,7 +105,18 @@ export class Notifier {
         due.push([`w:${tomorrow}`, { title: `Morgen: ${[...new Set(list.map((p) => p.wasteName))].join(', ')}`, body: duty && this.db.data.members[duty] ? `${this.db.data.members[duty].name} stellt heute Abend raus` : 'Heute Abend rausstellen', tag: 'waste', url: '#abfall' }, null]);
       }
     }
-    let n = 0;
+    // Morgens: Anziehtipp für jede Person (Wetter vom Pi)
+    const dt = this.db.data.settings.dressPushTime || '06:45';
+    const dAt = at(today, dt); const m = this.weather();
+    if (m && dt !== 'off' && dAt > from && dAt <= now && m.daily[0]?.date === today) {
+      for (const [id, s] of subs) {
+        const who = (s.memberId && this.db.data.members[s.memberId]) || { role: 'parent' };
+        const k = `dress:${today}:${id}`; if (sent[k]) continue;
+        sent[k] = now; n0++;
+        await this.send(id, { title: `${wxEmoji(m.daily[0].code)} ${Math.round(m.daily[0].min)}° bis ${Math.round(m.daily[0].max)}° – Anziehtipp`, body: speakDress(m, today, { ...who, name: '' }, 'Heute').replace(/^\s*Heute:\s*/, ''), tag: 'dress', url: '#wetter' });
+      }
+    }
+    let n = n0;
     for (const [key, msg, forMembers] of due) {
       for (const [id, s] of subs) {
         if (forMembers?.length && s.memberId && !forMembers.includes(s.memberId)) continue;

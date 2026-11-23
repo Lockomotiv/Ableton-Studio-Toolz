@@ -12,6 +12,7 @@ import { todayMealsCard } from './kitchen.js';
 import { boardTeaser, todaySchoolCard } from './family.js';
 import { todayWasteCard } from './waste.js';
 import { installBanner } from './iphone.js';
+import { todayWeatherCard } from './weather.js';
 import { sheet } from './ui.js';
 
 export const TASK_TABS = [['aufgaben', 'To-dos'], ['aemter', 'Ämter'], ['routinen', 'Routinen'], ['sterne', 'Sterne']];
@@ -137,6 +138,7 @@ export function viewToday() {
       h('p.date', null, fmt.longDate(now)),
       h('h1', null, `${greet}${me ? ', ' + me.name : ''}`, kid ? ' ' + (kid.emoji || '👋') : '')),
     installBanner(),
+    todayWeatherCard(),
     quick,
     personFilter(),
     stats,

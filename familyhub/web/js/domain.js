@@ -5,6 +5,7 @@ import { ymd, addDays } from './nlp.js';
 import { scheduleReminders, updateWidget } from './native.js';
 import { externalEvents } from './extcal.js';
 import { wasteReminders, pickupsOn } from './waste.js';
+import { weatherLine } from './weather.js';
 
 export const MEMBER_COLORS = ['#E4572E', '#2E86AB', '#7A9E3B', '#9B5DE5', '#F2A541', '#17A398', '#D64A8A', '#5C6B7A'];
 export const MEMBER_EMOJI = ['🦊', '🐻', '🐼', '🦁', '🐯', '🐨', '🐸', '🐙', '🦄', '🐝', '🐳', '🌻', '⚽', '🎸', '🚀', '⭐'];
@@ -131,6 +132,7 @@ export function refreshNative() {
     try {
       const tmw = pickupsOn(ymd(addDays(now, 1)));
       if (tmw.length) upcoming.unshift('Morgen Abfall: ' + tmw.map((p) => p.wasteEmoji + ' ' + p.wasteName).join(', '));
+      const wl = weatherLine(); if (wl) upcoming.unshift(wl);
     } catch { /* egal */ }
     updateWidget({
       events: todayEvents.length, tasks: due.length, openTasks: open.length,

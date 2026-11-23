@@ -10,7 +10,7 @@ import { calendars, refreshCalendar, calStatus } from './extcal.js';
 import { openWall } from './wall.js';
 import { MEMBER_COLORS } from './domain.js';
 
-const APP_VERSION = '4.3.0';
+const APP_VERSION = '4.4.0';
 
 function row(ic, title, sub, onclick, right) {
   return h(onclick ? 'button.menu-row' : 'div.menu-row', { onclick }, h('span.mi', null, icon(ic, 20)), h('span.mt', null, h('b', null, title), sub ? h('small', null, sub) : null), right || (onclick ? icon('right', 18) : null));
@@ -29,6 +29,7 @@ export function viewMore() {
       row('lock', 'Kindermodus', store.config.child.pinHash ? 'Eingerichtet' : 'Vereinfachte Ansicht für Kinder', () => go('kinder')),
       row('photo', 'Fotos', 'Eure Immich-Fotos & Diashow', () => go('fotos'))),
     h('div.menu', null,
+      row('sun', 'Wetter', 'Vorhersage, Warnungen, Anzieh-Assistent', () => go('wetter')),
       row('trash', 'Abfall', 'Abholtermine, Erinnerung am Vorabend', () => go('abfall')),
       row('users', 'iPhone & Browser', 'FamilyHub für iPhones, Benachrichtigungen, Siri', () => go('iphone')),
       row('users', 'Pinnwand', 'Nachrichten an die ganze Familie', () => go('pinnwand')),

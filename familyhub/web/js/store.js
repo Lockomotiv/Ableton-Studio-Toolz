@@ -197,6 +197,7 @@ class Store {
       this.data[c] = next;
     }
     if (st.settings?.familyName) this.config.familyName = st.settings.familyName;
+    if (st.settings?.weatherPlace && JSON.stringify(st.settings.weatherPlace) !== JSON.stringify(this.config.weatherPlace)) this.config.weatherPlace = st.settings.weatherPlace;
     this.saveData();
     this.emit('data');
   }

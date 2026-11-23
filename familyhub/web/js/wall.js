@@ -9,6 +9,7 @@ import { choresFor, routinesFor, balance } from './household.js';
 import { minutesOf } from './recur.js';
 import { slideCfg, loadPhotos, photoUrl, caption } from './photos.js';
 import { pickupsOn } from './waste.js';
+import { weather, weatherArt } from './weather.js';
 
 const N = typeof window !== 'undefined' ? window.FHNative : undefined;
 let active = null;
@@ -25,7 +26,10 @@ export async function openWall({ screensaver = false } = {}) {
   const cap = h('div.wall-caption');
   const body = h('div.wall-body');
   const close = h('button.wall-close', { 'aria-label': 'Schließen', onclick: (e) => { e.stopPropagation(); closeWall(); } }, '×');
-  root.append(...layers, h('div.wall-shade'), h('div.wall-top', null, h('div', null, clock, date), close), body, cap);
+  const wx = h('div.wall-wx');
+  const drawWx = () => { const m = weather(); if (!m) return; const c = m.current; const d = m.daily[0]; wx.replaceChildren(weatherArt(c.code, c.isDay, 'sm'), h('div', null, h('b', null, Math.round(c.temp) + '°'), h('small', null, `${Math.round(d.min)}° / ${Math.round(d.max)}°`))); };
+  drawWx();
+  root.append(...layers, h('div.wall-shade'), h('div.wall-top', null, h('div', null, clock, date), wx, close), body, cap);
   if (screensaver) root.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); closeWall(); }, { once: true });
   document.body.append(root);
   N?.setWallMode?.(true);
@@ -36,7 +40,7 @@ export async function openWall({ screensaver = false } = {}) {
     clock.textContent = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
     date.textContent = fmt.longDate(now);
   };
-  const draw = () => { if (overlay === 'agenda') body.replaceChildren(...content()); };
+  const draw = () => { drawWx(); if (overlay === 'agenda') body.replaceChildren(...content()); };
   tick(); draw();
   active.timers.push(setInterval(tick, 10000), setInterval(draw, 60000));
   active.off = store.on((r) => { if (r === 'data') draw(); });

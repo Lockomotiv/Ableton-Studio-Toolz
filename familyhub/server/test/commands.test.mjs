@@ -91,3 +91,25 @@ test('Abfall per Sprache', () => {
   assert.equal(c3('Welcher Müll kommt heute?').text, 'Heute wird nichts abgeholt. Als Nächstes: Gelber Sack / Tonne morgen.');
   assert.match(c3('Was wird diese Woche abgeholt? Müll').text, /^Diese Woche: Gelber Sack/);
 });
+
+test('Wetter & Anziehen per Sprache', async () => {
+  const fs = await import('node:fs');
+  const { buildModel, DEFAULT_PLACE } = await import('../../web/js/weathercore.js');
+  const m = buildModel(DEFAULT_PLACE, JSON.parse(fs.readFileSync(new URL('./fixture-openmeteo-luebben.json', import.meta.url))));
+  const ctx4 = { ...ctx, weather: () => m, hour: 7 };
+  const c4 = (x) => detectCommand(x, ctx4);
+  assert.match(c4('Wie wird das Wetter morgen?').text, /^Morgen in Lübben: .+ Grad/);
+  assert.match(c4('Was soll Lena heute anziehen?').text, /^Lena heute: .*jacke/i);
+  assert.match(c4('Was soll ich anziehen?').text, /^Heute für dich: /);
+  assert.match(c4('Brauche ich heute einen Schirm?').text, /^(Ja, heute|Nein, heute|Kein Schirm nötig – heute)/);
+});
+
+test('Schirm-Frage widerspricht sich nicht', async () => {
+  const fs = await import('node:fs');
+  const { buildModel, DEFAULT_PLACE } = await import('../../web/js/weathercore.js');
+  const m = buildModel(DEFAULT_PLACE, JSON.parse(fs.readFileSync(new URL('./fixture-openmeteo-luebben.json', import.meta.url))));
+  const t = detectCommand('Brauche ich heute einen Schirm?', { ...ctx, weather: () => m, hour: 7 }).text;
+  const pop = t.match(/(\d+) % Regenrisiko/);
+  if (t.startsWith('Ja')) assert.ok(+pop[1] >= 30, t);
+  else assert.ok(/^(Nein|Kein Schirm)/.test(t), t);
+});

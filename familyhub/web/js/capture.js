@@ -14,6 +14,7 @@ import { guessCategory } from './budget.js';
 import { lessonsOn } from './family.js';
 import { pickups } from './waste.js';
 import { addItem } from './shopping.js';
+import { weather } from './weather.js';
 import { ymd, addDays } from './nlp.js';
 
 /** Daten für Sprachfragen ("Was steht heute an?") */
@@ -28,7 +29,7 @@ function commandContext() {
     openTasks: openTasks({ filter: false }),
     shopping: store.list('shopping').filter((x) => !x.done),
     meals: (x) => mealsOn(x), choresFor: (x, mid) => choresFor(x, mid), balance: (mid) => balance(mid),
-    guessCategory, lessons: (mid, x) => lessonsOn(mid, x), pickups: (a, b) => pickups(a, b),
+    guessCategory, lessons: (mid, x) => lessonsOn(mid, x), pickups: (a, b) => pickups(a, b), weather: () => weather(),
   };
 }
 

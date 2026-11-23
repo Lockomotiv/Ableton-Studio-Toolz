@@ -1,4 +1,5 @@
 import { WASTE_TYPES } from './wastetypes.js';
+import { dressAdvice, speakWeather, speakDress, rainStart } from './weathercore.js';
 
 // Sprachbefehle, die keine neuen Einträge anlegen: Fragen beantworten und Dinge abhaken.
 // Reine Funktion – alle Daten kommen über `ctx`, damit sie ohne App getestet werden kann.
@@ -67,6 +68,29 @@ export function detectCommand(input, ctx) {
 
   // ---------- Fragen ----------
   if (isQuestion) {
+    // Wetter & Anziehen: "Wie wird das Wetter morgen?", "Was soll Lena anziehen?", "Brauche ich einen Schirm?"
+    const wxQ = /wetter|regnet|regen|schnee|schneit|sonnig|sonne\b|warm|kalt|grad|temperatur|schirm|gewitter|sturm|wind/.test(t) && !/müll|tonne/.test(t);
+    const dressQ = /anziehen|anzieh|kleidung|jacke|mütze|handschuhe|was zieh/.test(t);
+    if ((wxQ || dressQ) && ctx.weather) {
+      const m = ctx.weather();
+      if (!m) return answer('Wetter', 'Die Wettervorhersage ist gerade nicht verfügbar.');
+      const idx = /übermorgen/.test(t) ? 2 : /morgen/.test(t) && !/heute morgen/.test(t) ? 1 : 0;
+      const d = m.daily[idx]; if (!d) return answer('Wetter', 'Dafür habe ich keine Vorhersage.');
+      const label = ['heute', 'morgen', 'übermorgen'][idx];
+      const meM = (ctx.members || []).find((x) => x.id === ctx.meId);
+      if (dressQ) {
+        const target = who || meM || { role: 'parent' };
+        return answer('Anziehen', speakDress(m, d.date, target.id === ctx.meId ? { ...target, name: 'Du' } : target, label).replace(/^Du heute:/, 'Heute für dich:').replace(/^Du morgen:/, 'Morgen für dich:'));
+      }
+      if (/schirm|regnet|regen/.test(t)) {
+        const a = dressAdvice(m, d.date, meM || { role: 'parent' });
+        const rs = rainStart(m, d.date, idx === 0 ? Number(ctx.hour ?? 0) : 6);
+        if (a?.stats.wet) return answer('Wetter', `Ja, ${label} lieber einen Schirm mitnehmen${rs != null ? ` – Regen ab etwa ${rs} Uhr` : ''} (${a.stats.pop} % Regenrisiko).`);
+        if (a?.stats.snow) return answer('Wetter', `Kein Schirm nötig – ${label} kann es aber schneien. Mütze oder Kapuze reicht.`);
+        return answer('Wetter', `Nein, ${label} bleibt es voraussichtlich trocken (${a?.stats.pop ?? d.pop} % Regenrisiko).`);
+      }
+      return answer('Wetter', speakWeather(m, d.date, label.charAt(0).toUpperCase() + label.slice(1)));
+    }
     // Abfall: "Welcher Müll kommt morgen?", "Wann kommt die Biotonne?", "Wann ist der gelbe Sack dran?"
     if (/müll|tonne|abfall|gelbe[rn]?\s+sack|wertstoff|altpapier|abholung|abfuhr/.test(t) && ctx.pickups) {
       const asked = WASTE_TYPES.filter((w) => w[0] !== 'other' && w[4].test(t.replace(/\b(müll|abfall|tonne)\b/g, (m) => (/(rest|bio|sperr)/.test(t) ? m : ''))));

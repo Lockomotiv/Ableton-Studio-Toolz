@@ -95,6 +95,18 @@ Hinweis zu Cookidoo und Lifesum: Beide bieten keine offene Schnittstelle. Öffen
   Eine automatische Übernahme der Prospekt-Inhalte ist nicht möglich: Die Händler bieten keine Schnittstelle an, und das Auslesen
   ihrer Seiten verstößt gegen deren Nutzungsbedingungen.
 
+### Neu in 4.4: Wetter mit Anzieh-Assistent
+
+* **Wetter** für Lübben (Spreewald) – Ort änderbar (Suche nach Ort/PLZ), gilt für die ganze Familie
+* Animierte Wetterszenen (Sonne, Mond & Sterne, Wolken, Regen, Schnee, Gewitter, Nebel) auf „Heute“, in der Rubrik *Wetter* und in der Wandansicht
+* Aktuell, gefühlt, Tageshöchst/-tiefst, **24 Stunden**, **7 Tage**, Wind & Böen, Luftfeuchte, Luftdruck, UV-Index, Sonnenauf-/-untergang,
+  Niederschlag & Schnee, **Luftqualität**, **Pollenflug**, **Unwetterwarnungen des DWD**
+* **Anzieh-Assistent** je Person (Kinder bekommen eigene Regeln, z. B. Matschhose, Sonnenhut LSF 50, Wechselsachen) für heute,
+  morgen und übermorgen – mit Begründung, Zwiebellook-, Regen-, Glätte-, Sturm- und Pollenhinweisen; Vorlesen per Knopf
+* Sprache & Siri: „Wie wird das Wetter morgen?“, „Was soll Lena anziehen?“, „Brauche ich einen Schirm?“
+* iPhone: morgens um 06:45 Uhr Anziehtipp als Benachrichtigung vom Pi
+* Daten: Open-Meteo (CC BY 4.0, ohne Schlüssel), Warnungen: Deutscher Wetterdienst über Bright Sky
+
 ### Sprachsteuerung – Beispiele
 
 * „Morgen um halb vier Zahnarzt mit Lena, erinnere mich eine Stunde vorher“
@@ -108,7 +120,7 @@ Unter *Einstellungen* lässt sich „Direkt speichern“ einschalten – dann wi
 
 ## Installation auf dem Handy
 
-1. `release/FamilyHub-4.3.0.apk` aufs Handy und installieren.
+1. `release/FamilyHub-4.4.0.apk` aufs Handy und installieren.
    Die neue App hat eine eigene Paket-ID (`de.familyhub.app`) und läuft **neben** der alten App. Die alte kann gelöscht werden, sobald alles passt.
 2. Beim ersten Start „Familie anlegen“.
 3. Optional: Mehr → Synchronisierung → mit dem Pi verbinden (siehe unten).

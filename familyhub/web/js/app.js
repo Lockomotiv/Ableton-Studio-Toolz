@@ -13,6 +13,7 @@ import { viewBudget } from './budget.js';
 import { viewDocuments } from './docs.js';
 import { viewWaste } from './waste.js';
 import { viewIphone } from './iphone.js';
+import { viewWeather } from './weather.js';
 import { viewMore, viewFamily, viewChild, viewPi, viewSync, viewSettings, viewHelp, exitChildMode, viewExternal } from './more.js';
 import { openCapture } from './capture.js';
 import { consumeLaunchAction, haptic, moveToBack, isApp } from './native.js';
@@ -28,11 +29,11 @@ const ROUTES = {
   rezepte: () => hubPage('Rezepte', KITCHEN_TABS, 'rezepte', viewRecipes()),
   coach: () => hubPage('Ernährung', KITCHEN_TABS, 'coach', viewCoach()),
   familie: viewFamily, kinder: viewChild, extern: viewExternal, diashow: viewSlideshow,
-  iphone: viewIphone, abfall: viewWaste, pinnwand: viewBoard, kontakte: viewContacts, listen: viewLists, budget: viewBudget, stundenplan: viewTimetable, dokumente: viewDocuments, fotos: viewPhotos, pi: viewPi, sync: viewSync, einstellungen: viewSettings, hilfe: viewHelp,
+  wetter: viewWeather, iphone: viewIphone, abfall: viewWaste, pinnwand: viewBoard, kontakte: viewContacts, listen: viewLists, budget: viewBudget, stundenplan: viewTimetable, dokumente: viewDocuments, fotos: viewPhotos, pi: viewPi, sync: viewSync, einstellungen: viewSettings, hilfe: viewHelp,
 };
-const CHILD_ROUTES = new Set(['abfall', 'heute', 'kalender', 'aufgaben', 'aemter', 'routinen', 'sterne', 'hilfe', 'pinnwand', 'stundenplan']);
+const CHILD_ROUTES = new Set(['wetter', 'abfall', 'heute', 'kalender', 'aufgaben', 'aemter', 'routinen', 'sterne', 'hilfe', 'pinnwand', 'stundenplan']);
 const TABS = [['heute', 'Heute', 'home'], ['kalender', 'Kalender', 'calendar'], ['aufgaben', 'Aufgaben', 'tasks'], ['einkauf', 'Einkauf', 'cart'], ['mehr', 'Mehr', 'menu']];
-const PARENT = { iphone: 'mehr', abfall: 'mehr', pinnwand: 'mehr', kontakte: 'mehr', listen: 'mehr', budget: 'mehr', stundenplan: 'mehr', dokumente: 'mehr', diashow: 'fotos', extern: 'mehr', aemter: 'aufgaben', routinen: 'aufgaben', sterne: 'aufgaben', essen: 'einkauf', rezepte: 'einkauf', coach: 'einkauf', familie: 'mehr', kinder: 'mehr', fotos: 'mehr', pi: 'mehr', sync: 'mehr', einstellungen: 'mehr', hilfe: 'mehr' };
+const PARENT = { wetter: 'heute', iphone: 'mehr', abfall: 'mehr', pinnwand: 'mehr', kontakte: 'mehr', listen: 'mehr', budget: 'mehr', stundenplan: 'mehr', dokumente: 'mehr', diashow: 'fotos', extern: 'mehr', aemter: 'aufgaben', routinen: 'aufgaben', sterne: 'aufgaben', essen: 'einkauf', rezepte: 'einkauf', coach: 'einkauf', familie: 'mehr', kinder: 'mehr', fotos: 'mehr', pi: 'mehr', sync: 'mehr', einstellungen: 'mehr', hilfe: 'mehr' };
 
 const app = document.getElementById('app');
 const view = h('main', { id: 'view', tabindex: -1 });
