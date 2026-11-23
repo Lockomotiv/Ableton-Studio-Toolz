@@ -45,7 +45,7 @@ export async function http(url, { method = 'GET', headers = {}, body, timeout = 
   } finally { clearTimeout(t); }
 }
 
-export function openUrl(url) { if (N) N.openUrl(url); else window.open(url, '_blank', 'noopener'); }
+export function openUrl(url) { if (N) N.openUrl(url); else if (/^(tel|sms|mailto|geo):/.test(url)) location.href = url; else window.open(url, '_blank', 'noopener'); }
 export function openApp(pkg, fallbackUrl) { if (N && N.openApp(pkg)) return true; if (fallbackUrl) openUrl(fallbackUrl); return false; }
 export function haptic(kind = 'tick') { try { if (N) N.haptic(kind); else navigator.vibrate?.(kind === 'success' ? [10, 40, 10] : 8); } catch { /* egal */ } }
 export function speak(text) {

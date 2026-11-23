@@ -10,6 +10,8 @@ import { detectCommand } from './commands.js';
 import { agenda, openTasks, today } from './domain.js';
 import { choresFor, balance, toggleChore } from './household.js';
 import { mealsOn } from './kitchen.js';
+import { guessCategory } from './budget.js';
+import { lessonsOn } from './family.js';
 import { ymd, addDays } from './nlp.js';
 
 /** Daten für Sprachfragen ("Was steht heute an?") */
@@ -24,6 +26,7 @@ function commandContext() {
     openTasks: openTasks({ filter: false }),
     shopping: store.list('shopping').filter((x) => !x.done),
     meals: (x) => mealsOn(x), choresFor: (x, mid) => choresFor(x, mid), balance: (mid) => balance(mid),
+    guessCategory, lessons: (mid, x) => lessonsOn(mid, x),
   };
 }
 
@@ -55,7 +58,7 @@ export function openCapture({ mode = voiceAvailable() ? 'voice' : 'text', text =
   let command = null;
   function reparse(t) {
     command = !kind && t.trim() ? detectCommand(t, commandContext()) : null;
-    if (command && childMode() && command.type === 'action' && !(command.action.kind === 'chore' && command.action.memberId === childMode().id)) command = null;
+    if (command && childMode() && command.type === 'action' && !(command.action.kind === 'message' || (command.action.kind === 'chore' && command.action.memberId === childMode().id))) command = null;
     if (command) { parsed = null; renderCommand(); return; }
     parsed = t.trim() ? parse(t, ctx()) : null;
     if (parsed && kind) parsed = coerceKind(parsed, kind);
@@ -81,6 +84,8 @@ export function openCapture({ mode = voiceAvailable() ? 'voice' : 'text', text =
     const a = c.action;
     if (a.kind === 'chore') { const ch = store.get('chores', a.choreId); if (ch) toggleChore(ch, a.memberId, today()); }
     else if (a.kind === 'task') { const tk = store.get('tasks', a.taskId); if (tk) { const r = completeTask(tk); toast('Erledigt 🎉', { label: 'Rückgängig', run: () => { r.undo(); refreshNative(); } }); } }
+    else if (a.kind === 'budget') { const it = store.put('budget', { kind: 'entry', type: a.type, amount: a.amount, category: a.category, note: a.note, date: today(), memberId: store.config.meId || null }); toast('Im Haushaltsbuch eingetragen 💶', { label: 'Rückgängig', run: () => store.del('budget', it.id) }); }
+    else if (a.kind === 'message') { const author = childMode() || members().find((m) => m.id === store.config.meId); if (!author) { toast('Bitte unter „Familie“ festlegen, wer dieses Handy nutzt'); return; } store.put('messages', { text: a.text, authorId: author.id, reactions: {}, pinned: false }); toast('An die Pinnwand geschrieben 💬'); }
     else if (a.kind === 'shopping') { const before = a.ids.map((id) => store.get('shopping', id)).filter(Boolean); for (const it of before) store.put('shopping', { ...it, done: true, doneAt: Date.now() }); toast('Abgehakt 🛒', { label: 'Rückgängig', run: () => before.forEach((it) => store.put('shopping', it)) }); }
     refreshNative(); haptic('success');
     if (store.config.voiceSpeak && mode === 'voice') speak(c.speak);

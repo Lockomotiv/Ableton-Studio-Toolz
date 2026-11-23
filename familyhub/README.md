@@ -61,6 +61,18 @@ Hinweis zu Cookidoo und Lifesum: Beide bieten keine offene Schnittstelle. Öffen
 * Erledigt melden: „Lena hat den Tisch gedeckt“ (+ Sterne), „Steuererklärung ist erledigt“, „Milch ist gekauft“
 * Dasselbe über die Server-API `POST /api/v2/quick` – z. B. für Home Assistant, Google-Routinen oder Siri-Kurzbefehle
 
+### Neu in 4.0 (Abgleich mit FamilyWall)
+
+* **Pinnwand** – Familien-Nachrichten mit Anheften und Reaktionen, Benachrichtigung bei neuen Nachrichten
+* **Kontakte** – Kinderarzt, Kita, Babysitter … nach Bereichen, Anruf/SMS/E-Mail/Karte mit einem Tipp, Notrufnummern
+* **Listen** – eigene Listen (Packliste mit Vorlage, Geschenkideen, Filme, Bücher …)
+* **Stundenplan** – je Kind, erscheint auf „Heute“, per Sprache abfragbar
+* **Haushaltsbuch** – Ausgaben & Einnahmen, Kategorien, Monatslimits mit Warnung, Hochrechnung
+* **Dokumente** – Impfpass, Verträge, Zeugnisse als PDF/Foto, gespeichert auf dem Pi (nicht in einer fremden Cloud)
+* **Teilen → FamilyHub** mit Text (z. B. aus einer Termin-E-Mail) → wird als Termin erkannt
+* Neue Sprachbefehle: „35 Euro bei Rewe ausgegeben“, „Schreib an die Pinnwand: …“, „Was hat Lena morgen in der Schule?“
+* Bewusst nicht umgesetzt: **Live-Ortung** der Familie (bräuchte dauerhaftes GPS im Hintergrund – Akku & Datenschutz)
+
 ### Sprachsteuerung – Beispiele
 
 * „Morgen um halb vier Zahnarzt mit Lena, erinnere mich eine Stunde vorher“
@@ -74,28 +86,38 @@ Unter *Einstellungen* lässt sich „Direkt speichern“ einschalten – dann wi
 
 ## Installation auf dem Handy
 
-1. `release/FamilyHub-3.3.0.apk` aufs Handy und installieren.
+1. `release/FamilyHub-4.0.0.apk` aufs Handy und installieren.
    Die neue App hat eine eigene Paket-ID (`de.familyhub.app`) und läuft **neben** der alten App. Die alte kann gelöscht werden, sobald alles passt.
 2. Beim ersten Start „Familie anlegen“.
 3. Optional: Mehr → Synchronisierung → mit dem Pi verbinden (siehe unten).
 
-## Server auf dem Pi
+## Installation auf dem Pi (Datenbank + Immich)
 
 ```bash
-# auf dem Pi, im Ordner familyhub/
-docker compose up -d --build
+git clone https://github.com/Lockomotiv/Ableton-Studio-Toolz.git
+cd Ableton-Studio-Toolz/familyhub
+./install-pi.sh
 ```
 
-Der Server läuft dann unter `http://<pi>:8446/` (Browser-Version inklusive). In der App:
-*Mehr → Synchronisierung*, Adresse `http://192.168.178.51:8446/` eintragen und ein Familien-Passwort festlegen
-(beim ersten Verbinden wird es gesetzt). Weitere Handys melden sich mit demselben Passwort an.
-Bisher nur lokal erfasste Einträge werden dabei automatisch hochgeladen.
+Das Skript
+1. prüft Docker (bei CasaOS schon vorhanden),
+2. **findet Immich auf dem Pi automatisch** (Container `immich_server`) und fragt nach dem Immich-API-Schlüssel
+   (Immich → Profilbild → Kontoeinstellungen → API-Schlüssel; Rechte `asset.read`, `asset.view`, `album.read`) –
+   der Schlüssel kann auch später in der App eingetragen werden (*Mehr → Fotos*) und bleibt immer auf dem Pi,
+3. startet FamilyHub auf Port **8446** mit **SQLite-Datenbank** in `./data/familyhub.sqlite`
+   (WAL-Journal, tägliche Sicherung nach `./data/backups/`, 30 Tage),
+4. richtet auf Wunsch HTTPS für unterwegs über Tailscale ein.
 
-* Daten: `./data/familyhub.json`, tägliche Sicherungen in `./data/backups/` (30 Tage)
-* Unterwegs: Tailscale am Handy an → die App wechselt automatisch auf `http://autodartspi.tail318476.ts.net:8446/`
-  (Tailscale verschlüsselt selbst, http ist dort unkritisch). Für HTTPS `TLS_CERT`/`TLS_KEY` setzen, z. B. mit `tailscale cert`.
-* Kalender-Abo (Google/Apple/Outlook): *Mehr → Synchronisierung → Kalender abonnieren*
-* Fotos für die Wandansicht: in `docker-compose.yml` `IMMICH_URL` und `IMMICH_API_KEY` setzen (der Schlüssel bleibt auf dem Pi)
+Danach in der App: *Mehr → Synchronisierung* → `http://<Pi-IP>:8446/` → Familien-Passwort festlegen.
+Bestehende Daten aus FamilyHub 3.x (`familyhub.json`) werden beim ersten Start automatisch in die Datenbank übernommen.
+
+Update: `./install-pi.sh update` · Status: `./install-pi.sh status`
+
+### Fotos & Diashow
+* **Fotos** (*Mehr → Fotos*): Galerie aus Immich – Zufällig, Favoriten, „An diesem Tag“, Neueste, einzelne Alben; Vollbild mit Wischen
+* **Diashow / Bildschirmschoner**: startet nach **1 Minute** ohne Bedienung (einstellbar: Aus, 1, 2, 5, 10, 30 Min.)
+* Einstellungen (*Fotos → ⚙*): Fotoquelle inkl. Alben-Auswahl, Wechselintervall, Animation (Ken Burns, Überblenden, Schieben, Zoom, abwechselnd),
+  Anzeige (Uhr + Tagesplan, nur Uhr, nur Fotos), Datum & Ort einblenden („23. Juli 2021 · vor 5 Jahren · Graz“)
 
 ### API (für Home Assistant, Siri-Kurzbefehle, Google-Routinen, Tasker …)
 

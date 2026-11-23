@@ -1,4 +1,7 @@
 android
 server/data
 server/test
+data
+.env
+release
 **/node_modules

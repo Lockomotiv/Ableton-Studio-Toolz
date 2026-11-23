@@ -79,3 +79,9 @@ test('Essensplan per Sprache', () => {
   // Termine mit Essen bleiben Termine
   assert.equal(p('Heute um 18 Uhr Abendessen bei Oma').kind, 'event');
 });
+
+test('Text aus E-Mails', () => {
+  const r = p('Einladung zum Elternabend der Klasse 3b am 03.12.2026 um 19:30 Uhr');
+  assert.equal(r.kind, 'event'); assert.equal(r.date, '2026-12-03'); assert.equal(r.time, '19:30');
+  assert.equal(r.title, 'Elternabend der Klasse 3b');
+});

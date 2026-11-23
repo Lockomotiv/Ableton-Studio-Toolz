@@ -115,6 +115,8 @@ function cleanTitle(s) {
     '\\b<(trag(e)?|schreib(e)?|setz(e)?|notier(e)?|plane?|füg(e)?|leg(e)?)\\s+(mir\\s+|uns\\s+)?',
     '\\b<(ein(tragen)?|hinzu(fügen)?|an(legen)?|auf(schreiben)?|notieren|eintragen|hinzufügen|anlegen|aufschreiben|planen|speichern)\\s*[.!]?\\s*$',
     '^\\s*(ich\\s+(habe|hab)|wir\\s+haben|es\\s+gibt|da\\s+ist)\\b>',
+    '^\\s*(herzliche\\s+)?einladung\\s+(zu[mr]?|für\\s+(den|die|das))\\s+',
+    '^\\s*(erinnerung|reminder)\\s*[:,-]\\s*',
     '\\b<(habe|hab|haben)\\s*$',
     '^\\s*(muss|müssen|soll|sollte|sollen|kann|könnte)\\s+(noch\\s+)?',
     '^\\s*(neue[rns]?|einen|eine|ein)\\s+(termin|aufgabe|todo|to-do|eintrag)\\b>',

@@ -10,7 +10,7 @@ import { calendars, refreshCalendar, calStatus } from './extcal.js';
 import { openWall } from './wall.js';
 import { MEMBER_COLORS } from './domain.js';
 
-const APP_VERSION = '3.3.0';
+const APP_VERSION = '4.0.0';
 
 function row(ic, title, sub, onclick, right) {
   return h(onclick ? 'button.menu-row' : 'div.menu-row', { onclick }, h('span.mi', null, icon(ic, 20)), h('span.mt', null, h('b', null, title), sub ? h('small', null, sub) : null), right || (onclick ? icon('right', 18) : null));
@@ -27,7 +27,14 @@ export function viewMore() {
     h('div.menu', null,
       row('users', 'Familie', members().length ? members().map((m) => m.name).join(', ') : 'Personen anlegen', () => go('familie'), avatars(members().map((m) => m.id))),
       row('lock', 'Kindermodus', store.config.child.pinHash ? 'Eingerichtet' : 'Vereinfachte Ansicht für Kinder', () => go('kinder')),
-      row('photo', 'Fotos', 'Immich öffnen', () => go('fotos'))),
+      row('photo', 'Fotos', 'Eure Immich-Fotos & Diashow', () => go('fotos'))),
+    h('div.menu', null,
+      row('users', 'Pinnwand', 'Nachrichten an die ganze Familie', () => go('pinnwand')),
+      row('tasks', 'Listen', 'Packliste, Geschenkideen, Filme …', () => go('listen')),
+      row('pin', 'Kontakte', 'Kinderarzt, Kita, Babysitter, Notruf', () => go('kontakte')),
+      row('calendar', 'Stundenplan', 'Schulstunden der Kinder', () => go('stundenplan')),
+      row('flag', 'Haushaltsbuch', 'Ausgaben, Einnahmen, Limits', () => go('budget')),
+      row('download', 'Dokumente', 'Impfpass, Verträge, Zeugnisse – auf dem Pi', () => go('dokumente'))),
     h('div.menu', null,
       row('calendar', 'Kalender verbinden', calendars().length ? calendars().map((c) => c.name).join(', ') : 'Google, Apple, Outlook, Schulferien …', () => go('extern')),
       row('photo', 'Wandansicht & Bilderrahmen', 'Für ein Tablet an der Wand', () => openWall())),
@@ -96,29 +103,6 @@ export function viewChild() {
       if (!await confirmSheet({ title: `Kindermodus für ${k.name}?`, text: 'Zum Verlassen wird die Eltern-PIN gebraucht.', ok: 'Starten' })) return;
       store.saveConfig({ child: { activeMemberId: k.id } }); setChildLock(true); refreshNative(); location.hash = 'heute';
     }))) : h('div.card.tip', null, h('p', null, 'Lege unter „Familie“ ein Kind an (Rolle „Kind“), um den Kindermodus zu nutzen.'), h('a.btn.tonal', { href: '#familie' }, 'Zur Familie')));
-}
-
-// ---------- Fotos ----------
-export function viewPhotos() {
-  const sv = store.config.services;
-  const st = h('p.status', null, 'Wird geprüft …');
-  (async () => {
-    for (const [label, url] of [['Zuhause', sv.immichHome], ['Mobil', sv.immichMobile]]) {
-      if (!url) continue;
-      try { const r = await http(normalizeBase(url) + 'api/server/ping', { timeout: 3000 }); if (r.data?.res === 'pong') return status(st, `● Immich erreichbar (${label})`, 'ok'); } catch { /* weiter */ }
-    }
-    status(st, '○ Immich gerade nicht erreichbar – im Heimnetz oder per Tailscale verbinden', 'warn');
-  })();
-  return h('div.page', null,
-    back('Fotos'),
-    h('div.card.photo-card', null,
-      h('div.big-ic', null, icon('photo', 40)),
-      h('h2', null, 'Familienfotos mit Immich'), st,
-      h('div.btn-col', null,
-        h('button.btn.primary', { onclick: () => openApp('app.alextran.immich', normalizeBase(sv.immichHome)) }, 'Immich-App öffnen'),
-        h('button.btn.tonal', { onclick: () => openUrl(normalizeBase(sv.immichHome)) }, icon('external', 18), 'Im Browser (Zuhause)'),
-        sv.immichMobile ? h('button.btn.tonal', { onclick: () => openUrl(normalizeBase(sv.immichMobile)) }, icon('external', 18), 'Im Browser (Mobil · Tailscale)') : null)),
-    h('p.hint', null, 'Tipp: In der Immich-App „Sicherung“ aktivieren, dann landen neue Handyfotos automatisch auf dem Pi.'));
 }
 
 // ---------- Pi & Dienste ----------
@@ -286,11 +270,10 @@ export function viewSettings() {
     h('div.menu', null,
       sel('Standard bei Terminen', 'remindDefault', [['', 'Keine'], [0, 'Zur Startzeit'], [10, '10 Min. vorher'], [30, '30 Min. vorher'], [60, '1 Std. vorher']]),
       isApp ? row('bell', 'Benachrichtigungen erlauben', null, () => requestNotifications()) : null),
-    h('h3.section-title', null, 'Wandansicht & Bilderrahmen'),
+    h('h3.section-title', null, 'Fotos & Diashow'),
     h('div.menu', null,
-      sel('Automatisch starten nach', 'wallIdleMin', [[0, 'Nie'], [2, '2 Min. ohne Bedienung'], [5, '5 Min.'], [10, '10 Min.'], [30, '30 Min.']]),
-      sel('Fotowechsel', 'wallSlideSec', [[10, 'alle 10 s'], [20, 'alle 20 s'], [60, 'jede Minute'], [300, 'alle 5 Min.']]),
-      row('photo', 'Jetzt starten', 'Fotos kommen aus Immich (über den Pi)', () => openWall())),
+      row('photo', 'Diashow & Bildschirmschoner', 'Start nach Inaktivität, Fotoquelle, Animation', () => go('diashow')),
+      row('grid', 'Wandansicht jetzt öffnen', 'Uhr, Tagesplan & Fotos', () => openWall())),
     h('h3.section-title', null, 'Daten'),
     h('div.menu', null,
       row('download', 'Sicherung exportieren', 'Alle Einträge als Datei', () => { saveFile(`familyhub-${new Date().toISOString().slice(0, 10)}.json`, store.exportJson()); }),
@@ -307,6 +290,8 @@ export function viewHelp() {
     ['Fragen', ['Was steht heute an?', 'Was hat Lena morgen?', 'Wann ist der Elternabend?', 'Was gibt es heute zu essen?', 'Was steht auf der Einkaufsliste?', 'Wie viele Sterne hat Ben?', 'Was muss Ben heute noch machen?']],
     ['Erledigt melden', ['Lena hat den Tisch gedeckt', 'Ben hat den Müll rausgebracht', 'Steuererklärung ist erledigt', 'Milch ist gekauft']],
     ['Essensplan', ['Am Freitag gibt es Pizza zum Abendessen', 'Morgen essen wir Spaghetti zum Mittag']],
+    ['Haushaltsbuch & Pinnwand', ['35 Euro bei Rewe ausgegeben', 'Kindergeld 250 Euro bekommen', 'Schreib an die Pinnwand: Bin um 6 zuhause']],
+    ['Schule', ['Was hat Lena morgen in der Schule?', 'Wie lange hat Ben heute Schule?']],
     ['Einkauf', ['Milch, Eier und Brot auf die Einkaufsliste', 'Wir brauchen noch Waschmittel', 'Kaufe zwei Gurken und Tomaten']],
   ];
   return h('div.page', null,

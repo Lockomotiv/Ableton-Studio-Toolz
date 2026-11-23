@@ -44,8 +44,36 @@ export function detectCommand(input, ctx) {
   const isQuestion = /\?\s*$/.test(raw) || /^(was|wann|wie|welche[rsn]?|wer|gibt es|haben wir|steht|habe ich|hab ich|muss ich|müssen wir|sag mir|zeig mir|lies)\b/.test(t);
   const who = findMember(raw, ctx.members || []);
 
+  // ---------- Pinnwand: "Schreib an die Pinnwand: Bin um 6 zuhause" ----------
+  const pin = raw.match(/^\s*(?:schreib(?:e)?\s+)?(?:(?:eine\s+)?nachricht\s+)?(?:an\s+(?:die\s+)?(?:pinnwand|familie|alle)|auf\s+die\s+pinnwand|pinnwand)\s*[:,-]?\s+(.{2,})$/i);
+  if (pin && ctx.postMessage !== false) return { type: 'action', title: 'Pinnwand', label: `💬 „${pin[1].trim()}“`, speak: 'Nachricht an die Pinnwand geschrieben.', action: { kind: 'message', text: pin[1].trim().replace(/^./, (c) => c.toUpperCase()) } };
+
+  // ---------- Haushaltsbuch: "35 Euro bei Rewe ausgegeben", "Kindergeld 250 € bekommen" ----------
+  const money = raw.match(/(\d+(?:[.,]\d{1,2})?)\s*(?:€|euro|eur)(?![\p{L}])/iu);
+  if (money && !isQuestionStart(t)) {
+    const amount = parseFloat(money[1].replace(',', '.'));
+    const income = /\b(bekommen|erhalten|eingenommen|gutgeschrieben|eingegangen|kindergeld|gehalt|lohn)\b/i.test(raw);
+    const expense = /\b(ausgegeben|bezahlt|gezahlt|gekostet|überwiesen|eingekauft|getankt)\b/i.test(raw);
+    if (amount > 0 && (income || expense)) {
+      const note = raw.replace(money[0], ' ').replace(/\b(ich|wir|habe|haben|hab|heute|gerade|für|bei|im|in|beim|am|ausgegeben|bezahlt|gezahlt|gekostet|überwiesen|bekommen|erhalten|eingenommen|gutgeschrieben|eingegangen)\b/gi, ' ').replace(/\s+/g, ' ').trim();
+      const category = income ? (/kindergeld/i.test(raw) ? 'Kindergeld' : /gehalt|lohn/i.test(raw) ? 'Gehalt' : 'Sonstige Einnahme') : (ctx.guessCategory ? ctx.guessCategory(raw) : 'Sonstiges');
+      const cleanNote = note.toLowerCase() === category.toLowerCase() ? '' : note;
+      const eur = amount.toLocaleString('de-DE', { minimumFractionDigits: amount % 1 ? 2 : 0, maximumFractionDigits: 2 });
+      return { type: 'action', title: 'Haushaltsbuch', label: `${income ? '➕' : '➖'} ${eur} € · ${category}${cleanNote ? ' · ' + cleanNote : ''}`, speak: `${eur} Euro ${income ? 'Einnahme' : 'für ' + category} eingetragen.`, action: { kind: 'budget', type: income ? 'in' : 'out', amount, category, note: cleanNote.replace(/^./, (c) => c.toUpperCase()) } };
+    }
+  }
+
   // ---------- Fragen ----------
   if (isQuestion) {
+    // Schule: "Was hat Lena morgen in der Schule?", "Wie lange hat Ben heute Schule?"
+    if (/schule|unterricht|stundenplan|fächer|stunden hat/.test(t) && ctx.lessons) {
+      const day = /übermorgen/.test(t) ? ctx.dayAfter : /morgen/.test(t) && !/heute/.test(t) ? ctx.tomorrow : ctx.today;
+      const label = day === ctx.today ? 'heute' : day === ctx.tomorrow ? 'morgen' : 'übermorgen';
+      const kids = who ? [who] : (ctx.members || []).filter((m) => m.role === 'child');
+      const parts = kids.map((k) => [k, ctx.lessons(k.id, day)]).map(([k, l]) => (l.length ? `${k.name} hat ${label} ${joinDe(l.map((x) => x.subject))} – bis ${t12(l[l.length - 1].end)}` : `${k.name} hat ${label} keinen Unterricht`));
+      if (!parts.length) return answer('Stundenplan', 'Es ist noch kein Stundenplan eingetragen.');
+      return answer('Stundenplan', parts.join('. ') + '.');
+    }
     // Essen: "Was gibt es heute (zu essen | zum Abendessen)?"
     if (/^(was|wer kocht).*(essen|gibt es|gibts|kochen)/.test(t) && !/kaufen|einkauf/.test(t)) {
       const day = /morgen/.test(t) && !/heute/.test(t) ? ctx.tomorrow : ctx.today;
@@ -128,5 +156,6 @@ export function detectCommand(input, ctx) {
   return null;
 }
 
+function isQuestionStart(t) { return /^(was|wann|wie|welche[rsn]?|wer|wo)\b/.test(t); }
 function answer(title, text) { return { type: 'answer', title, text, speak: text.replace(/[🎉👍]/gu, '') }; }
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }

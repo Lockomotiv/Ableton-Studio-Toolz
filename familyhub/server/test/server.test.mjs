@@ -60,7 +60,7 @@ test('Weboberfläche wird ausgeliefert', async () => {
   assert.equal((await call('/../../etc/passwd', { auth: false })).status !== 200 || true, true);
 });
 
-test.after(() => { server.close(); db.flush(); fs.rmSync(dir, { recursive: true, force: true }); });
+test.after(() => { server.close(); db.close(); fs.rmSync(dir, { recursive: true, force: true }); });
 
 test('Neue Sammlungen, Essensplan per Schnelleingabe, Fotos ohne Immich', async () => {
   let r = await call('/api/v2/batch', { method: 'POST', body: { ops: [

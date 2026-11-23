@@ -1,23 +1,20 @@
-# Start auf dem Pi:  docker compose up -d --build
-# Danach in der App: Mehr → Synchronisierung → Adresse + neues Familien-Passwort.
+# Start auf dem Pi:  ./install-pi.sh   (oder: docker compose up -d --build)
+# Einstellungen stehen in ./.env (wird vom Installationsskript angelegt):
+#   FAMILYHUB_PORT=8446
+#   IMMICH_URL=http://host.docker.internal:2283    # Immich auf demselben Pi
+#   IMMICH_API_KEY=…                               # alternativ in der App: Mehr → Fotos
+#   IMMICH_INSECURE=1                              # nur bei https mit selbstsigniertem Zertifikat
 services:
   familyhub:
     build: .
     container_name: familyhub3
     restart: unless-stopped
+    env_file: .env        # wird von install-pi.sh angelegt (sonst: touch .env)
     environment:
       - TZ=Europe/Berlin
-      # Fotos für Wandansicht/Bilderrahmen aus Immich (API-Schlüssel: Immich → Konto → API-Schlüssel)
-      # - IMMICH_URL=https://192.168.178.51:8444
-      # - IMMICH_API_KEY=hier-den-schluessel-eintragen
-      # - IMMICH_ALBUM_ID=      # optional: nur ein bestimmtes Album zeigen
-      # - IMMICH_INSECURE=1     # bei selbstsigniertem Zertifikat
-      # Optional: HTTPS direkt im Container (z. B. Tailscale-Zertifikat, siehe README)
-      # - TLS_CERT=/certs/pi.crt
-      # - TLS_KEY=/certs/pi.key
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # erreicht Immich & Co. auf dem Pi selbst
     volumes:
       - ./data:/data
-      # - ./certs:/certs:ro
     ports:
-      # Erst parallel zum alten FamilyHub auf 8446 testen, später auf 8443 umstellen.
-      - "8446:8080"
+      - "${FAMILYHUB_PORT:-8446}:8080"

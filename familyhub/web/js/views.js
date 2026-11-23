@@ -9,6 +9,7 @@ import { haptic } from './native.js';
 import { minutesOf } from './recur.js';
 import { todayKidsCard } from './household.js';
 import { todayMealsCard } from './kitchen.js';
+import { boardTeaser, todaySchoolCard } from './family.js';
 import { sheet } from './ui.js';
 
 export const TASK_TABS = [['aufgaben', 'To-dos'], ['aemter', 'Ämter'], ['routinen', 'Routinen'], ['sterne', 'Sterne']];
@@ -140,6 +141,8 @@ export function viewToday() {
       todays.length ? h('div.list', null, ...todays.map((e) => eventRow(e))) : h('p.soft', null, 'Heute keine Termine. 🌤'),
     ),
     dueTasks.length ? section('Zu erledigen', h('div.list', null, ...dueTasks.slice(0, 6).map((t) => taskRow(t))), dueTasks.length > 6 ? h('a.more', { href: '#aufgaben' }, `Alle ${dueTasks.length} anzeigen`) : null) : null,
+    boardTeaser(),
+    todaySchoolCard(),
     todayKidsCard(),
     todayMealsCard(),
     tomorrows.length ? section('Morgen', h('div.list', null, ...tomorrows.map((e) => eventRow(e)))) : null,

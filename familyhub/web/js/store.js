@@ -1,7 +1,7 @@
 // Datenhaltung: lokal zuerst (funktioniert offline), optional Abgleich mit dem FamilyHub-Server auf dem Pi.
 import { http, notify } from './native.js';
 
-export const COLLECTIONS = ['members', 'events', 'tasks', 'shopping', 'notes', 'chores', 'routines', 'rewards', 'points', 'routinelog', 'meals', 'recipes', 'calendars'];
+export const COLLECTIONS = ['members', 'events', 'tasks', 'shopping', 'notes', 'chores', 'routines', 'rewards', 'points', 'routinelog', 'meals', 'recipes', 'calendars', 'messages', 'contacts', 'lists', 'listitems', 'budget', 'timetable', 'documents'];
 const KEY_DATA = 'fh3.data';
 const KEY_CFG = 'fh3.config';
 const KEY_OUT = 'fh3.outbox';
@@ -209,6 +209,11 @@ class Store {
         if (it.createdBy === me || it.external) continue;
         fresh.push(`${labels[col]}: ${it.title}`);
       }
+    }
+    for (const m of st.messages || []) {
+      if (m.deleted || this.data.messages[m.id] || m.authorId === me) continue;
+      const who = (st.members || []).find((x) => x.id === m.authorId)?.name || 'Familie';
+      fresh.push(`💬 ${who}: ${m.text.slice(0, 80)}`);
     }
     if (!fresh.length) return;
     notify(fresh.length === 1 ? fresh[0] : `${fresh.length} neue Einträge für dich`, fresh.length === 1 ? 'Von deiner Familie eingetragen' : fresh.slice(0, 4).join(' · '));

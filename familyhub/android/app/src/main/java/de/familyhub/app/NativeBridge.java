@@ -74,7 +74,7 @@ public class NativeBridge {
     public void openUrl(String url) {
         Uri u = Uri.parse(url);
         String sc = u.getScheme();
-        if (!"https".equals(sc) && !"http".equals(sc) && !"webcal".equals(sc)) return;
+        if (sc == null || !java.util.Arrays.asList("https", "http", "webcal", "tel", "sms", "mailto", "geo").contains(sc)) return;
         a.runOnUiThread(() -> {
             try { a.startActivity(new Intent(Intent.ACTION_VIEW, u)); }
             catch (ActivityNotFoundException e) { Toast.makeText(a, "Keine passende App gefunden", Toast.LENGTH_SHORT).show(); }

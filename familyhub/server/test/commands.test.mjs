@@ -57,3 +57,22 @@ test('Ähnlichkeit', () => {
   assert.equal(similarity('Tisch decken', 'Lena hat den Tisch gedeckt'), 1);
   assert.ok(similarity('Zimmer aufräumen', 'hat das Zimmer aufgeräumt') >= 0.99);
 });
+
+test('Haushaltsbuch, Pinnwand, Schule per Sprache', () => {
+  const ctx2 = { ...ctx, guessCategory: (x) => (/rewe/i.test(x) ? 'Lebensmittel' : 'Sonstiges'),
+    lessons: (mid, d) => (mid === 'l' && d === '2026-11-24' ? [{ subject: 'Mathe', end: '11:30' }, { subject: 'Sport', end: '12:30' }] : []) };
+  const c2 = (x) => detectCommand(x, ctx2);
+  let r = c2('35,50 Euro bei Rewe ausgegeben');
+  assert.deepEqual(r.action, { kind: 'budget', type: 'out', amount: 35.5, category: 'Lebensmittel', note: 'Rewe' });
+  r = c2('Kindergeld 250 € bekommen');
+  assert.equal(r.action.type, 'in'); assert.equal(r.action.category, 'Kindergeld'); assert.equal(r.action.amount, 250);
+  assert.equal(c2('Was kostet die Klassenfahrt 120 Euro?')?.action?.kind, undefined);
+  r = c2('Schreib an die Pinnwand: bin um 6 zuhause');
+  assert.deepEqual(r.action, { kind: 'message', text: 'Bin um 6 zuhause' });
+  assert.equal(c2('Nachricht an alle: Abendessen ist fertig').action.text, 'Abendessen ist fertig');
+  assert.equal(c2('Was hat Lena morgen in der Schule?').text, 'Lena hat morgen Mathe und Sport – bis 12:30 Uhr.');
+  assert.equal(c2('Wer hat heute Schule?').text, 'Lena hat heute keinen Unterricht. Ben hat heute keinen Unterricht.');
+  // keine Fehlerkennung
+  assert.equal(c2('Morgen um 15 Uhr Zahnarzt mit Lena'), null);
+  assert.equal(c2('Termin beim Notar, kostet 300 Euro, nächsten Montag'), null);
+});

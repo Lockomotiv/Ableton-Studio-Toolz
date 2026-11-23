@@ -7,7 +7,11 @@ import { viewChores, viewRoutines, viewRewards } from './household.js';
 import { viewMeals, viewRecipes, viewCoach, importRecipe } from './kitchen.js';
 import { openWall, closeWall, wallActive, armScreensaver } from './wall.js';
 import { refreshAll as refreshCalendars } from './extcal.js';
-import { viewMore, viewFamily, viewChild, viewPhotos, viewPi, viewSync, viewSettings, viewHelp, exitChildMode, viewExternal } from './more.js';
+import { viewPhotos, viewSlideshow } from './photos.js';
+import { viewBoard, viewContacts, viewLists, viewList, viewTimetable } from './family.js';
+import { viewBudget } from './budget.js';
+import { viewDocuments } from './docs.js';
+import { viewMore, viewFamily, viewChild, viewPi, viewSync, viewSettings, viewHelp, exitChildMode, viewExternal } from './more.js';
 import { openCapture } from './capture.js';
 import { consumeLaunchAction, haptic, moveToBack, isApp } from './native.js';
 import { voiceAvailable } from './voice.js';
@@ -21,11 +25,12 @@ const ROUTES = {
   essen: () => hubPage('Essen', KITCHEN_TABS, 'essen', viewMeals()),
   rezepte: () => hubPage('Rezepte', KITCHEN_TABS, 'rezepte', viewRecipes()),
   coach: () => hubPage('Ernährung', KITCHEN_TABS, 'coach', viewCoach()),
-  familie: viewFamily, kinder: viewChild, extern: viewExternal, fotos: viewPhotos, pi: viewPi, sync: viewSync, einstellungen: viewSettings, hilfe: viewHelp,
+  familie: viewFamily, kinder: viewChild, extern: viewExternal, diashow: viewSlideshow,
+  pinnwand: viewBoard, kontakte: viewContacts, listen: viewLists, budget: viewBudget, stundenplan: viewTimetable, dokumente: viewDocuments, fotos: viewPhotos, pi: viewPi, sync: viewSync, einstellungen: viewSettings, hilfe: viewHelp,
 };
-const CHILD_ROUTES = new Set(['heute', 'kalender', 'aufgaben', 'aemter', 'routinen', 'sterne', 'hilfe']);
+const CHILD_ROUTES = new Set(['heute', 'kalender', 'aufgaben', 'aemter', 'routinen', 'sterne', 'hilfe', 'pinnwand', 'stundenplan']);
 const TABS = [['heute', 'Heute', 'home'], ['kalender', 'Kalender', 'calendar'], ['aufgaben', 'Aufgaben', 'tasks'], ['einkauf', 'Einkauf', 'cart'], ['mehr', 'Mehr', 'menu']];
-const PARENT = { extern: 'mehr', aemter: 'aufgaben', routinen: 'aufgaben', sterne: 'aufgaben', essen: 'einkauf', rezepte: 'einkauf', coach: 'einkauf', familie: 'mehr', kinder: 'mehr', fotos: 'mehr', pi: 'mehr', sync: 'mehr', einstellungen: 'mehr', hilfe: 'mehr' };
+const PARENT = { pinnwand: 'mehr', kontakte: 'mehr', listen: 'mehr', budget: 'mehr', stundenplan: 'mehr', dokumente: 'mehr', diashow: 'fotos', extern: 'mehr', aemter: 'aufgaben', routinen: 'aufgaben', sterne: 'aufgaben', essen: 'einkauf', rezepte: 'einkauf', coach: 'einkauf', familie: 'mehr', kinder: 'mehr', fotos: 'mehr', pi: 'mehr', sync: 'mehr', einstellungen: 'mehr', hilfe: 'mehr' };
 
 const app = document.getElementById('app');
 const view = h('main', { id: 'view', tabindex: -1 });
@@ -43,6 +48,7 @@ app.append(topbar, view, fab, nav);
 
 function route() {
   let r = (location.hash || '#heute').slice(1) || 'heute';
+  if (r.startsWith('liste-') && !childMode()) return r;
   if (!ROUTES[r]) r = 'heute';
   if (childMode() && !CHILD_ROUTES.has(r)) r = 'heute';
   return r;
@@ -63,11 +69,11 @@ function render(reason) {
     kid ? h('button.btn.small.tonal', { onclick: exitChildMode }, icon('lock', 16), 'Eltern') : null,
   );
   // Tabs
-  const active = PARENT[r] || r;
+  const active = r.startsWith('liste-') ? 'mehr' : PARENT[r] || r;
   nav.replaceChildren(...TABS.filter(([k]) => !kid || CHILD_ROUTES.has(k)).map(([k, label, ic]) => h('a.tab' + (active === k ? '.on' : ''), { href: '#' + k, 'aria-current': active === k ? 'page' : null, onclick: () => haptic() }, icon(ic, 24), h('span', null, label))));
   // Inhalt
   const scroll = r === lastRoute ? view.scrollTop : 0;
-  const page = ROUTES[r]();
+  const page = r.startsWith('liste-') ? viewList(r.slice(6)) : ROUTES[r]();
   view.replaceChildren(page);
   if (r === lastRoute && reason) view.scrollTop = scroll; else view.scrollTop = 0;
   if (r !== lastRoute) view.focus({ preventScroll: true });
@@ -96,9 +102,11 @@ function applyTheme() {
 
 // Android-Zurück-Taste
 window.fhBack = () => {
+  if (window.fhViewerClose) { window.fhViewerClose(); return true; }
   if (wallActive()) { closeWall(); return true; }
   if (closeTopSheet()) return true;
   const r = route();
+  if (r.startsWith('liste-')) { location.hash = 'listen'; return true; }
   if (PARENT[r]) { location.hash = PARENT[r]; return true; }
   if (r !== 'heute') { location.hash = 'heute'; return true; }
   return false;
@@ -108,6 +116,7 @@ function handleLaunch(action) {
   if (action === 'voice') openCapture({ mode: 'voice' });
   else if (action === 'add') openCapture({ mode: 'text' });
   else if (action === 'wand') openWall();
+  else if (action && action.startsWith('text:')) openCapture({ mode: 'text', text: action.slice(5).replace(/\s+/g, ' ').trim() });
   else if (action && action.startsWith('import:')) { if (childMode()) return; location.hash = 'rezepte'; setTimeout(() => importRecipe(action.slice(7)), 200); }
   else if (action && ROUTES[action]) location.hash = action;
 }

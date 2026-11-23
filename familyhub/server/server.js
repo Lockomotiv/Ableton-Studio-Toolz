@@ -8,12 +8,14 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { Db, COLLECTIONS } from './lib/db.js';
 import { buildIcs } from './lib/ics.js';
+import { Immich } from './lib/immich.js';
 import { parse as parseText, describe as describeEntry, ymd as ymdOf, addDays as addDaysOf, relativeDay } from '../web/js/nlp.js';
 import { detectCommand } from '../web/js/commands.js';
+import { guessCategory } from '../web/js/budgetcats.js';
 import { occurrences } from '../web/js/recur.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const VERSION = '3.3.0';
+const VERSION = '4.0.0';
 const cfg = {
   port: +(process.env.PORT || 8080),
   host: process.env.HOST || '0.0.0.0',
@@ -60,27 +62,15 @@ export function createApp(options = {}) {
   if (c.password) setPassword(c.password, false);
   if (!auth.icsKey) { auth.icsKey = token(18); db.save(); }
   if (!auth.photoKey) { auth.photoKey = token(18); db.save(); }
-  const immich = () => ({ url: (c.immichUrl || '').replace(/\/+$/, ''), key: c.immichKey, album: c.immichAlbum, insecure: c.immichInsecure });
-  const photoCache = { at: 0, items: [] };
-  async function immichPhotos() {
-    const im = immich();
-    if (!im.url || !im.key) throw Object.assign(new Error('Immich ist auf dem Server nicht eingerichtet (IMMICH_URL / IMMICH_API_KEY).'), { status: 404 });
-    if (Date.now() - photoCache.at < 10 * 60e3 && photoCache.items.length) return [...photoCache.items].sort(() => Math.random() - 0.5).slice(0, 60);
-    const hdr = { 'x-api-key': im.key, Accept: 'application/json', 'Content-Type': 'application/json' };
-    let assets = [];
-    if (im.album) {
-      const r = await fetchRaw(`${im.url}/api/albums/${encodeURIComponent(im.album)}`, { headers: hdr, insecure: im.insecure });
-      if (r.status !== 200) throw Object.assign(new Error('Immich-Album nicht lesbar (HTTP ' + r.status + ')'), { status: 502 });
-      assets = JSON.parse(r.body.toString()).assets || [];
-    } else {
-      const r = await fetchRaw(`${im.url}/api/search/random`, { method: 'POST', headers: hdr, body: JSON.stringify({ size: 120, type: 'IMAGE' }), insecure: im.insecure });
-      if (r.status !== 200) throw Object.assign(new Error('Immich antwortet nicht wie erwartet (HTTP ' + r.status + ')'), { status: 502 });
-      assets = JSON.parse(r.body.toString());
-    }
-    photoCache.items = assets.filter((a) => a.type === 'IMAGE' || !a.type).map((a) => ({ id: a.id }));
-    photoCache.at = Date.now();
-    return [...photoCache.items].sort(() => Math.random() - 0.5).slice(0, 60);
-  }
+  if (!auth.fileKey) { auth.fileKey = token(18); db.save(); }
+  const filesDir = path.join(c.dataDir, 'files');
+  fs.mkdirSync(filesDir, { recursive: true });
+  const FILE_TYPES = /^(application\/pdf|image\/(jpeg|png|webp|heic|heif|gif)|text\/plain|application\/vnd\.openxmlformats-officedocument\.[a-z.]+|application\/msword)$/;
+  // Immich: Umgebungsvariablen haben Vorrang, sonst gilt die in der App gespeicherte Verbindung
+  const immichCfg = () => (c.immichUrl && c.immichKey
+    ? { url: c.immichUrl, key: c.immichKey, insecure: c.immichInsecure, fromEnv: true }
+    : db.data.secrets.immich || null);
+  const immich = new Immich(immichCfg, fetchRaw);
 
   function setPassword(pw, bump = true) {
     const salt = auth.salt && verifyPassword(pw) ? auth.salt : crypto.randomBytes(16).toString('hex');
@@ -174,7 +164,8 @@ export function createApp(options = {}) {
       dayLabel: (x) => relativeDay(x, now),
       events: (a, b) => list('events').flatMap((e) => occurrences(e, a, b)).sort((x, y) => (x.date + (x.time || '')).localeCompare(y.date + (y.time || ''))),
       openTasks: list('tasks').filter((t) => !t.done), shopping: list('shopping').filter((s) => !s.done),
-      meals: (x) => list('meals').filter((m) => m.date === x), choresFor, balance: pointsOf,
+      meals: (x) => list('meals').filter((m) => m.date === x), choresFor, balance: pointsOf, guessCategory,
+      lessons: (mid, date) => { const tt = db.data.timetable['tt_' + safe(mid)]; if (!tt || tt.deleted) return []; const [y, mo, dd] = date.split('-').map(Number); const wd = new Date(y, mo - 1, dd).getDay(); const per = tt.periods || []; return (tt.days?.[wd] || []).map((sub, i) => ({ subject: sub, ...(per[i] || {}) })).filter((x) => x.subject && x.subject !== 'Pause'); },
     };
     const c = detectCommand(text, ctx);
     if (!c || c.type === 'answer') return c;
@@ -185,6 +176,11 @@ export function createApp(options = {}) {
     } else if (a.kind === 'task') {
       const t = db.data.tasks[a.taskId];
       ops.push({ op: 'put', col: 'tasks', item: { ...t, done: true, doneAt: ts, updatedAt: ts } });
+    } else if (a.kind === 'budget') {
+      ops.push({ op: 'put', col: 'budget', item: { id: newId(), kind: 'entry', type: a.type, amount: a.amount, category: a.category, note: a.note, date: today, memberId: meId || null, createdAt: ts, updatedAt: ts } });
+    } else if (a.kind === 'message') {
+      if (!meId) return { type: 'answer', title: 'Pinnwand', text: 'Bitte memberId mitschicken, damit klar ist, wer schreibt.', speak: 'Ich weiß nicht, wer schreibt.' };
+      ops.push({ op: 'put', col: 'messages', item: { id: newId(), text: a.text, authorId: meId, reactions: {}, pinned: false, createdAt: ts, updatedAt: ts } });
     } else if (a.kind === 'shopping') {
       for (const id of a.ids) ops.push({ op: 'put', col: 'shopping', item: { ...db.data.shopping[id], done: true, doneAt: ts, updatedAt: ts } });
     }
@@ -215,7 +211,7 @@ export function createApp(options = {}) {
     const ip = req.socket.remoteAddress || '';
 
     if (p === '/healthz' || p === '/api/v2/health') {
-      return send(res, 200, { status: 'ok', module: 'familyhub', schema: 4, version: VERSION, setup: !auth.passwordHash, immich: c.immichUrl || null });
+      return send(res, 200, { status: 'ok', module: 'familyhub', schema: 5, version: VERSION, setup: !auth.passwordHash, immich: immich.configured(), db: db.kind });
     }
     if (p === '/api/v2/setup' && req.method === 'POST') {
       if (auth.passwordHash) return send(res, 409, { error: 'Bereits eingerichtet.' });
@@ -246,12 +242,20 @@ export function createApp(options = {}) {
       if (key.length !== auth.photoKey.length || !crypto.timingSafeEqual(Buffer.from(key), Buffer.from(auth.photoKey))) return send(res, 403, 'Ungültiger Schlüssel');
       const id = decodeURIComponent(p.slice('/api/v2/photos/'.length));
       if (!/^[0-9a-f-]{36}$/i.test(id)) return send(res, 400, 'Ungültige ID');
-      const im = immich();
-      if (!im.url || !im.key) return send(res, 404, 'Immich nicht eingerichtet');
-      const r = await fetchRaw(`${im.url}/api/assets/${id}/thumbnail?size=preview`, { headers: { 'x-api-key': im.key }, insecure: im.insecure, limit: 15 * 1024 * 1024 });
-      if (r.status !== 200) return send(res, 502, 'Bild nicht verfügbar');
-      res.writeHead(200, { 'Content-Type': r.headers['content-type'] || 'image/jpeg', 'Cache-Control': 'private, max-age=86400' });
-      return res.end(r.body);
+      if (!immich.configured()) return send(res, 404, 'Immich nicht eingerichtet');
+      const img = await immich.image(id, url.searchParams.get('size'));
+      res.writeHead(200, { 'Content-Type': img.type, 'Cache-Control': 'private, max-age=604800, immutable' });
+      return res.end(img.body);
+    }
+    if (p.startsWith('/api/v2/files/') && req.method === 'GET') {
+      const key = url.searchParams.get('key') || '';
+      if (key.length !== auth.fileKey.length || !crypto.timingSafeEqual(Buffer.from(key), Buffer.from(auth.fileKey))) return send(res, 403, 'Ungültiger Schlüssel');
+      const id = p.slice('/api/v2/files/'.length);
+      if (!/^[A-Za-z0-9_-]{8,40}$/.test(id)) return send(res, 400, 'Ungültige ID');
+      let meta;
+      try { meta = JSON.parse(fs.readFileSync(path.join(filesDir, id + '.json'), 'utf8')); } catch { return send(res, 404, 'Nicht gefunden'); }
+      res.writeHead(200, { 'Content-Type': meta.type, 'Content-Disposition': `inline; filename*=UTF-8''${encodeURIComponent(meta.name)}`, 'Cache-Control': 'private, max-age=86400', 'X-Content-Type-Options': 'nosniff' });
+      return fs.createReadStream(path.join(filesDir, id)).pipe(res);
     }
     if (p === '/api/v2/calendar.ics') {
       const key = url.searchParams.get('key') || '';
@@ -305,8 +309,50 @@ export function createApp(options = {}) {
       if (cmd) return send(res, 200, { command: cmd.type, title: cmd.title, summary: cmd.type === 'answer' ? cmd.text : cmd.speak, speak: cmd.speak, created: [] });
       return send(res, 200, quickAdd(text, b.memberId));
     }
+    if (p === '/api/v2/files' && req.method === 'POST') {
+      // Dokumente (Impfpass-Foto, Vertrag als PDF …) – als Base64 im JSON, max. 15 MB
+      const b = await readJson(req, 21 * 1024 * 1024);
+      const type = String(b.type || '').toLowerCase();
+      if (!FILE_TYPES.test(type)) return send(res, 415, { error: 'Dateityp nicht erlaubt (PDF, Bilder, Word, Text).' });
+      const buf = Buffer.from(String(b.data || ''), 'base64');
+      if (!buf.length || buf.length > 15 * 1024 * 1024) return send(res, 413, { error: 'Datei leer oder größer als 15 MB.' });
+      const id = newId() + newId();
+      fs.writeFileSync(path.join(filesDir, id), buf);
+      fs.writeFileSync(path.join(filesDir, id + '.json'), JSON.stringify({ name: String(b.name || 'Dokument').slice(0, 120), type, size: buf.length, created: Date.now() }));
+      return send(res, 200, { fileId: id, size: buf.length, key: auth.fileKey });
+    }
+    if (p === '/api/v2/files-key' && req.method === 'GET') return send(res, 200, { key: auth.fileKey });
+    const del = p.match(/^\/api\/v2\/files\/([A-Za-z0-9_-]{8,40})\/delete$/);
+    if (del && req.method === 'POST') {
+      for (const f of [del[1], del[1] + '.json']) { try { fs.unlinkSync(path.join(filesDir, f)); } catch { /* schon weg */ } }
+      return send(res, 200, { ok: true });
+    }
     if (p === '/api/v2/photos' && req.method === 'GET') {
-      return send(res, 200, { items: await immichPhotos(), key: auth.photoKey });
+      if (!immich.configured()) return send(res, 404, { error: 'Immich ist noch nicht verbunden (Mehr → Fotos).' });
+      const source = url.searchParams.get('source') || 'random';
+      const albumIds = (url.searchParams.get('albums') || '').split(',').filter((x) => /^[0-9a-f-]{36}$/i.test(x));
+      const limit = Math.min(500, +(url.searchParams.get('limit') || 80));
+      return send(res, 200, { items: await immich.photos({ source, albumIds, limit }), key: auth.photoKey });
+    }
+    if (p === '/api/v2/photo-albums' && req.method === 'GET') {
+      return send(res, 200, { albums: await immich.albums() });
+    }
+    if (p === '/api/v2/immich' && req.method === 'GET') {
+      const cfg = immichCfg();
+      return send(res, 200, { configured: immich.configured(), url: cfg?.url || c.immichUrl || null, insecure: !!cfg?.insecure, fromEnv: !!cfg?.fromEnv, user: db.data.secrets.immichUser || null });
+    }
+    if (p === '/api/v2/immich' && req.method === 'POST') {
+      const b = await readJson(req);
+      if (b.disconnect) { delete db.data.secrets.immich; db.save(); immich.cache.clear(); return send(res, 200, { configured: false }); }
+      const cfg = { url: String(b.url || '').trim().replace(/\/+$/, ''), key: String(b.key || db.data.secrets.immich?.key || '').trim(), insecure: !!b.insecure };
+      if (!/^https?:\/\//.test(cfg.url)) return send(res, 400, { error: 'Bitte die Immich-Adresse mit http:// oder https:// angeben.' });
+      if (!cfg.key) return send(res, 400, { error: 'Bitte einen API-Schlüssel aus Immich eintragen.' });
+      const r = await immich.test(cfg);
+      db.data.secrets.immich = cfg; db.data.secrets.immichUser = r.user; db.save(); immich.cache.clear();
+      return send(res, 200, { configured: true, ...r });
+    }
+    if (p === '/api/v2/server-info' && req.method === 'GET') {
+      return send(res, 200, { version: VERSION, node: process.version, db: db.stats(), immich: immich.configured() });
     }
     if (p === '/api/v2/fetch' && req.method === 'POST') {
       // Rezeptseiten für den Import in der Browser-Version (in der App lädt das Handy selbst)
@@ -388,6 +434,6 @@ if (isMain) {
     console.log(`FamilyHub ${VERSION} läuft auf ${cfg.tlsCert ? 'https' : 'http'}://${cfg.host}:${cfg.port}  (Daten: ${cfg.dataDir})`);
     if (!db.data.auth.passwordHash) console.log('Noch kein Passwort gesetzt → in der App „Server verbinden“ wählen oder FAMILYHUB_PASSWORD setzen.');
   });
-  const stop = () => { db.flush(); process.exit(0); };
+  const stop = () => { db.close(); process.exit(0); };
   process.on('SIGTERM', stop); process.on('SIGINT', stop);
 }

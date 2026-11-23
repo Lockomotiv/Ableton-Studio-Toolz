@@ -1,9 +1,9 @@
 {
   "name": "familyhub-server",
-  "version": "3.3.0",
+  "version": "4.0.0",
   "private": true,
   "type": "module",
   "description": "FamilyHub-Server: Termine, Aufgaben, Einkauf für die Familie. Ohne externe Abhängigkeiten.",
-  "engines": { "node": ">=20" },
+  "engines": { "node": ">=22.5" },
   "scripts": { "start": "node server.js", "test": "node --test test/*.test.mjs" }
 }

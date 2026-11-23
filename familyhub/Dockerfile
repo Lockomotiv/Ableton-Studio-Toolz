@@ -1,5 +1,5 @@
-# FamilyHub-Server (läuft auf Raspberry Pi 4/5 und jedem anderen Docker-Host)
-FROM node:22-alpine
+# FamilyHub-Server (Raspberry Pi 4/5 und jeder andere Docker-Host, arm64 & amd64)
+FROM node:24-alpine
 WORKDIR /app
 COPY web ./web
 COPY server ./server

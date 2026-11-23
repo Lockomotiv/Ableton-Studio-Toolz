@@ -1,4 +1,13 @@
 // Kleine UI-Bausteine ohne Framework.
+
+// Schutz: append()/replaceChildren() würden null/false als Text "null" anzeigen – hier einfach überspringen.
+if (typeof Element !== 'undefined' && !Element.prototype.__fhSafe) {
+  for (const m of ['append', 'prepend', 'replaceChildren']) {
+    const orig = Element.prototype[m];
+    Element.prototype[m] = function (...a) { return orig.apply(this, a.filter((x) => x != null && x !== false)); };
+  }
+  Element.prototype.__fhSafe = true;
+}
 import { haptic } from './native.js';
 
 export function h(tag, attrs, ...children) {
@@ -12,6 +21,7 @@ export function h(tag, attrs, ...children) {
       else if (k === 'class') el.setAttribute('class', ((el.getAttribute('class') || '') + ' ' + v).trim());
       else if (k === 'style' && typeof v === 'object') { for (const [sk, sv] of Object.entries(v)) if (sv != null) (sk.startsWith('--') ? el.style.setProperty(sk, sv) : (el.style[sk] = sv)); }
       else if (k === 'html') el.innerHTML = v;
+      else if (k === 'value' && name === 'textarea') el.value = v; // <textarea> kennt kein value-Attribut
       else if (k in el && typeof v !== 'string' && k !== 'list') el[k] = v;
       else el.setAttribute(k, v === true ? '' : v);
     }

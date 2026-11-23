@@ -33,7 +33,8 @@ import androidx.webkit.WebViewAssetLoader;
 public class MainActivity extends Activity {
     static final String ORIGIN = "https://appassets.androidplatform.net";
     static final String START = ORIGIN + "/assets/web/index.html";
-    static final int REQ_AUDIO = 11, REQ_NOTIFY = 12, REQ_SPEECH = 21, REQ_SAVE = 31, REQ_OPEN = 32;
+    static final int REQ_AUDIO = 11, REQ_NOTIFY = 12, REQ_SPEECH = 21, REQ_SAVE = 31, REQ_OPEN = 32, REQ_FILE = 33;
+    private android.webkit.ValueCallback<Uri[]> fileCallback;
 
     WebView web;
     NativeBridge bridge;
@@ -88,6 +89,15 @@ public class MainActivity extends Activity {
         web.setWebChromeClient(new WebChromeClient() {
             @Override
             public void onPermissionRequest(PermissionRequest request) { request.deny(); }
+            // <input type="file"> (Dokumente hochladen)
+            @Override
+            public boolean onShowFileChooser(WebView view, android.webkit.ValueCallback<Uri[]> cb, FileChooserParams params) {
+                if (fileCallback != null) fileCallback.onReceiveValue(null);
+                fileCallback = cb;
+                try { startActivityForResult(params.createIntent(), REQ_FILE); }
+                catch (Exception e) { fileCallback = null; return false; }
+                return true;
+            }
         });
         WebView.setWebContentsDebuggingEnabled((getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0);
 
@@ -142,7 +152,12 @@ public class MainActivity extends Activity {
         if ("de.familyhub.app.WALL".equals(a)) return "wand";
         if (Intent.ACTION_SEND.equals(a)) {
             String t = i.getStringExtra(Intent.EXTRA_TEXT);
-            if (t != null) { java.util.regex.Matcher m = java.util.regex.Pattern.compile("https?://\\S+").matcher(t); if (m.find()) return "import:" + m.group(); }
+            if (t != null) {
+                java.util.regex.Matcher m = java.util.regex.Pattern.compile("https?://\\S+").matcher(t);
+                if (m.find()) return "import:" + m.group();
+                // z. B. Text aus einer Termin-E-Mail → Schnelleingabe mit Vorschau
+                return "text:" + (t.length() > 600 ? t.substring(0, 600) : t);
+            }
             return "";
         }
         String extra = i.getStringExtra("action");
@@ -212,5 +227,9 @@ public class MainActivity extends Activity {
         if (req == REQ_SPEECH) bridge.onSpeechActivityResult(result, data);
         else if (req == REQ_SAVE) bridge.onSaveResult(result, data);
         else if (req == REQ_OPEN) bridge.onOpenResult(result, data);
+        else if (req == REQ_FILE && fileCallback != null) {
+            fileCallback.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(result, data));
+            fileCallback = null;
+        }
     }
 }
