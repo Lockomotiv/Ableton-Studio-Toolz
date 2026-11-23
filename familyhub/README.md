@@ -43,6 +43,17 @@ familyhub/
 * **Wandansicht / Bilderrahmen** – große Uhr, Tagesplan je Person, Essen, Kinder-Fortschritt, Diashow aus Immich; startet auf Wunsch automatisch nach x Minuten (Bildschirm bleibt an)
 * **Hinweis bei Zuteilung** – trägt jemand anderes dir einen Termin, eine Aufgabe oder ein Amt ein, kommt eine Benachrichtigung
 
+### Neu in 3.2: Rezepte von Chefkoch & Cookidoo, Ernährungscoach
+
+* **Rezept-Import per Link oder „Teilen → FamilyHub“** aus Chefkoch, Cookidoo (Thermomix), EatSmarter, Lecker, Kitchen Stories, Essen & Trinken, BBC Good Food und allen Seiten mit schema.org-Rezeptdaten: Foto, Zutaten, Schritte, Portionen, Zeit und – wo vorhanden – Nährwerte
+* **Portionsrechner** – Mengen werden umgerechnet („500 g“ → „750 g“ bei 6 statt 4 Portionen)
+* **Ernährungscoach** – Wochen-Balance (0–100) nach den DGE-Empfehlungen: Fleisch, Fisch, vegetarisch, Gemüse, Hülsenfrüchte, Abwechslung, optional kcal-Ziel; konkrete Tipps und passende Ideen
+* **Ideen** – eigener Pool mit 50 Familiengerichten, abgestimmt auf die Lücken der Woche, plus Suche direkt bei Chefkoch, Cookidoo, EatSmarter, Lecker und Kitchen Stories
+* **„Offene Tage mit Ideen füllen“** – plant den Rest der Woche ausgewogen vor (eigene Rezepte zuerst)
+
+Hinweis zu Cookidoo und Lifesum: Beide bieten keine offene Schnittstelle. Öffentliche Cookidoo-Rezeptseiten lassen sich importieren
+(Zutaten zeigt Cookidoo teils nur angemeldet), „In Cookidoo öffnen“ springt zurück ins Original. Lifesum ersetzt der eingebaute Coach.
+
 ### Sprachsteuerung – Beispiele
 
 * „Morgen um halb vier Zahnarzt mit Lena, erinnere mich eine Stunde vorher“
@@ -56,7 +67,7 @@ Unter *Einstellungen* lässt sich „Direkt speichern“ einschalten – dann wi
 
 ## Installation auf dem Handy
 
-1. `release/FamilyHub-3.1.0.apk` aufs Handy und installieren.
+1. `release/FamilyHub-3.2.0.apk` aufs Handy und installieren.
    Die neue App hat eine eigene Paket-ID (`de.familyhub.app`) und läuft **neben** der alten App. Die alte kann gelöscht werden, sobald alles passt.
 2. Beim ersten Start „Familie anlegen“.
 3. Optional: Mehr → Synchronisierung → mit dem Pi verbinden (siehe unten).

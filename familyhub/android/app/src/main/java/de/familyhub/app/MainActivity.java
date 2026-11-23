@@ -140,6 +140,11 @@ public class MainActivity extends Activity {
         if ("de.familyhub.app.ADD".equals(a)) return "add";
         if ("de.familyhub.app.SHOP".equals(a)) return "einkauf";
         if ("de.familyhub.app.WALL".equals(a)) return "wand";
+        if (Intent.ACTION_SEND.equals(a)) {
+            String t = i.getStringExtra(Intent.EXTRA_TEXT);
+            if (t != null) { java.util.regex.Matcher m = java.util.regex.Pattern.compile("https?://\\S+").matcher(t); if (m.find()) return "import:" + m.group(); }
+            return "";
+        }
         String extra = i.getStringExtra("action");
         return extra == null ? "" : extra;
     }

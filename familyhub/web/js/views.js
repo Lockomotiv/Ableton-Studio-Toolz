@@ -12,7 +12,7 @@ import { todayMealsCard } from './kitchen.js';
 import { sheet } from './ui.js';
 
 export const TASK_TABS = [['aufgaben', 'To-dos'], ['aemter', 'Ämter'], ['routinen', 'Routinen'], ['sterne', 'Sterne']];
-export const KITCHEN_TABS = [['einkauf', 'Einkauf'], ['essen', 'Essensplan'], ['rezepte', 'Rezepte']];
+export const KITCHEN_TABS = [['einkauf', 'Einkauf'], ['essen', 'Essensplan'], ['rezepte', 'Rezepte'], ['coach', 'Coach']];
 export function subnav(tabs, active) {
   return h('nav.subnav', { 'aria-label': 'Bereich' }, ...tabs.map(([k, l]) => h('a.sub' + (k === active ? '.on' : ''), { href: '#' + k, 'aria-current': k === active ? 'page' : null }, l)));
 }

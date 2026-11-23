@@ -36,6 +36,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
             <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
+            <!-- "Teilen → FamilyHub": Rezept-Links aus Chefkoch, Cookidoo, Browser … -->
+            <intent-filter android:label="Rezept in FamilyHub">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
         </activity>
 
         <receiver android:name=".ReminderReceiver" android:exported="false" />

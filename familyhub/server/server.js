@@ -11,7 +11,7 @@ import { buildIcs } from './lib/ics.js';
 import { parse as parseText, describe as describeEntry } from '../web/js/nlp.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const VERSION = '3.1.0';
+const VERSION = '3.2.0';
 const cfg = {
   port: +(process.env.PORT || 8080),
   host: process.env.HOST || '0.0.0.0',
@@ -266,6 +266,14 @@ export function createApp(options = {}) {
     }
     if (p === '/api/v2/photos' && req.method === 'GET') {
       return send(res, 200, { items: await immichPhotos(), key: auth.photoKey });
+    }
+    if (p === '/api/v2/fetch' && req.method === 'POST') {
+      // Rezeptseiten für den Import in der Browser-Version (in der App lädt das Handy selbst)
+      const b = await readJson(req);
+      const r = await fetchRaw(String(b.url || ''), { headers: { Accept: 'text/html', 'Accept-Language': 'de-DE,de;q=0.9' }, limit: 4 * 1024 * 1024 }).catch((e) => ({ error: e.message }));
+      if (r.error) return send(res, 502, { error: r.error });
+      if (r.status !== 200) return send(res, 502, { error: 'Seite antwortet mit HTTP ' + r.status });
+      return send(res, 200, { text: r.body.toString('utf8') });
     }
     if (p === '/api/v2/ics-proxy' && req.method === 'POST') {
       // Externe Kalender für die Browser-Version (dort verhindert CORS den direkten Abruf)

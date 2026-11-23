@@ -4,7 +4,7 @@ import { store } from './store.js';
 import { childMode, refreshNative, members } from './domain.js';
 import { viewToday, viewCalendar, viewTasks, viewShopping, hubPage, TASK_TABS, KITCHEN_TABS } from './views.js';
 import { viewChores, viewRoutines, viewRewards } from './household.js';
-import { viewMeals, viewRecipes } from './kitchen.js';
+import { viewMeals, viewRecipes, viewCoach, importRecipe } from './kitchen.js';
 import { openWall, closeWall, wallActive, armScreensaver } from './wall.js';
 import { refreshAll as refreshCalendars } from './extcal.js';
 import { viewMore, viewFamily, viewChild, viewPhotos, viewPi, viewSync, viewSettings, viewHelp, exitChildMode, viewExternal } from './more.js';
@@ -20,11 +20,12 @@ const ROUTES = {
   sterne: () => hubPage('Aufgaben', TASK_TABS, 'sterne', viewRewards()),
   essen: () => hubPage('Essen', KITCHEN_TABS, 'essen', viewMeals()),
   rezepte: () => hubPage('Rezepte', KITCHEN_TABS, 'rezepte', viewRecipes()),
+  coach: () => hubPage('Ernährung', KITCHEN_TABS, 'coach', viewCoach()),
   familie: viewFamily, kinder: viewChild, extern: viewExternal, fotos: viewPhotos, pi: viewPi, sync: viewSync, einstellungen: viewSettings, hilfe: viewHelp,
 };
 const CHILD_ROUTES = new Set(['heute', 'kalender', 'aufgaben', 'aemter', 'routinen', 'sterne', 'hilfe']);
 const TABS = [['heute', 'Heute', 'home'], ['kalender', 'Kalender', 'calendar'], ['aufgaben', 'Aufgaben', 'tasks'], ['einkauf', 'Einkauf', 'cart'], ['mehr', 'Mehr', 'menu']];
-const PARENT = { extern: 'mehr', aemter: 'aufgaben', routinen: 'aufgaben', sterne: 'aufgaben', essen: 'einkauf', rezepte: 'einkauf', familie: 'mehr', kinder: 'mehr', fotos: 'mehr', pi: 'mehr', sync: 'mehr', einstellungen: 'mehr', hilfe: 'mehr' };
+const PARENT = { extern: 'mehr', aemter: 'aufgaben', routinen: 'aufgaben', sterne: 'aufgaben', essen: 'einkauf', rezepte: 'einkauf', coach: 'einkauf', familie: 'mehr', kinder: 'mehr', fotos: 'mehr', pi: 'mehr', sync: 'mehr', einstellungen: 'mehr', hilfe: 'mehr' };
 
 const app = document.getElementById('app');
 const view = h('main', { id: 'view', tabindex: -1 });
@@ -107,6 +108,7 @@ function handleLaunch(action) {
   if (action === 'voice') openCapture({ mode: 'voice' });
   else if (action === 'add') openCapture({ mode: 'text' });
   else if (action === 'wand') openWall();
+  else if (action && action.startsWith('import:')) { if (childMode()) return; location.hash = 'rezepte'; setTimeout(() => importRecipe(action.slice(7)), 200); }
   else if (action && ROUTES[action]) location.hash = action;
 }
 
