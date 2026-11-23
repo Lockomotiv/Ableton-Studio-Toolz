@@ -656,3 +656,23 @@ body.child .check { width: 38px; height: 38px; }
 
 .tt-cell { font-size: 12px; hyphens: auto; -webkit-hyphens: auto; overflow-wrap: normal; word-break: normal; }
 @media (max-width: 420px) { .tt-cell { font-size: 11px; letter-spacing: -.01em; } .tt-grid { grid-template-columns: 40px repeat(5, 1fr); gap: 3px; padding: 6px; } }
+
+/* ================= 4.1: Abfall ================= */
+.bins { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.bin { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 14px; border-radius: 20px; text-align: left; background: color-mix(in srgb, var(--c) 10%, var(--surface)); border: 1px solid color-mix(in srgb, var(--c) 30%, var(--line)); border-top: 5px solid var(--c); }
+.bin.soon { box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 35%, transparent); }
+.bin-emoji { font-size: 30px; line-height: 1.1; }
+.bin b { font-size: 15.5px; }
+.bin-when { font-size: 20px; font-weight: 800; color: color-mix(in srgb, var(--c) 70%, var(--text)); }
+.bin small { color: var(--muted); font-size: 12.5px; }
+.bin-duty { font-weight: 650; color: var(--text) !important; }
+.waste-date { width: 44px; flex: none; display: flex; flex-direction: column; align-items: center; }
+.waste-date b { font-size: 18px; } .waste-date small { color: var(--muted); }
+.waste-dots { display: flex; gap: 2px; font-size: 20px; }
+.waste-today { display: flex; flex-direction: column; gap: 10px; margin-top: 0; }
+.wt-row { display: flex; align-items: center; gap: 12px; padding-left: 10px; border-left: 4px solid var(--c); }
+.wt-main { flex: 1; display: flex; flex-direction: column; }
+.wt-main small { color: var(--muted); }
+.warn-card { border-color: var(--warn); }
+input.mini-time { height: 38px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); padding: 0 10px; }
+.wall-chip.waste { background: rgba(224, 180, 0, .35); }

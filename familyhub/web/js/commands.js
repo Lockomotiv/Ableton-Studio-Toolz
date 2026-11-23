@@ -1,3 +1,5 @@
+import { WASTE_TYPES } from './wastetypes.js';
+
 // Sprachbefehle, die keine neuen Einträge anlegen: Fragen beantworten und Dinge abhaken.
 // Reine Funktion – alle Daten kommen über `ctx`, damit sie ohne App getestet werden kann.
 //
@@ -65,6 +67,25 @@ export function detectCommand(input, ctx) {
 
   // ---------- Fragen ----------
   if (isQuestion) {
+    // Abfall: "Welcher Müll kommt morgen?", "Wann kommt die Biotonne?", "Wann ist der gelbe Sack dran?"
+    if (/müll|tonne|abfall|gelbe[rn]?\s+sack|wertstoff|altpapier|abholung|abfuhr/.test(t) && ctx.pickups) {
+      const asked = WASTE_TYPES.filter((w) => w[0] !== 'other' && w[4].test(t.replace(/\b(müll|abfall|tonne)\b/g, (m) => (/(rest|bio|sperr)/.test(t) ? m : ''))));
+      const specific = asked.find((w) => new RegExp(w[4].source, 'i').test(t) && !/^(welche|was)\b/.test(t));
+      if (specific) {
+        const next = ctx.pickups(ctx.today, ctx.yearEnd).find((p) => p.wasteKey === specific[0]);
+        if (!next) return answer('Abfall', `Für ${specific[1]} habe ich keinen Termin gefunden.`);
+        return answer('Abfall', `${specific[2]} ${specific[1]}: ${ctx.dayLabel(next.date)}.`);
+      }
+      const week = /woche/.test(t);
+      const day = /übermorgen/.test(t) ? ctx.dayAfter : /heute/.test(t) ? ctx.today : ctx.tomorrow;
+      const list = week ? ctx.pickups(ctx.today, ctx.weekEnd) : ctx.pickups(day, day);
+      const label = week ? 'diese Woche' : day === ctx.today ? 'heute' : day === ctx.tomorrow ? 'morgen' : 'übermorgen';
+      if (!list.length) {
+        const next = ctx.pickups(ctx.today, ctx.yearEnd)[0];
+        return answer('Abfall', `${cap(label)} wird nichts abgeholt.${next ? ` Als Nächstes: ${next.wasteName} ${ctx.dayLabel(next.date)}.` : ''}`);
+      }
+      return answer('Abfall', `${cap(label)}: ${joinDe(list.map((p) => `${p.wasteName}${week ? ' ' + ctx.dayLabel(p.date) : ''}`))}.`);
+    }
     // Schule: "Was hat Lena morgen in der Schule?", "Wie lange hat Ben heute Schule?"
     if (/schule|unterricht|stundenplan|fächer|stunden hat/.test(t) && ctx.lessons) {
       const day = /übermorgen/.test(t) ? ctx.dayAfter : /morgen/.test(t) && !/heute/.test(t) ? ctx.tomorrow : ctx.today;
@@ -157,5 +178,5 @@ export function detectCommand(input, ctx) {
 }
 
 function isQuestionStart(t) { return /^(was|wann|wie|welche[rsn]?|wer|wo)\b/.test(t); }
-function answer(title, text) { return { type: 'answer', title, text, speak: text.replace(/[🎉👍]/gu, '') }; }
+function answer(title, text) { text = text.replace(/\.\.$/, '.'); return { type: 'answer', title, text, speak: text.replace(/[🎉👍]/gu, '') }; }
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }

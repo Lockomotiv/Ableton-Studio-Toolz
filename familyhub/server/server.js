@@ -13,9 +13,11 @@ import { parse as parseText, describe as describeEntry, ymd as ymdOf, addDays as
 import { detectCommand } from '../web/js/commands.js';
 import { guessCategory } from '../web/js/budgetcats.js';
 import { occurrences } from '../web/js/recur.js';
+import { parseIcs } from '../web/js/icsparse.js';
+import { wasteType } from '../web/js/wastetypes.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const VERSION = '4.0.0';
+const VERSION = '4.1.0';
 const cfg = {
   port: +(process.env.PORT || 8080),
   host: process.env.HOST || '0.0.0.0',
@@ -71,6 +73,24 @@ export function createApp(options = {}) {
     ? { url: c.immichUrl, key: c.immichKey, insecure: c.immichInsecure, fromEnv: true }
     : db.data.secrets.immich || null);
   const immich = new Immich(immichCfg, fetchRaw);
+
+  // Abfallkalender auch auf dem Pi laden (für Sprachassistenten über /api/v2/quick)
+  const wasteCache = { url: null, at: 0, events: [] };
+  async function refreshWaste() {
+    const cal = Object.values(db.data.calendars).find((x) => x.kind === 'waste' && !x.deleted && x.url && x.enabled !== false);
+    if (!cal) { wasteCache.events = []; return; }
+    if (wasteCache.url === cal.url && Date.now() - wasteCache.at < 3600e3) return;
+    try {
+      const r = await fetchRaw(cal.url.replace(/^webcal:\/\//i, 'https://'), { headers: { Accept: 'text/calendar' } });
+      if (r.status === 200) { wasteCache.events = parseIcs(r.body.toString('utf8'), { calId: 'waste' }); wasteCache.url = cal.url; wasteCache.at = Date.now(); }
+    } catch { /* später erneut */ }
+  }
+  const wastePickups = (a, b) => [
+    ...wasteCache.events.flatMap((e) => occurrences(e, a, b)),
+    ...Object.values(db.data.events).filter((e) => e.waste && !e.deleted).flatMap((e) => occurrences(e, a, b)),
+  ].map((e) => { const t = wasteType(e.title); return { date: e.date, wasteKey: t[0], wasteName: t[1] }; }).sort((x, y) => x.date.localeCompare(y.date));
+  if (!options.noTimers) { setTimeout(refreshWaste, 2000).unref?.(); setInterval(refreshWaste, 3600e3).unref?.(); }
+  db.listeners.add(() => { setTimeout(refreshWaste, 500); });
 
   function setPassword(pw, bump = true) {
     const salt = auth.salt && verifyPassword(pw) ? auth.salt : crypto.randomBytes(16).toString('hex');
@@ -164,7 +184,7 @@ export function createApp(options = {}) {
       dayLabel: (x) => relativeDay(x, now),
       events: (a, b) => list('events').flatMap((e) => occurrences(e, a, b)).sort((x, y) => (x.date + (x.time || '')).localeCompare(y.date + (y.time || ''))),
       openTasks: list('tasks').filter((t) => !t.done), shopping: list('shopping').filter((s) => !s.done),
-      meals: (x) => list('meals').filter((m) => m.date === x), choresFor, balance: pointsOf, guessCategory,
+      meals: (x) => list('meals').filter((m) => m.date === x), choresFor, balance: pointsOf, guessCategory, pickups: wastePickups,
       lessons: (mid, date) => { const tt = db.data.timetable['tt_' + safe(mid)]; if (!tt || tt.deleted) return []; const [y, mo, dd] = date.split('-').map(Number); const wd = new Date(y, mo - 1, dd).getDay(); const per = tt.periods || []; return (tt.days?.[wd] || []).map((sub, i) => ({ subject: sub, ...(per[i] || {}) })).filter((x) => x.subject && x.subject !== 'Pause'); },
     };
     const c = detectCommand(text, ctx);

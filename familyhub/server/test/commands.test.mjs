@@ -76,3 +76,18 @@ test('Haushaltsbuch, Pinnwand, Schule per Sprache', () => {
   assert.equal(c2('Morgen um 15 Uhr Zahnarzt mit Lena'), null);
   assert.equal(c2('Termin beim Notar, kostet 300 Euro, nächsten Montag'), null);
 });
+
+test('Abfall per Sprache', () => {
+  const pk = [
+    { date: '2026-11-24', wasteKey: 'gelb', wasteName: 'Gelber Sack / Tonne' }, { date: '2026-11-24', wasteKey: 'bio', wasteName: 'Biotonne' },
+    { date: '2026-11-27', wasteKey: 'rest', wasteName: 'Restmüll' }, { date: '2026-12-02', wasteKey: 'papier', wasteName: 'Papier' },
+  ];
+  const ctx3 = { ...ctx, pickups: (a, b) => pk.filter((p) => p.date >= a && p.date <= b) };
+  const c3 = (x) => detectCommand(x, ctx3);
+  assert.equal(c3('Welcher Müll kommt morgen?').text, 'Morgen: Gelber Sack / Tonne und Biotonne.');
+  assert.equal(c3('Wann kommt die Biotonne?').text, '🟤 Biotonne: morgen.');
+  assert.equal(c3('Wann ist Restmüll?').text, '⚫ Restmüll: 2026-11-27.');
+  assert.equal(c3('Wann wird das Altpapier abgeholt?').text, '🔵 Papier: 2026-12-02.');
+  assert.equal(c3('Welcher Müll kommt heute?').text, 'Heute wird nichts abgeholt. Als Nächstes: Gelber Sack / Tonne morgen.');
+  assert.match(c3('Was wird diese Woche abgeholt? Müll').text, /^Diese Woche: Gelber Sack/);
+});

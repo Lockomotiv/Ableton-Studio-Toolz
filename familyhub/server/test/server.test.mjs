@@ -88,3 +88,11 @@ test('Sprachassistent: Fragen und Erledigt über /quick', async () => {
   r = await call('/api/v2/quick', { method: 'POST', body: { text: 'Wie viele Sterne hat Mia?' } });
   assert.equal(r.body.summary, 'Mia hat 4 Sterne.');
 });
+
+test('Abfall-Frage über /quick (Termine aus importierter Datei)', async () => {
+  const d = new Date(); d.setDate(d.getDate() + 1);
+  const tm = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  await call('/api/v2/batch', { method: 'POST', body: { ops: [{ op: 'put', col: 'events', item: { id: 'w1', title: 'Gelbe Tonne', date: tm, allDay: true, waste: true, updatedAt: 1 } }] } });
+  const r = await call('/api/v2/quick', { method: 'POST', body: { text: 'Welcher Müll kommt morgen?' } });
+  assert.equal(r.body.summary, 'Morgen: Gelber Sack / Tonne.');
+});

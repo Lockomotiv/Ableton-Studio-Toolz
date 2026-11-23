@@ -73,6 +73,17 @@ Hinweis zu Cookidoo und Lifesum: Beide bieten keine offene Schnittstelle. Öffen
 * Neue Sprachbefehle: „35 Euro bei Rewe ausgegeben“, „Schreib an die Pinnwand: …“, „Was hat Lena morgen in der Schule?“
 * Bewusst nicht umgesetzt: **Live-Ortung** der Familie (bräuchte dauerhaftes GPS im Hintergrund – Akku & Datenschutz)
 
+### Neu in 4.1: Abfall
+
+* **Abfall** (*Mehr → Abfall*): nächste Abholung je Tonne (Restmüll, Bio, Gelber Sack, Papier, Glas, Grünschnitt, Sperrmüll, Schadstoffe) mit Countdown
+* Abholtermine erscheinen farbig im **Kalender**, auf **Heute** („morgen – heute Abend rausstellen“), im **Widget** und in der **Wandansicht**
+* **Erinnerung am Vorabend** (Uhrzeit einstellbar), **Zuständigkeit** je Tonne („Ben stellt raus“)
+* Sprache: „Welcher Müll kommt morgen?“, „Wann kommt die Biotonne?“ – auch über die Pi-API
+* Quelle: Abo-Link (iCal/ICS/webcal) des Entsorgers, Google-Kalender (Link, Kalender-ID oder „Privatadresse im iCal-Format“) oder eine .ics-Datei
+
+  Hinweis: Ein in Google *per URL abonnierter* Kalender (`…@import.calendar.google.com`) ist nur im eigenen Google-Konto sichtbar –
+  Google liefert dafür keine öffentliche iCal-Adresse (404/401). Dann den ursprünglichen Abo-Link des Entsorgers verwenden.
+
 ### Sprachsteuerung – Beispiele
 
 * „Morgen um halb vier Zahnarzt mit Lena, erinnere mich eine Stunde vorher“
@@ -86,7 +97,7 @@ Unter *Einstellungen* lässt sich „Direkt speichern“ einschalten – dann wi
 
 ## Installation auf dem Handy
 
-1. `release/FamilyHub-4.0.0.apk` aufs Handy und installieren.
+1. `release/FamilyHub-4.1.0.apk` aufs Handy und installieren.
    Die neue App hat eine eigene Paket-ID (`de.familyhub.app`) und läuft **neben** der alten App. Die alte kann gelöscht werden, sobald alles passt.
 2. Beim ersten Start „Familie anlegen“.
 3. Optional: Mehr → Synchronisierung → mit dem Pi verbinden (siehe unten).

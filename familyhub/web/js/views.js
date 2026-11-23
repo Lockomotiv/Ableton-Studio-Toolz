@@ -10,6 +10,7 @@ import { minutesOf } from './recur.js';
 import { todayKidsCard } from './household.js';
 import { todayMealsCard } from './kitchen.js';
 import { boardTeaser, todaySchoolCard } from './family.js';
+import { todayWasteCard } from './waste.js';
 import { sheet } from './ui.js';
 
 export const TASK_TABS = [['aufgaben', 'To-dos'], ['aemter', 'Ämter'], ['routinen', 'Routinen'], ['sterne', 'Sterne']];
@@ -107,8 +108,9 @@ export function viewToday() {
   const greet = hour < 5 ? 'Gute Nacht' : hour < 11 ? 'Guten Morgen' : hour < 17 ? 'Hallo' : hour < 22 ? 'Guten Abend' : 'Gute Nacht';
   const kid = childMode();
   const me = kid || member(store.config.meId);
-  const todays = agenda(td, td);
-  const tomorrows = agenda(tm, tm);
+  // Abholtermine stehen in der eigenen Abfall-Karte
+  const todays = agenda(td, td).filter((e) => !e.waste);
+  const tomorrows = agenda(tm, tm).filter((e) => !e.waste);
   const tasks = sortTasks(openTasks());
   const dueTasks = tasks.filter((t) => t.date && t.date <= td);
   const nxt = nextUp(now);
@@ -141,6 +143,7 @@ export function viewToday() {
       todays.length ? h('div.list', null, ...todays.map((e) => eventRow(e))) : h('p.soft', null, 'Heute keine Termine. 🌤'),
     ),
     dueTasks.length ? section('Zu erledigen', h('div.list', null, ...dueTasks.slice(0, 6).map((t) => taskRow(t))), dueTasks.length > 6 ? h('a.more', { href: '#aufgaben' }, `Alle ${dueTasks.length} anzeigen`) : null) : null,
+    todayWasteCard(),
     boardTeaser(),
     todaySchoolCard(),
     todayKidsCard(),

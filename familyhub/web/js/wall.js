@@ -8,6 +8,7 @@ import { mealsOn, SLOTS } from './kitchen.js';
 import { choresFor, routinesFor, balance } from './household.js';
 import { minutesOf } from './recur.js';
 import { slideCfg, loadPhotos, photoUrl, caption } from './photos.js';
+import { pickupsOn } from './waste.js';
 
 const N = typeof window !== 'undefined' ? window.FHNative : undefined;
 let active = null;
@@ -75,6 +76,7 @@ function content() {
   return [
     cols.length ? h('div.wall-cols', null, ...cols) : h('div.wall-empty', null, 'Heute ist nichts mehr geplant 🌤'),
     h('div.wall-foot', null,
+      (() => { const w = pickupsOn(tm); return w.length ? h('div.wall-chip.waste', null, 'Morgen Abfall: ', w.map((p) => p.wasteEmoji + ' ' + p.wasteName).join(', ')) : null; })(),
       meals.length ? h('div.wall-chip', null, '🍽️ ', meals.map((m) => `${SLOTS[m.slot]?.[0]}: ${m.title}`).join(' · ')) : null,
       tomorrow.length ? h('div.wall-chip', null, 'Morgen: ', tomorrow.map((e) => (e.allDay ? '' : fmt.time(e.time) + ' ') + e.title).join(' · ')) : null),
   ];

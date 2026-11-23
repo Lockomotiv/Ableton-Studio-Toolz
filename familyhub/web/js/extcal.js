@@ -4,6 +4,7 @@
 import { store } from './store.js';
 import { http, isApp } from './native.js';
 import { parseIcs } from './icsparse.js';
+import { wasteType } from './wastetypes.js';
 
 const KEY = 'fh3.extcache';
 let cache = load();
@@ -19,7 +20,10 @@ export function externalEvents() {
     if (c.enabled === false) continue;
     const entry = cache[c.id];
     if (!entry?.events) continue;
-    for (const e of entry.events) out.push({ ...e, memberIds: c.memberIds || [], calColor: c.color, calName: c.name });
+    for (const e of entry.events) {
+      if (c.kind === 'waste') { const t = wasteType(e.title); out.push({ ...e, memberIds: [], calColor: t[3], calName: 'Abfall', title: `${t[2]} ${e.title}`, waste: true }); }
+      else out.push({ ...e, memberIds: c.memberIds || [], calColor: c.color, calName: c.name });
+    }
   }
   return out;
 }
@@ -29,6 +33,8 @@ function normalizeUrl(u) { return String(u || '').trim().replace(/^webcal:\/\//i
 
 export async function refreshCalendar(c) {
   const url = normalizeUrl(c.url);
+  // Wurde die Adresse inzwischen geändert, gilt dieses (ältere) Ergebnis nicht mehr
+  const stale = () => (store.get('calendars', c.id)?.url ?? c.url) !== c.url;
   try {
     let text;
     if (isApp) {
@@ -42,9 +48,11 @@ export async function refreshCalendar(c) {
     } else throw new Error('Im Browser nur mit verbundenem Pi möglich');
     if (!/BEGIN:VCALENDAR/.test(text)) throw new Error('Keine gültige iCal-Adresse');
     const events = parseIcs(text, { calId: c.id.slice(0, 10) });
-    cache[c.id] = { events, fetched: Date.now(), error: null, count: events.length };
+    if (stale()) return cache[c.id];
+    cache[c.id] = { events, fetched: Date.now(), error: null, count: events.length, url: c.url };
   } catch (e) {
-    cache[c.id] = { ...(cache[c.id] || {}), error: e.message, tried: Date.now() };
+    if (stale()) return cache[c.id] || { error: null };
+    cache[c.id] = { ...(cache[c.id] || {}), error: /ENOTFOUND|getaddrinfo/.test(e.message) ? 'Adresse nicht erreichbar (Internet/Name prüfen)' : e.message, tried: Date.now() };
   }
   save();
   store.emit('data');

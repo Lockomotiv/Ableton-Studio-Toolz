@@ -4,6 +4,7 @@ import { occurrences, nextDate, minutesOf } from './recur.js';
 import { ymd, addDays } from './nlp.js';
 import { scheduleReminders, updateWidget } from './native.js';
 import { externalEvents } from './extcal.js';
+import { wasteReminders, pickupsOn } from './waste.js';
 
 export const MEMBER_COLORS = ['#E4572E', '#2E86AB', '#7A9E3B', '#9B5DE5', '#F2A541', '#17A398', '#D64A8A', '#5C6B7A'];
 export const MEMBER_EMOJI = ['🦊', '🐻', '🐼', '🦁', '🐯', '🐨', '🐸', '🐙', '🦄', '🐝', '🐳', '🌻', '⚽', '🎸', '🚀', '⭐'];
@@ -112,6 +113,7 @@ export function refreshNative() {
         if (at > now.getTime()) items.push({ key: `t:${t.id}:${t.date}`, at, title: '☑ ' + t.title, body: 'Aufgabe fällig' });
       }
     }
+    if (!child) { try { items.push(...wasteReminders()); } catch { /* ohne Abfallkalender */ } }
     items.sort((a, b) => a.at - b.at);
     scheduleReminders(items.slice(0, 120));
 
@@ -126,6 +128,10 @@ export function refreshNative() {
       const tomorrow = ymd(addDays(now, 1));
       for (const e of agenda(tomorrow, tomorrow, { filter: false }).slice(0, 3 - upcoming.length)) upcoming.push('Morgen ' + (e.allDay ? '' : e.time.replace(/^0/, '') + ' · ') + e.title);
     }
+    try {
+      const tmw = pickupsOn(ymd(addDays(now, 1)));
+      if (tmw.length) upcoming.unshift('Morgen Abfall: ' + tmw.map((p) => p.wasteEmoji + ' ' + p.wasteName).join(', '));
+    } catch { /* egal */ }
     updateWidget({
       events: todayEvents.length, tasks: due.length, openTasks: open.length,
       shopping: store.list('shopping').filter((s) => !s.done).length,
