@@ -1,5 +1,5 @@
 // Wetter: Karte auf „Heute“, eigene Rubrik mit Animationen, Details, Warnungen, Pollen und Anzieh-Assistent.
-import { h, icon, toast, sheet, fmt } from './ui.js';
+import { h, icon, toast, sheet, fmt, kidGlyphs } from './ui.js';
 import { store } from './store.js';
 import { members, member, today, childMode } from './domain.js';
 import { ymd, addDays } from './nlp.js';
@@ -81,7 +81,7 @@ export function todayWeatherCard() {
       h('div.wx-card-top', null, h('b.wx-temp', null, Math.round(c.temp) + '°'), h('span', null, wmo(c.code)[0])),
       h('small', null, `${m.place.name.replace(/\s*\(.*\)/, '')} · ${Math.round(d.min)}° / ${Math.round(d.max)}° · gefühlt ${Math.round(c.feels)}°`),
       warn ? h('small.wx-warn', null, '⚠️ ' + warn.event) : rs != null ? h('small', null, `🌧 Regen ab etwa ${rs} Uhr`) : null,
-      adv ? h('small.wx-dress', null, `${after18 ? 'Morgen' : 'Heute'} anziehen: ${adv.items.slice(0, 4).map((i) => i.emoji + ' ' + i.label.split(/[(/+]/)[0].trim()).join(', ')}`) : null),
+      adv ? h('small.wx-dress', null, `${after18 ? 'Morgen' : 'Heute'} anziehen: ${adv.items.slice(0, 4).map((i) => (kidGlyphs() ? i.emoji + ' ' : '') + i.label.split(/[(/+]/)[0].trim()).join(', ')}`) : null),
     icon('right', 18));
 }
 

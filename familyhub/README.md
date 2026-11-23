@@ -107,6 +107,14 @@ Hinweis zu Cookidoo und Lifesum: Beide bieten keine offene Schnittstelle. Öffen
 * iPhone: morgens um 06:45 Uhr Anziehtipp als Benachrichtigung vom Pi
 * Daten: Open-Meteo (CC BY 4.0, ohne Schlüssel), Warnungen: Deutscher Wetterdienst über Bright Sky
 
+### Neu in 4.5: Premium-Oberfläche
+Überarbeitet nach den Design-Skills `anthropics/skills › frontend-design` und `dickwu/apple-design-skill` (Apple Human Interface Guidelines):
+- **Symbole statt Emojis für Eltern & Erwachsene:** eine einheitliche Linien-Symbolsprache (Lucide, ISC-Lizenz) – Einkaufsartikel, Kategorien, Wetter, Anzieh-Tipps, Abfalltonnen, Haushaltsbuch, Kontakte, Listen, Ämter, Rezepte. Einkaufskacheln zeigen das Symbol in der Farbe ihres Bereichs.
+- **Kinderprofil bleibt bunt:** im Kindermodus (und auf Handys, die einem Kind gehören) erscheinen weiter Emojis. Das Avatar-Emoji wählt ihr unter „Familie → Symbol im Kinderprofil“; Erwachsene sehen stattdessen ein Monogramm.
+- **Auch Benachrichtigungen & Widget** sind für Erwachsene ohne Emojis (Push vom Pi, Erinnerungen, Startbildschirm-Widget).
+- **Ruhigere Gestaltung:** kühles Neutral statt Creme, Spreewald-Petrol nur für Aktionen und Status, Koralle ausschließlich für die Sprachtaste. Überschriften in Satzschreibung mit Zähl-Pillen statt VERSALIEN, feine Kanten statt Farbflächen, gruppierte Menüs wie in den Systemeinstellungen, Glas-Effekt nur für Kopf- und Tab-Leiste.
+- **Schrift:** Manrope (OFL, liegt in der App) für Überschriften und Zahlen, Systemschrift für Text und Bedienelemente. Hell & Dunkel geprüft, Kontraste ≥ 4,5:1 für Text.
+
 ### Sprachsteuerung – Beispiele
 
 * „Morgen um halb vier Zahnarzt mit Lena, erinnere mich eine Stunde vorher“
@@ -120,7 +128,7 @@ Unter *Einstellungen* lässt sich „Direkt speichern“ einschalten – dann wi
 
 ## Installation auf dem Handy
 
-1. `release/FamilyHub-4.4.0.apk` aufs Handy und installieren.
+1. `release/FamilyHub-4.5.0.apk` aufs Handy und installieren.
    Die neue App hat eine eigene Paket-ID (`de.familyhub.app`) und läuft **neben** der alten App. Die alte kann gelöscht werden, sobald alles passt.
 2. Beim ersten Start „Familie anlegen“.
 3. Optional: Mehr → Synchronisierung → mit dem Pi verbinden (siehe unten).

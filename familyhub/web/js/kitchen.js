@@ -2,6 +2,7 @@
 //   meals   { date, slot: 'breakfast'|'lunch'|'dinner', title, recipeId, emoji }
 //   recipes { title, emoji, image, servings, ingredients: "eine Zutat pro Zeile", steps, url, source, thermomix,
 //             nutrition: {kcal, protein, fat, carbs, fiber, sugar} (pro Portion), totalMin, tags, cookedAt }
+import { uniqGlyphs } from './ui.js';
 import { h, icon, toast, sheet, confirmSheet, promptSheet, fmt } from './ui.js';
 import { store } from './store.js';
 import { today, childMode } from './domain.js';
@@ -304,7 +305,7 @@ export function editRecipe(r) {
   const f = {};
   let emoji = v.emoji;
   const ems = h('div.emojis');
-  const drawE = () => ems.replaceChildren(...FOOD_EMOJI.map((e) => h('button.emoji' + (e === emoji ? '.on' : ''), { type: 'button', onclick: () => { emoji = e; drawE(); } }, e)));
+  const drawE = () => ems.replaceChildren(...uniqGlyphs(FOOD_EMOJI, emoji).map((e) => h('button.emoji' + (e === emoji ? '.on' : ''), { type: 'button', onclick: () => { emoji = e; drawE(); } }, e)));
   drawE();
   const numIn = (val) => h('input', { type: 'number', min: 0, step: 'any', value: val ?? '', inputmode: 'decimal' });
   sheet((s) => h('form.sheet-body', { onsubmit: (e) => {

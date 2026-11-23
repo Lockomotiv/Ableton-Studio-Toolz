@@ -1,5 +1,5 @@
 // Schnell-Erfassung: sprechen oder tippen → FamilyHub versteht Termin / Aufgabe / Einkauf.
-import { h, icon, sheet, toast, fmt, fill } from './ui.js';
+import { h, icon, sheet, toast, fmt, fill, mono } from './ui.js';
 import { parse, describe, repeatLabel, shoppingCategory } from './nlp.js';
 import { store } from './store.js';
 import { members, refreshNative, childMode, completeTask } from './domain.js';
@@ -125,7 +125,7 @@ export function openCapture({ mode = voiceAvailable() ? 'voice' : 'text', text =
         h('div.chips', null, ...chips),
         mem.length ? h('div.chips.people', null, ...mem.map((m) => {
           const on = p.memberIds.includes(m.id);
-          return h('button.person' + (on ? '.on' : ''), { style: { '--c': m.color }, onclick: () => { haptic(); const ids = new Set(current().memberIds); on ? ids.delete(m.id) : ids.add(m.id); overrides.memberIds = [...ids]; renderPreview(); } }, h('span.av', null, m.emoji || m.name[0]), m.name);
+          return h('button.person' + (on ? '.on' : ''), { style: { '--c': m.color }, onclick: () => { haptic(); const ids = new Set(current().memberIds); on ? ids.delete(m.id) : ids.add(m.id); overrides.memberIds = [...ids]; renderPreview(); } }, h('span.av', null, mono(m)), m.name);
         })) : null,
       ),
     );

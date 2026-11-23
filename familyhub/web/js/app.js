@@ -1,5 +1,5 @@
 // FamilyHub 3 – App-Rahmen: Navigation, Routing, Theme, Zurück-Taste.
-import { h, icon, closeTopSheet, sheet, fill } from './ui.js';
+import { h, icon, closeTopSheet, sheet, fill, setEmojiMode } from './ui.js';
 import { store } from './store.js';
 import { childMode, refreshNative, members } from './domain.js';
 import { viewToday, viewCalendar, viewTasks, viewShopping, hubPage, TASK_TABS, KITCHEN_TABS } from './views.js';
@@ -62,10 +62,12 @@ function render(reason) {
   const r = route();
   const kid = childMode();
   document.body.classList.toggle('child', !!kid);
+  const meM = members().find((m) => m.id === store.config.meId);
+  setEmojiMode(!!kid || meM?.role === 'child');
   // Topbar
   const syncState = store.serverEnabled() ? store.sync.state : 'local';
   fill(topbar,
-    h('div.brand', null, h('span.logo', null, '⌂'), h('span', null, kid ? `${kid.name}s Bereich` : store.config.familyName || 'FamilyHub')),
+    h('div.brand', null, h('span.logo', null, icon('home', 18)), h('span', null, kid ? `${kid.name}s Bereich` : store.config.familyName || 'FamilyHub')),
     h('span.spacer'),
     store.serverEnabled() ? h('a.sync-dot.' + syncState, { href: kid ? null : '#sync', title: syncState === 'error' ? store.sync.error : 'Synchronisiert', 'aria-label': 'Synchronisierung' }, icon(syncState === 'error' ? 'cloudOff' : 'sync', 18)) : null,
     h('button.icon-btn', { 'aria-label': 'Wandansicht', title: 'Wandansicht / Bilderrahmen', onclick: () => openWall() }, icon('photo', 20)),

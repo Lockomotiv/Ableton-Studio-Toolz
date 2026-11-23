@@ -1,6 +1,6 @@
 // Dokumente der Familie (liegen auf dem Pi): Impfpass, Ausweise, Verträge, Zeugnisse, Garantien …
 //   documents { name, category, fileId, type, size, memberIds, note }
-import { h, icon, toast, sheet, confirmSheet } from './ui.js';
+import { h, icon, toast, sheet, confirmSheet, mono } from './ui.js';
 import { store } from './store.js';
 import { members, childMode } from './domain.js';
 import { openUrl } from './native.js';
@@ -50,7 +50,7 @@ function upload() {
 function details({ name, file, doc }) {
   const f = {}; const sel = new Set(doc?.memberIds || []);
   const ppl = h('div.chips.people');
-  const drawP = () => ppl.replaceChildren(...members().map((m) => h('button.person' + (sel.has(m.id) ? '.on' : ''), { type: 'button', style: { '--c': m.color }, onclick: () => { sel.has(m.id) ? sel.delete(m.id) : sel.add(m.id); drawP(); } }, h('span.av', null, m.emoji || m.name[0]), m.name)));
+  const drawP = () => ppl.replaceChildren(...members().map((m) => h('button.person' + (sel.has(m.id) ? '.on' : ''), { type: 'button', style: { '--c': m.color }, onclick: () => { sel.has(m.id) ? sel.delete(m.id) : sel.add(m.id); drawP(); } }, h('span.av', null, mono(m)), m.name)));
   drawP();
   const st = h('p.status');
   const guess = /impf|kranken|arzt|befund|rezept/i.test(name) ? 'health' : /ausweis|pass|urkunde|geburt/i.test(name) ? 'id' : /schul|kita|zeugnis/i.test(name) ? 'school' : /vertrag|versicherung|police/i.test(name) ? 'contracts' : /rechnung|garantie|beleg|quittung/i.test(name) ? 'receipts' : 'other';

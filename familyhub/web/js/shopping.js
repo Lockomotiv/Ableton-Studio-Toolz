@@ -77,7 +77,7 @@ export function viewShopping() {
   // Wiederkehrend fällig
   const due = db.list('catalog').filter((c) => isDue(c) && !open.some((s) => s.name.toLowerCase() === c.name.toLowerCase()));
   if (due.length && !kid) page.append(h('div.card.due-card', null,
-    h('div.due-head', null, h('b', null, `🔁 Wiederkehrend fällig · ${due.length}`), h('button.btn.small.primary', { onclick: () => { due.forEach((c) => addItem(c.name, { silent: true })); haptic('success'); toast(`${due.length} Stammartikel hinzugefügt`); } }, 'Alle hinzufügen')),
+    h('div.due-head', null, h('b', null, '🔁 Wiederkehrend fällig', h('span.count-pill', null, due.length)), h('button.btn.small.primary', { onclick: () => { due.forEach((c) => addItem(c.name, { silent: true })); haptic('success'); toast(`${due.length} Stammartikel hinzugefügt`); } }, 'Alle hinzufügen')),
     h('div.tile-row', null, ...due.map((c) => tile({ name: c.name, emoji: c.emoji, small: REPEATS[c.repeat]?.[0] }, () => { addItem(c.name); rerender(); })))));
 
   // Liste
@@ -89,13 +89,13 @@ export function viewShopping() {
     for (const s of items) (byCat[s.category || categoryOf(s.name)] ||= []).push(s);
     const out = [];
     if (title) out.push(h('h3.section-title.store-sec', null, title));
-    for (const cat of CATEGORY_ORDER) if (byCat[cat]) out.push(h('section.section.shop-cat', null, h('h3.section-title', null, catEmoji(cat) + ' ' + cat), h('div.shop-list', null, ...byCat[cat].sort((a, b) => a.name.localeCompare(b.name)).map((s) => shopRow(s, rerender)))));
+    for (const cat of CATEGORY_ORDER) if (byCat[cat]) out.push(h('section.section.shop-cat', { style: { '--t': tint(cat) } }, h('h3.section-title', null, catEmoji(cat) + ' ' + cat), h('div.shop-list', null, ...byCat[cat].sort((a, b) => a.name.localeCompare(b.name)).map((s) => shopRow(s, rerender)))));
     return out;
   };
   page.append(...group(visible));
   if (anywhere.length) page.append(...group(anywhere, '📍 In jedem Laden erhältlich'));
 
-  if (done.length) page.append(h('section.section', null, h('h3.section-title', null, `✓ Im Wagen · ${done.length}`), h('div.shop-list.done-list', null, ...done.slice(0, 40).map((s) => shopRow(s, rerender)))),
+  if (done.length) page.append(h('section.section', null, h('h3.section-title', null, 'Im Wagen', h('span.count-pill', null, done.length)), h('div.shop-list.done-list', null, ...done.slice(0, 40).map((s) => shopRow(s, rerender)))),
     kid ? null : h('button.btn.ghost.more-btn', { onclick: () => { done.forEach((s) => db.del('shopping', s.id)); toast('Liste aufgeräumt', { label: 'Rückgängig', run: () => db.putMany('shopping', done) }); } }, icon('trash', 18), 'Gekaufte entfernen'));
 
   // Prospekte
@@ -110,7 +110,7 @@ function storeBadge(id) { const s = storeOf(id); return s ? h('span.store-badge'
 
 function shopRow(s, rerender) {
   let timer = null; let long = false;
-  const el = h('div.shop-item' + (s.done ? '.done' : '') + (s.offer ? '.offer' : ''), { role: 'button', tabindex: 0 },
+  const el = h('div.shop-item' + (s.done ? '.done' : '') + (s.offer ? '.offer' : ''), { role: 'button', tabindex: 0, style: { '--t': tint(s.category || categoryOf(s.name)) } },
     h('span.si-emoji', null, s.emoji || emojiOf(s.name)),
     h('span.si-main', null, h('b', null, s.name), (s.note || s.unit || s.offer) ? h('small', null, [s.offer ? '🏷️ Angebot' : null, s.unit, s.note].filter(Boolean).join(' · ')) : null),
     (+s.qty || 1) > 1 ? h('span.qty', null, `${s.qty}×`) : null,
@@ -169,9 +169,13 @@ export function editItem(s) {
     h('button.btn.primary', { type: 'submit' }, 'Speichern'))), { tall: true, label: 'Artikel' });
 }
 
+// Ruhige Erkennungsfarbe je Bereich (Symbole im Erwachsenenprofil)
+const TINT = { 'Obst & Gemüse': '#3F8F4E', 'Brot & Backwaren': '#A8742F', 'Milch, Käse & Eier': '#3F7FBF', 'Fleisch, Wurst & Fisch': '#BC4A45', 'Tiefkühl': '#2F93B5', 'Nudeln, Reis & Vorrat': '#B88A1E', 'Konserven & Soßen': '#B0533A', 'Frühstück & Aufstriche': '#C27F22', 'Backen & Gewürze': '#8A6A4E', 'Süßes & Snacks': '#B04C7C', 'Getränke': '#2A8AA0', 'Baby & Kind': '#8768C2', 'Hygiene & Pflege': '#7259C4', 'Reinigung & Waschen': '#23917F', 'Haushalt & Papier': '#64748B', 'Tierbedarf': '#94703F' };
+export const tint = (cat) => TINT[cat] || '#64748B';
+
 // ================= Bildkachel-Auswahl =================
 function tile(it, onclick, badge) {
-  return h('button.tile' + (badge ? '.on' : ''), { onclick, 'aria-label': it.name }, h('span.tile-emoji', null, it.emoji), h('span.tile-name', null, it.name), it.small ? h('small', null, it.small) : null, badge ? h('span.tile-badge', null, badge) : null);
+  return h('button.tile' + (badge ? '.on' : ''), { onclick, 'aria-label': it.name, style: { '--t': tint(it.cat || categoryOf(it.name)) } }, h('span.tile-emoji', null, it.emoji), h('span.tile-name', null, it.name), it.small ? h('small', null, it.small) : null, badge ? h('span.tile-badge', null, badge) : null);
 }
 
 export function openPicker(storeId) {
@@ -192,10 +196,10 @@ export function openPicker(storeId) {
       const top = db.list('catalog').filter((c) => c.count).sort((a, b) => (b.count || 0) - (a.count || 0)).slice(0, 24).map((c) => ({ n: c.name, e: c.emoji, c: c.category }));
       items = top.length >= 6 ? top : CATALOG.filter((x) => ['Milch', 'Brot', 'Eier', 'Butter', 'Bananen', 'Äpfel', 'Tomaten', 'Gurke', 'Käsescheiben', 'Joghurt', 'Nudeln', 'Kaffee', 'Toilettenpapier', 'Zahnpasta', 'Spülmittel', 'Wasser', 'Kartoffeln', 'Zwiebeln'].includes(x.n));
     } else items = pool.filter((x) => x.c === cat);
-    const tiles = items.map((x) => tile({ name: x.n, emoji: x.e }, () => add(x.n), list.get(x.n.toLowerCase())));
+    const tiles = items.map((x) => tile({ name: x.n, emoji: x.e, cat: x.c }, () => add(x.n), list.get(x.n.toLowerCase())));
     if (ql && !pool.some((x) => x.n.toLowerCase() === ql)) {
       const name = tidy(q);
-      tiles.unshift(h('button.tile.new-tile', { onclick: () => { add(name); input.value = ''; q = ''; draw(); input.focus(); } }, h('span.tile-emoji', null, emojiOf(name)), h('span.tile-name', null, `„${name}“`), h('small', null, '+ neu: ' + categoryOf(name))));
+      tiles.unshift(h('button.tile.new-tile', { style: { '--t': tint(categoryOf(name)) }, onclick: () => { add(name); input.value = ''; q = ''; draw(); input.focus(); } }, h('span.tile-emoji', null, emojiOf(name)), h('span.tile-name', null, `„${name}“`), h('small', null, '+ neu: ' + categoryOf(name))));
     }
     grid.replaceChildren(...(tiles.length ? tiles : [h('p.soft', null, 'Nichts gefunden.')]));
     cats.replaceChildren(

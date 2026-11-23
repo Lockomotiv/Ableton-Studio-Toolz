@@ -1,5 +1,5 @@
 // Bereich „Mehr“: Familie, Kindermodus, Fotos, Pi & Dienste, Synchronisierung, Einstellungen, Hilfe.
-import { h, icon, toast, confirmSheet, promptSheet, sheet } from './ui.js';
+import { h, icon, toast, confirmSheet, promptSheet, sheet, mono } from './ui.js';
 import { store, normalizeBase, webOrigin } from './store.js';
 import { members, childMode, refreshNative } from './domain.js';
 import { editMember } from './editors.js';
@@ -10,7 +10,7 @@ import { calendars, refreshCalendar, calStatus } from './extcal.js';
 import { openWall } from './wall.js';
 import { MEMBER_COLORS } from './domain.js';
 
-const APP_VERSION = '4.4.0';
+const APP_VERSION = '4.5.0';
 
 function row(ic, title, sub, onclick, right) {
   return h(onclick ? 'button.menu-row' : 'div.menu-row', { onclick }, h('span.mi', null, icon(ic, 20)), h('span.mt', null, h('b', null, title), sub ? h('small', null, sub) : null), right || (onclick ? icon('right', 18) : null));
@@ -22,31 +22,31 @@ function status(el, text, kind) { el.textContent = text; el.className = 'status 
 export function viewMore() {
   const s = store.config.server;
   const syncSub = store.serverEnabled() ? (store.sync.state === 'error' ? '⚠ ' + store.sync.error : `Verbunden · ${s.familyName || store.config.familyName}`) : 'Nur auf diesem Gerät gespeichert';
-  return h('div.page.more', null,
+  return h('div.page.more-page', null,
     h('div.page-head', null, h('h1', null, 'Mehr')),
     h('div.menu', null,
       row('users', 'Familie', members().length ? members().map((m) => m.name).join(', ') : 'Personen anlegen', () => go('familie'), avatars(members().map((m) => m.id))),
-      row('lock', 'Kindermodus', store.config.child.pinHash ? 'Eingerichtet' : 'Vereinfachte Ansicht für Kinder', () => go('kinder')),
+      row('baby', 'Kindermodus', store.config.child.pinHash ? 'Eingerichtet' : 'Vereinfachte Ansicht für Kinder', () => go('kinder')),
       row('photo', 'Fotos', 'Eure Immich-Fotos & Diashow', () => go('fotos'))),
     h('div.menu', null,
       row('sun', 'Wetter', 'Vorhersage, Warnungen, Anzieh-Assistent', () => go('wetter')),
       row('trash', 'Abfall', 'Abholtermine, Erinnerung am Vorabend', () => go('abfall')),
-      row('users', 'iPhone & Browser', 'FamilyHub für iPhones, Benachrichtigungen, Siri', () => go('iphone')),
-      row('users', 'Pinnwand', 'Nachrichten an die ganze Familie', () => go('pinnwand')),
-      row('tasks', 'Listen', 'Packliste, Geschenkideen, Filme …', () => go('listen')),
-      row('pin', 'Kontakte', 'Kinderarzt, Kita, Babysitter, Notruf', () => go('kontakte')),
-      row('calendar', 'Stundenplan', 'Schulstunden der Kinder', () => go('stundenplan')),
-      row('flag', 'Haushaltsbuch', 'Ausgaben, Einnahmen, Limits', () => go('budget')),
-      row('download', 'Dokumente', 'Impfpass, Verträge, Zeugnisse – auf dem Pi', () => go('dokumente'))),
+      row('smartphone', 'iPhone & Browser', 'FamilyHub für iPhones, Benachrichtigungen, Siri', () => go('iphone')),
+      row('message-square-text', 'Pinnwand', 'Nachrichten an die ganze Familie', () => go('pinnwand')),
+      row('list-todo', 'Listen', 'Packliste, Geschenkideen, Filme …', () => go('listen')),
+      row('contact', 'Kontakte', 'Kinderarzt, Kita, Babysitter, Notruf', () => go('kontakte')),
+      row('graduation-cap', 'Stundenplan', 'Schulstunden der Kinder', () => go('stundenplan')),
+      row('wallet', 'Haushaltsbuch', 'Ausgaben, Einnahmen, Limits', () => go('budget')),
+      row('folder-lock', 'Dokumente', 'Impfpass, Verträge, Zeugnisse – auf dem Pi', () => go('dokumente'))),
     h('div.menu', null,
-      row('calendar', 'Kalender verbinden', calendars().length ? calendars().map((c) => c.name).join(', ') : 'Google, Apple, Outlook, Schulferien …', () => go('extern')),
-      row('photo', 'Wandansicht & Bilderrahmen', 'Für ein Tablet an der Wand', () => openWall())),
+      row('calendar-plus', 'Kalender verbinden', calendars().length ? calendars().map((c) => c.name).join(', ') : 'Google, Apple, Outlook, Schulferien …', () => go('extern')),
+      row('frame', 'Wandansicht & Bilderrahmen', 'Für ein Tablet an der Wand', () => openWall())),
     h('div.menu', null,
       row('sync', 'Synchronisierung', syncSub, () => go('sync')),
       row('server', 'Pi & Dienste', 'Status, Starten/Stoppen, Adressen', () => go('pi'))),
     h('div.menu', null,
       row('settings', 'Einstellungen', 'Darstellung, Sprache, Erinnerungen, Daten', () => go('einstellungen')),
-      row('help', 'Sprachbefehle & Hilfe', 'Was FamilyHub versteht', () => go('hilfe'))),
+      row('mic', 'Sprachbefehle & Hilfe', 'Was FamilyHub versteht', () => go('hilfe'))),
     h('p.footnote', null, `FamilyHub ${APP_VERSION}`));
 }
 const go = (r) => { location.hash = r; };
@@ -59,14 +59,14 @@ export function viewFamily() {
     back('Familie'),
     h('p.muted', null, 'Wer gehört dazu? Namen helfen der Sprachsteuerung („… mit Lena“), Farben machen den Kalender übersichtlich.'),
     h('div.menu', null, ...ms.map((m) => h('button.menu-row', { onclick: () => editMember(m) },
-      h('span.av.lg', { style: { '--c': m.color } }, m.emoji || m.name[0]),
+      h('span.av.lg', { style: { '--c': m.color } }, mono(m)),
       h('span.mt', null, h('b', null, m.name, m.id === me ? h('span.badge', null, 'Ich') : null), h('small', null, { parent: 'Elternteil', child: 'Kind', other: 'Familie' }[m.role] || '')),
       icon('right', 18))),
     h('button.menu-row.add', { onclick: () => editMember(null) }, h('span.mi', null, icon('plus', 20)), h('span.mt', null, h('b', null, 'Person hinzufügen')))),
     ms.length ? h('div.card', null,
       h('b', null, 'Wer nutzt dieses Handy?'),
       h('p.muted', null, 'Erinnerungen kommen nur für eigene und gemeinsame Einträge. „Für mich“ in Sprachbefehlen meint diese Person.'),
-      h('div.chips.people', null, ...ms.map((m) => h('button.person' + (m.id === me ? '.on' : ''), { style: { '--c': m.color }, onclick: () => { store.saveConfig({ meId: m.id === me ? null : m.id }); refreshNative(); } }, h('span.av', null, m.emoji || m.name[0]), m.name)))) : null);
+      h('div.chips.people', null, ...ms.map((m) => h('button.person' + (m.id === me ? '.on' : ''), { style: { '--c': m.color }, onclick: () => { store.saveConfig({ meId: m.id === me ? null : m.id }); refreshNative(); } }, h('span.av', null, mono(m)), m.name)))) : null);
 }
 
 // ---------- Kindermodus ----------
@@ -341,7 +341,7 @@ function editCalendar(c) {
   draw();
   const set = new Set(v.memberIds);
   const ppl = h('div.chips.people');
-  const drawP = () => ppl.replaceChildren(...members().map((m) => h('button.person' + (set.has(m.id) ? '.on' : ''), { type: 'button', style: { '--c': m.color }, onclick: () => { set.has(m.id) ? set.delete(m.id) : set.add(m.id); drawP(); } }, h('span.av', null, m.emoji || m.name[0]), m.name)));
+  const drawP = () => ppl.replaceChildren(...members().map((m) => h('button.person' + (set.has(m.id) ? '.on' : ''), { type: 'button', style: { '--c': m.color }, onclick: () => { set.has(m.id) ? set.delete(m.id) : set.add(m.id); drawP(); } }, h('span.av', null, mono(m)), m.name)));
   drawP();
   const st = h('p.status');
   sheet((s) => h('form.sheet-body', { onsubmit: async (e) => {

@@ -1,5 +1,5 @@
 // Ausführliche Bearbeitungsmasken für Termine, Aufgaben, Einkauf und Familienmitglieder.
-import { h, icon, sheet, toast, confirmSheet } from './ui.js';
+import { h, icon, sheet, toast, confirmSheet, mono } from './ui.js';
 import { store } from './store.js';
 import { members, deleteEvent, refreshNative, MEMBER_COLORS, MEMBER_EMOJI, childMode } from './domain.js';
 import { shoppingCategory, SHOPPING_CATEGORY_ORDER, ymd } from './nlp.js';
@@ -17,7 +17,7 @@ function select(options, value) { return h('select', null, ...options.map(([v, l
 function peoplePicker(selected) {
   const set = new Set(selected || []);
   const wrap = h('div.chips.people');
-  const render = () => wrap.replaceChildren(...members().map((m) => h('button.person' + (set.has(m.id) ? '.on' : ''), { type: 'button', style: { '--c': m.color }, onclick: () => { haptic(); set.has(m.id) ? set.delete(m.id) : set.add(m.id); render(); } }, h('span.av', null, m.emoji || m.name[0]), m.name)));
+  const render = () => wrap.replaceChildren(...members().map((m) => h('button.person' + (set.has(m.id) ? '.on' : ''), { type: 'button', style: { '--c': m.color }, onclick: () => { haptic(); set.has(m.id) ? set.delete(m.id) : set.add(m.id); render(); } }, h('span.av', null, mono(m)), m.name)));
   render();
   return { el: members().length ? field('Wer?', wrap) : h('p.hint', null, 'Tipp: Unter „Familie“ Personen anlegen, dann kannst du Einträge zuordnen.'), get: () => [...set] };
 }
@@ -138,7 +138,7 @@ export function editMember(m) {
   sheet((s) => {
     let color = v.color; let emoji = v.emoji;
     const colors = h('div.swatches');
-    const emojis = h('div.emojis');
+    const emojis = h('div.emojis.keep-emoji');
     const drawC = () => colors.replaceChildren(...MEMBER_COLORS.map((c) => h('button.swatch' + (c === color ? '.on' : ''), { type: 'button', style: { background: c }, 'aria-label': 'Farbe', onclick: () => { color = c; drawC(); } })));
     const drawE = () => emojis.replaceChildren(h('button.emoji' + (!emoji ? '.on' : ''), { type: 'button', onclick: () => { emoji = ''; drawE(); } }, 'Aa'), ...MEMBER_EMOJI.map((e) => h('button.emoji' + (e === emoji ? '.on' : ''), { type: 'button', onclick: () => { emoji = e; drawE(); } }, e)));
     drawC(); drawE();
@@ -160,7 +160,7 @@ export function editMember(m) {
       field('Rolle', f.role = select([['parent', 'Elternteil'], ['child', 'Kind'], ['other', 'Andere']], v.role)),
       field('Geburtstag', f.bday = h('input', { type: 'date', value: v.birthday || '' }))),
     field('Farbe', colors),
-    field('Symbol', emojis),
+    field('Symbol im Kinderprofil', emojis),
     h('div.btn-row', null,
       base ? h('button.btn.danger-ghost', { type: 'button', onclick: async () => { if (await confirmSheet({ title: `${base.name} entfernen?`, text: 'Termine und Aufgaben bleiben erhalten.', ok: 'Entfernen', danger: true })) { store.del('members', base.id); s.close(); } } }, icon('trash', 18), 'Entfernen') : h('span'),
       h('button.btn.primary', { type: 'submit' }, 'Speichern')));

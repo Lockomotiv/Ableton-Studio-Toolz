@@ -1,5 +1,5 @@
 // Hauptbereiche: Heute, Kalender, Aufgaben, Einkauf.
-import { h, icon, fmt, toast } from './ui.js';
+import { h, icon, fmt, toast, mono } from './ui.js';
 import { store } from './store.js';
 import { agenda, openTasks, doneTasks, taskBucket, BUCKETS, sortTasks, completeTask, nextUp, members, member, childMode, refreshNative, today } from './domain.js';
 import { ymd, addDays, repeatLabel, SHOPPING_CATEGORY_ORDER, shoppingCategory, parse } from './nlp.js';
@@ -43,7 +43,7 @@ function showExternal(ev) {
 export function avatars(ids, size = 'sm') {
   const ms = (ids || []).map(member).filter(Boolean);
   if (!ms.length) return null;
-  return h('span.avs.' + size, null, ...ms.slice(0, 4).map((m) => h('span.av', { style: { '--c': m.color }, title: m.name }, m.emoji || m.name[0])));
+  return h('span.avs.' + size, null, ...ms.slice(0, 4).map((m) => h('span.av', { style: { '--c': m.color }, title: m.name }, mono(m))));
 }
 
 function eventRow(ev, { showDay } = {}) {
@@ -276,7 +276,7 @@ export function viewTasks() {
     if (!list.length) page.append(empty('check', 'Alles erledigt! Zeit für eine Pause. ☕'));
     for (const [key, label] of BUCKETS) {
       const items = list.filter((t) => taskBucket(t) === key);
-      if (items.length) page.append(section(label + ` · ${items.length}`, h('div.list', null, ...items.map((t) => taskRow(t, { showDate: key !== 'today' && key !== 'tomorrow' })))));
+      if (items.length) page.append(section([label, h('span.count-pill', null, items.length)], h('div.list', null, ...items.map((t) => taskRow(t, { showDate: key !== 'today' && key !== 'tomorrow' })))));
     }
   } else {
     const list = doneTasks().slice(0, 100);

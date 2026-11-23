@@ -45,7 +45,7 @@ export function viewBudget() {
       h('div.progress', null, h('i', { style: { width: Math.min(100, pct * 100) + '%' } })),
       lim && v > lim ? h('small.warn', null, `${euro(v - lim)} über dem Limit`) : null);
   }))));
-  page.append(h('section.section', null, h('h3.section-title', null, `Buchungen · ${entries.length}`),
+  page.append(h('section.section', null, h('h3.section-title', null, 'Buchungen', h('span.count-pill', null, entries.length)),
     entries.length ? h('div.list.compact', null, ...entries.map((e) => h('button.item.budget-row', { onclick: () => editEntry(e) },
       h('span.br-emoji', null, catEmoji(e.category)),
       h('div.what', null, h('div.title', null, e.note || e.category), h('div.meta', null, h('span', null, fmt.dayLabel(e.date)), h('span', null, e.category), e.memberId ? h('span', null, member(e.memberId)?.name || '') : null)),

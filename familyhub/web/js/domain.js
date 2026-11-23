@@ -1,5 +1,6 @@
 // Fachlogik: was steht wann an, wer ist beteiligt, was ist fällig.
 import { store } from './store.js';
+import { stripEmoji } from './ui.js';
 import { occurrences, nextDate, minutesOf } from './recur.js';
 import { ymd, addDays } from './nlp.js';
 import { scheduleReminders, updateWidget } from './native.js';
@@ -116,6 +117,7 @@ export function refreshNative() {
     }
     if (!child) { try { items.push(...wasteReminders()); } catch { /* ohne Abfallkalender */ } }
     items.sort((a, b) => a.at - b.at);
+    if (!child) for (const it of items) { it.title = stripEmoji(it.title); it.body = stripEmoji(it.body); }
     scheduleReminders(items.slice(0, 120));
 
     const td = ymd(now);
@@ -137,7 +139,7 @@ export function refreshNative() {
     updateWidget({
       events: todayEvents.length, tasks: due.length, openTasks: open.length,
       shopping: store.list('shopping').filter((s) => !s.done).length,
-      lines: upcoming, tasksPreview: sortTasks(due).slice(0, 3).map((t) => t.title),
+      lines: child ? upcoming : upcoming.map(stripEmoji), tasksPreview: sortTasks(due).slice(0, 3).map((t) => t.title),
       child: !!child, updated: Date.now(),
     });
   }, 500);

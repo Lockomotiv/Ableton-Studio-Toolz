@@ -3,6 +3,10 @@
 // - sofort: neue Nachricht auf der Pinnwand, neuer Termin / neue Aufgabe / neues Amt für mich
 import crypto from 'node:crypto';
 import { generateVapid, sendPush } from './webpush.js';
+
+const EMO = /(?:\p{Regional_Indicator}{2}|\p{Extended_Pictographic}\uFE0F?(?:\u200D\p{Extended_Pictographic}\uFE0F?)*)/gu;
+/** Entfernt Emojis (nicht ©/®/™) und glättet Leerzeichen. */
+export function stripEmoji(s) { return s == null ? s : String(s).replace(EMO, (m) => (m.codePointAt(0) >= 0x2190 && m !== '\u2122' ? '' : m)).replace(/[ \t]{2,}/g, ' ').replace(/^[\s:·,–-]+/, '').trim(); }
 import { occurrences } from '../../web/js/recur.js';
 import { speakDress, wxEmoji } from '../../web/js/weathercore.js';
 
@@ -35,6 +39,9 @@ export class Notifier {
 
   async send(id, msg) {
     const sub = this.subs[id]; if (!sub) return null;
+    // Emojis nur für Kinder – Erwachsene bekommen ruhige, reine Texte
+    const kid = sub.memberId && this.db.data.members?.[sub.memberId]?.role === 'child';
+    if (!kid) msg = { ...msg, title: stripEmoji(msg.title), body: stripEmoji(msg.body) };
     try {
       const r = await sendPush(sub, msg, this.vapid, this.fetchRaw, { topic: msg.tag });
       if (r.status === 404 || r.status === 410) { delete this.subs[id]; this.db.save(); this.log(`Push-Abo ${sub.device} abgelaufen – entfernt`); }

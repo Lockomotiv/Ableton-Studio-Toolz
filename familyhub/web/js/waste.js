@@ -1,7 +1,7 @@
 // Abfall: Abholtermine (Restmüll, Bio, Gelber Sack, Papier …) aus einem Abfuhrkalender.
 // Quelle: Abo-Link (iCal/ICS) des Entsorgers oder Google-Kalender, alternativ eine .ics-Datei.
 // Termine erscheinen im Kalender, auf „Heute“, im Widget, in der Wandansicht und als Erinnerung am Vorabend.
-import { h, icon, toast, sheet, confirmSheet, fmt } from './ui.js';
+import { h, icon, toast, sheet, confirmSheet, fmt, mono } from './ui.js';
 import { store } from './store.js';
 import { agenda, members, member, today, childMode } from './domain.js';
 import { ymd, addDays } from './nlp.js';
@@ -86,7 +86,7 @@ function editDuty(key) {
   const t = byKey[key];
   sheet((s) => h('div.sheet-body', null, h('h2.sheet-title', null, `${t[2]} ${t[1]} – wer stellt raus?`),
     h('div.menu', null,
-      ...members().map((m) => h('button.menu-row', { onclick: () => { store.put('calendars', { ...cal, duties: { ...(cal.duties || {}), [key]: m.id } }); s.close(); } }, h('span.av', { style: { '--c': m.color } }, m.emoji || m.name[0]), h('span.mt', null, h('b', null, m.name)), cal.duties?.[key] === m.id ? icon('check') : null)),
+      ...members().map((m) => h('button.menu-row', { onclick: () => { store.put('calendars', { ...cal, duties: { ...(cal.duties || {}), [key]: m.id } }); s.close(); } }, h('span.av', { style: { '--c': m.color } }, mono(m)), h('span.mt', null, h('b', null, m.name)), cal.duties?.[key] === m.id ? icon('check') : null)),
       h('button.menu-row', { onclick: () => { const d = { ...(cal.duties || {}) }; delete d[key]; store.put('calendars', { ...cal, duties: d }); s.close(); } }, h('span.mt', null, h('b', null, 'Niemand Bestimmtes'))))), { label: 'Zuständig' });
 }
 

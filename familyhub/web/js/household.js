@@ -7,7 +7,8 @@
 //   points     Punktebuch: { memberId, delta, reason, date, kind:'chore'|'routine'|'redeem'|'bonus', ref }
 //              Abgehakte Ämter haben eine feste ID (c_<chore>_<member>_<datum>) – so ist Abhaken idempotent.
 //   routinelog { routineId, memberId, date, done:[Schrittindex] }
-import { h, icon, toast, sheet, confirmSheet, promptSheet, fmt } from './ui.js';
+import { uniqGlyphs } from './ui.js';
+import { h, icon, toast, sheet, confirmSheet, promptSheet, fmt, mono } from './ui.js';
 import { store } from './store.js';
 import { members, member, childMode, today } from './domain.js';
 import { ymd, addDays } from './nlp.js';
@@ -115,7 +116,7 @@ export function confetti() {
 
 // ---------------- Ansichten ----------------
 function memberHead(m, extra) {
-  return h('div.kid-head', { style: { '--c': m.color } }, h('span.av.lg', { style: { '--c': m.color } }, m.emoji || m.name[0]), h('div', null, h('b', null, m.name), extra ? h('small', null, extra) : null), h('span.stars', null, '⭐ ', balance(m.id)));
+  return h('div.kid-head', { style: { '--c': m.color } }, h('span.av.lg', { style: { '--c': m.color } }, mono(m)), h('div', null, h('b', null, m.name), extra ? h('small', null, extra) : null), h('span.stars', null, '⭐ ', balance(m.id)));
 }
 
 function dateSwitch(state, rerender) {
@@ -171,7 +172,7 @@ function daysPicker(sel) {
 function memberPicker(sel) {
   const set = new Set(sel || []);
   const wrap = h('div.chips.people');
-  const draw = () => wrap.replaceChildren(...members().map((m) => h('button.person' + (set.has(m.id) ? '.on' : ''), { type: 'button', style: { '--c': m.color }, onclick: () => { set.has(m.id) ? set.delete(m.id) : set.add(m.id); draw(); } }, h('span.av', null, m.emoji || m.name[0]), m.name)));
+  const draw = () => wrap.replaceChildren(...members().map((m) => h('button.person' + (set.has(m.id) ? '.on' : ''), { type: 'button', style: { '--c': m.color }, onclick: () => { set.has(m.id) ? set.delete(m.id) : set.add(m.id); draw(); } }, h('span.av', null, mono(m)), m.name)));
   draw();
   return { el: wrap, get: () => [...set] };
 }
@@ -188,7 +189,7 @@ export function guessEmoji(title, fallback) { for (const [re, e] of GUESS) if (r
 function emojiPicker(list, cur) {
   let val = cur || null;
   const wrap = h('div.emojis');
-  const draw = () => wrap.replaceChildren(...list.map((e) => h('button.emoji' + (e === val ? '.on' : ''), { type: 'button', onclick: () => { val = e; draw(); } }, e)));
+  const draw = () => wrap.replaceChildren(...uniqGlyphs(list, val).map((e) => h('button.emoji' + (e === val ? '.on' : ''), { type: 'button', onclick: () => { val = e; draw(); } }, e)));
   draw();
   return { el: wrap, get: (title) => val || guessEmoji(title || '', list[0]) };
 }
@@ -307,7 +308,7 @@ export function viewRewards() {
     const bal = balance(m.id);
     const next = rewards.find((r) => r.cost > bal);
     return h('div.star-card', { style: { '--c': m.color } },
-      h('span.av.lg', { style: { '--c': m.color } }, m.emoji || m.name[0]),
+      h('span.av.lg', { style: { '--c': m.color } }, mono(m)),
       h('b', null, m.name),
       h('div.star-count', null, '⭐ ', bal),
       h('small', null, `heute +${earnedOn(m.id, today())}`),
@@ -382,7 +383,7 @@ export function todayKidsCard() {
   if (!rows.length) return null;
   return h('section.section', null, h('h3.section-title', null, kid ? 'Deine Sterne' : 'Kinder heute'),
     h('a.card.kids-today', { href: '#aemter' }, ...rows.map(({ m, total, done }) => h('div.kt-row', { style: { '--c': m.color } },
-      h('span.av', { style: { '--c': m.color } }, m.emoji || m.name[0]),
+      h('span.av', { style: { '--c': m.color } }, mono(m)),
       h('div.kt-main', null, h('b', null, m.name), h('div.progress', null, h('i', { style: { width: total ? (done / total) * 100 + '%' : '0' } }))),
       h('span.kt-num', null, total ? `${done}/${total}` : ''),
       h('span.stars', null, '⭐ ', balance(m.id))))));

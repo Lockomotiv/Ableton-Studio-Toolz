@@ -14,7 +14,7 @@ export const store = (id) => STORES.find((s) => s.id === id) || null;
 
 // [Name der Kategorie, Emoji, Standard-Laden]
 export const CATEGORIES = [
-  ['Obst & Gemüse', '🥦'], ['Brot & Backwaren', '🍞'], ['Milch, Käse & Eier', '🧀'], ['Fleisch, Wurst & Fisch', '🥩'],
+  ['Obst & Gemüse', '🥦'], ['Brot & Backwaren', '🍞'], ['Milch, Käse & Eier', '🥛'], ['Fleisch, Wurst & Fisch', '🥩'],
   ['Tiefkühl', '🧊'], ['Nudeln, Reis & Vorrat', '🍝'], ['Konserven & Soßen', '🥫'], ['Frühstück & Aufstriche', '🍯'],
   ['Backen & Gewürze', '🧂'], ['Süßes & Snacks', '🍫'], ['Getränke', '🧃'], ['Baby & Kind', '🍼'],
   ['Hygiene & Pflege', '🧴', 'rossmann'], ['Reinigung & Waschen', '🧽'], ['Haushalt & Papier', '🧻'], ['Tierbedarf', '🐾'], ['Sonstiges', '🛒'],

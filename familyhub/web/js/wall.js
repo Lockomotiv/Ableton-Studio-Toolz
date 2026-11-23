@@ -1,6 +1,6 @@
 // Wandansicht & Diashow (Bildschirmschoner): Fotos aus Immich mit Animation, darüber Uhr und Tagesplan.
 // Startet automatisch nach der eingestellten Zeit ohne Bedienung (Standard: 1 Minute).
-import { h, fmt } from './ui.js';
+import { h, fmt, mono } from './ui.js';
 import { store } from './store.js';
 import { agenda, members, today, openTasks } from './domain.js';
 import { ymd, addDays } from './nlp.js';
@@ -73,7 +73,7 @@ function content() {
     const total = ch.length + rt.reduce((s, r) => s + r.routine.steps.length, 0);
     const done = ch.filter((c) => c.done).length + rt.reduce((s, r) => s + r.done.length, 0);
     if (!mine.length && !due.length && !total) continue;
-    cols.push(col(m.name, m.color, m.emoji || m.name[0], mine, due, total ? { done, total, stars: balance(m.id) } : null));
+    cols.push(col(m.name, m.color, mono(m), mine, due, total ? { done, total, stars: balance(m.id) } : null));
   }
   const meals = mealsOn(td);
   const tomorrow = agenda(tm, tm, { filter: false }).slice(0, 4);

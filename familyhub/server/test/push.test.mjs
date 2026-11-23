@@ -44,7 +44,7 @@ test('Erinnerungen, Abfall und neue Nachrichten werden zugestellt', async () => 
     const n = new Notifier(db, fetchRaw, { wastePickups: (a) => (a === '2026-11-24' ? [{ date: a, wasteKey: 'gelb', wasteName: 'Gelber Sack / Tonne' }] : []) });
     db.data.secrets.push.lena = { endpoint: `http://127.0.0.1:${srv.address().port}/lena`, keys: { p256dh: ua.getPublicKey().toString('base64url'), auth }, memberId: 'lena', device: 'iPhone Lena' };
     db.data.secrets.push.ben = { endpoint: `http://127.0.0.1:${srv.address().port}/ben`, keys: { p256dh: ua.getPublicKey().toString('base64url'), auth }, memberId: 'ben', device: 'iPhone Ben' };
-    db.data.members.lena = { id: 'lena', name: 'Lena' };
+    db.data.members.lena = { id: 'lena', name: 'Lena', role: 'child' };
     db.data.events.e1 = { id: 'e1', title: 'Zahnarzt', date: '2026-11-23', time: '19:30', remindMin: 31, memberIds: ['lena'], updatedAt: 1 };
     db.data.tasks.t1 = { id: 't1', title: 'Müll raus', date: '2026-11-23', time: '19:00', remindMin: 0, memberIds: [], updatedAt: 1, done: false };
     n.last = now - 60e3;
@@ -53,12 +53,15 @@ test('Erinnerungen, Abfall und neue Nachrichten werden zugestellt', async () => 
     assert.equal(await n.tick(now + 60e3), 0); // keine Doppelten
     const titles = got.map((g) => g.msg.title);
     assert.deepEqual(titles.slice(0, 1), ['Zahnarzt']);
-    assert.ok(titles.includes('☑ Müll raus') && titles.includes('Morgen: Gelber Sack / Tonne'));
+    assert.ok(titles.includes('Morgen: Gelber Sack / Tonne'));
+    // Emojis nur auf dem Kinder-Handy, Erwachsene bekommen reinen Text
+    const by = (who) => got.filter((g) => g.msg.title.includes('Müll raus')).map((g) => g.msg.title).sort();
+    assert.deepEqual(by(), ['Müll raus', '☑ Müll raus']);
     assert.ok(got.every((g) => g.enc === 'aes128gcm' && /^vapid t=.+, k=/.test(g.auth)));
     got.length = 0;
     n.afterBatch([{ op: 'put', col: 'messages', item: { id: 'm1', text: 'Bin um 6 da', authorId: 'lena' } }], new Set());
     await new Promise((r) => setTimeout(r, 300));
-    assert.deepEqual(got.map((g) => [g.msg.title, g.msg.body]), [['💬 Lena', 'Bin um 6 da']]); // nicht an die Absenderin
+    assert.deepEqual(got.map((g) => [g.msg.title, g.msg.body]), [['Lena', 'Bin um 6 da']]); // nicht an die Absenderin, Erwachsene ohne Emoji
     // abgelaufenes Abo wird entfernt
     db.data.secrets.push.alt = { endpoint: 'http://127.0.0.1:1/x', keys: db.data.secrets.push.ben.keys, memberId: null, device: 'alt' };
     assert.throws(() => n.subscribe({ endpoint: 'http://unsicher', keys: {} }), /Ungültig/);

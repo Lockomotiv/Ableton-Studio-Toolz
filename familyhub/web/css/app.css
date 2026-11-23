@@ -1,24 +1,29 @@
-/* FamilyHub 3 – ruhiges, warmes Design. Hell & Dunkel. */
+/* FamilyHub 4.5 – ruhige, wertige Oberfläche. Hell & Dunkel.
+   Tokens: kühles Neutral statt Creme, Spreewald-Petrol als Marke, Koralle nur für die Sprachtaste (Signatur). */
+@font-face { font-family: 'Manrope'; src: url('../fonts/manrope.woff2') format('woff2'); font-weight: 200 800; font-display: swap; }
 :root {
-  --bg: #F5F2EC; --surface: #FFFFFF; --surface2: #EFEBE3; --text: #1E2329; --muted: #6A7077; --line: #E4DED3;
-  --primary: #1F6F66; --primary-ink: #FFFFFF; --primary-soft: #DDEDE9; --accent: #EE6C4D; --accent-soft: #FCE3DB;
-  --ok: #1D7A45; --warn: #B45309; --bad: #B42318; --shadow: 0 1px 2px rgba(30, 35, 41, .06), 0 6px 20px rgba(30, 35, 41, .06);
+  --bg: #F3F5F4; --surface: #FFFFFF; --surface2: #EBEFED; --text: #121917; --muted: #56625F; --line: #DFE4E2;
+  --primary: #1F6F66; --primary-ink: #FFFFFF; --primary-soft: #E1EFEC; --accent: #E4572E; --accent-soft: #FBE4DC;
+  --ok: #1D7A45; --warn: #A85A07; --bad: #B42318; --shadow: 0 1px 2px rgba(18, 25, 23, .05), 0 2px 8px rgba(18, 25, 23, .04);
+  --shadow-lg: 0 18px 40px -12px rgba(18, 25, 23, .28); --hair: rgba(18, 25, 23, .08);
   --r: 18px; --tab-h: 64px; --top-h: 56px;
   --safe-t: env(safe-area-inset-top, 0px); --safe-b: env(safe-area-inset-bottom, 0px);
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #13171C; --surface: #1C2228; --surface2: #262D35; --text: #ECEFF1; --muted: #9AA3AC; --line: #2F3740;
-    --primary: #63C5B6; --primary-ink: #0C1917; --primary-soft: #1D3532; --accent: #FF8566; --accent-soft: #3A2620;
-    --ok: #4ADE80; --warn: #FBBF24; --bad: #F87171; --shadow: 0 1px 2px rgba(0, 0, 0, .3);
+    --bg: #0E1312; --surface: #171D1C; --surface2: #212827; --text: #E9EEEC; --muted: #98A4A0; --line: #2A3231;
+    --primary: #6CCABC; --primary-ink: #06201C; --primary-soft: #17312D; --accent: #FF7A55; --accent-soft: #3A2219;
+    --ok: #4ADE80; --warn: #FBBF24; --bad: #F87171; --shadow: 0 1px 2px rgba(0, 0, 0, .4);
+    --shadow-lg: 0 18px 40px -12px rgba(0, 0, 0, .7); --hair: rgba(255, 255, 255, .07);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #13171C; --surface: #1C2228; --surface2: #262D35; --text: #ECEFF1; --muted: #9AA3AC; --line: #2F3740;
-  --primary: #63C5B6; --primary-ink: #0C1917; --primary-soft: #1D3532; --accent: #FF8566; --accent-soft: #3A2620;
-  --ok: #4ADE80; --warn: #FBBF24; --bad: #F87171; --shadow: 0 1px 2px rgba(0, 0, 0, .3);
+  --bg: #0E1312; --surface: #171D1C; --surface2: #212827; --text: #E9EEEC; --muted: #98A4A0; --line: #2A3231;
+  --primary: #6CCABC; --primary-ink: #06201C; --primary-soft: #17312D; --accent: #FF7A55; --accent-soft: #3A2219;
+  --ok: #4ADE80; --warn: #FBBF24; --bad: #F87171; --shadow: 0 1px 2px rgba(0, 0, 0, .4);
+  --shadow-lg: 0 18px 40px -12px rgba(0, 0, 0, .7); --hair: rgba(255, 255, 255, .07);
   color-scheme: dark;
 }
 
@@ -859,3 +864,176 @@ input.mini-time { height: 38px; border-radius: 12px; border: 1px solid var(--lin
 .wall-wx { display: flex; align-items: center; gap: 10px; margin-left: auto; margin-right: 16px; text-shadow: 0 1px 8px rgba(0, 0, 0, .4); }
 .wall-wx b { font-size: 34px; font-weight: 300; display: block; line-height: 1; } .wall-wx small { opacity: .85; }
 @media (prefers-reduced-motion: reduce) { .wx-art * { animation: none !important; } }
+
+/* ================= 4.5: Premium-Oberfläche =================
+   Grundsätze (frontend-design + Apple HIG):
+   – Eine Formensprache: Linien-Symbole, 1.75er Strich, Gewicht passend zum Text (HIG icons.md › Best practices).
+   – Hierarchie über Schrift und Abstand statt über Farbflächen; Marke nur für primäre Aktionen und Status (HIG branding.md).
+   – Satzschreibung statt VERSALIEN-Überschriften; Zahlen in eigener Pille statt „· 3“.
+   – Koralle ausschließlich für die Sprachtaste: das eine laute Element. */
+:root { --display: 'Manrope', system-ui, -apple-system, sans-serif; --r: 16px; --r-lg: 20px; }
+.ic { stroke-width: 1.75; }
+.tab .ic, .fab .ic, .orb .ic { stroke-width: 2; }
+
+/* Typografie */
+.page-head h1, .greet h1, .cal-head h2, .sheet-title, .card h2, .hero-title, .wx-big, .wx-temp, .stat b, .star-count, .bh-box b, .wall-clock, .wall-wx b, .stars, .qty-val, .score span, .ring span {
+  font-family: var(--display); font-feature-settings: 'tnum' 1, 'cv01' 1;
+}
+.page-head h1 { font-size: 30px; font-weight: 750; letter-spacing: -.025em; }
+.greet h1 { font-size: 32px; font-weight: 750; letter-spacing: -.03em; }
+.greet .date { font-size: 15px; font-weight: 600; }
+.cal-head h2 { font-weight: 750; }
+.sheet-title { font-weight: 750; letter-spacing: -.02em; }
+.section { margin-top: 26px; }
+.section-title, .examples-title { font-size: 17px; font-weight: 700; color: var(--text); text-transform: none; letter-spacing: -.01em; margin: 0 2px 10px; display: flex; align-items: center; gap: 8px; }
+.section-title .emo { width: 20px; height: 20px; color: var(--t, var(--primary)); }
+.count-pill { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 7px; border-radius: 11px; background: var(--surface2); color: var(--muted); font-size: 12.5px; font-weight: 700; letter-spacing: 0; margin-left: 4px; font-variant-numeric: tabular-nums; }
+.hero-label { text-transform: none; letter-spacing: 0; font-size: 14px; font-weight: 650; }
+.meal-slot small, .item.event .allday { text-transform: none; letter-spacing: 0; font-size: 12.5px; font-weight: 650; }
+.field > span { font-size: 13.5px; font-weight: 600; }
+
+/* Rahmen: Kopfzeile & Tab-Leiste */
+.topbar { background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: saturate(1.4) blur(16px); -webkit-backdrop-filter: saturate(1.4) blur(16px); }
+.logo { border-radius: 10px; background: linear-gradient(160deg, color-mix(in srgb, var(--primary) 82%, #fff), var(--primary)); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12); }
+.brand { font-family: var(--display); font-weight: 750; letter-spacing: -.015em; }
+.tabbar { background: color-mix(in srgb, var(--surface) 82%, transparent); backdrop-filter: saturate(1.6) blur(20px); -webkit-backdrop-filter: saturate(1.6) blur(20px); border-top: 1px solid var(--hair); }
+.tab { font-size: 11.5px; font-weight: 600; letter-spacing: .01em; }
+.tab .ic { padding: 4px 18px; border-radius: 15px; }
+.tab.on .ic { background: var(--primary-soft); stroke-width: 2.25; }
+/* Inhalt nie unter der Sprachtaste */
+#view { padding-bottom: calc(var(--tab-h) + var(--safe-b) + 112px); }
+
+/* Signatur: Sprachtaste */
+.fab { width: 64px; height: 64px; border-radius: 22px; background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 86%, #fff), var(--accent)); box-shadow: 0 10px 28px -6px color-mix(in srgb, var(--accent) 65%, transparent), inset 0 1px 0 rgba(255, 255, 255, .25); }
+.quick-mic { background: var(--accent); }
+.quick-mic .ic { color: #fff; }
+.big-mic { background: var(--accent); color: #fff; }
+
+/* Flächen: weiß auf kühlem Grund, feine Kante, kaum Schatten */
+.card, .menu, .item, .stat, .month, .shop-item, .tile, .quickbar, .wx-days, .wx-tile, .wx-hour, .pollen, .cat-bars, .bh-box, .recipe-card, .reward, .star-card, .kid-card, .week-day, .tt-grid, .ios-step, .leaflet, .idea, .ctip, .nt, .cstat, .date-switch, .pv-card {
+  border-color: var(--hair); box-shadow: var(--shadow);
+}
+.card, .menu, .month, .wx-days, .tt-grid { border-radius: var(--r-lg); }
+.item, .shop-item, .stat, .wx-tile, .bh-box { border-radius: var(--r); }
+.card.tip { background: var(--surface); border: 1px solid var(--hair); position: relative; padding-left: 18px; }
+.card.tip::before { content: ''; position: absolute; left: 0; top: 16px; bottom: 16px; width: 3px; border-radius: 0 3px 3px 0; background: var(--primary); }
+.card.tip b:first-child { font-family: var(--display); font-size: 17px; letter-spacing: -.01em; }
+.quickbar { border-radius: 18px; min-height: 58px; }
+.stat b { font-weight: 750; color: var(--text); font-size: 28px; letter-spacing: -.02em; }
+.stat span { font-weight: 600; }
+.hero { border-radius: var(--r-lg); background: var(--surface); border: 1px solid var(--hair); box-shadow: var(--shadow); padding-left: 20px; }
+.hero::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--c); }
+.hero-label { color: color-mix(in srgb, var(--c) 70%, var(--text)); }
+
+/* Steuerelemente */
+.btn { border-radius: 14px; font-weight: 650; letter-spacing: -.005em; }
+.btn.primary { box-shadow: 0 1px 0 rgba(255, 255, 255, .12) inset, 0 2px 6px -2px color-mix(in srgb, var(--primary) 55%, transparent); }
+.btn.tonal { background: var(--primary-soft); color: var(--primary); }
+:root[data-theme="dark"] .btn.tonal { color: var(--primary); }
+.sub { background: transparent; color: var(--muted); border: 1px solid var(--line); height: 36px; }
+.sub.on { background: var(--text); color: var(--bg); border-color: var(--text); }
+.fchip { border-color: var(--line); height: 34px; }
+.seg { background: var(--surface2); border-radius: 12px; }
+.seg-btn { border-radius: 9px; height: 34px; }
+.chip { border-radius: 10px; }
+.person.on { background: color-mix(in srgb, var(--c) 12%, var(--surface)); }
+.av { font-family: var(--display); font-weight: 750; letter-spacing: -.02em; }
+.check { border-width: 1.75px; }
+
+/* Menüs: gruppierte Listen wie in den Systemeinstellungen */
+.menu-row { min-height: 58px; gap: 14px; }
+.menu-row { position: relative; }
+.menu-row + .menu-row { border-top: 0; }
+.menu-row + .menu-row::before { content: ''; position: absolute; top: 0; right: 0; left: 64px; height: 1px; background: var(--hair); }
+.menu-row .mi { width: 34px; height: 34px; border-radius: 10px; background: var(--primary-soft); color: var(--primary); }
+.menu-row b { font-weight: 600; }
+.menu-row.add b { color: var(--primary); }
+.emoji-mi { background: var(--surface2) !important; }
+.glyphs .emoji-mi { background: var(--primary-soft) !important; color: var(--primary); }
+
+/* Symbole statt Emojis (nur Erwachsene) */
+.ic.emo { width: 1.15em; height: 1.15em; vertical-align: -.2em; stroke-width: 1.75; }
+.glyphs .tile-emoji, .glyphs .si-emoji { display: grid; place-items: center; color: var(--t, var(--primary)); background: color-mix(in srgb, var(--t, var(--primary)) 11%, var(--surface)); }
+.glyphs .tile-emoji { width: 52px; height: 52px; border-radius: 16px; font-size: 26px; margin-bottom: 4px; }
+.glyphs .tile-emoji .emo { width: 26px; height: 26px; }
+.glyphs .si-emoji { width: 40px; height: 40px; border-radius: 12px; font-size: 20px; }
+.glyphs .si-emoji .emo { width: 21px; height: 21px; }
+.glyphs .shop-item.done .si-emoji { filter: none; color: var(--muted); background: var(--surface2); }
+.glyphs .tile { min-height: 112px; }
+.glyphs .tile.on { border-color: var(--t, var(--primary)); background: color-mix(in srgb, var(--t, var(--primary)) 7%, var(--surface)); }
+.glyphs .tile-badge { background: var(--t, var(--primary)); }
+.glyphs .mi.emoji-mi .emo, .glyphs .br-emoji .emo, .glyphs .tip-ic .emo, .glyphs .mt-emoji .emo, .glyphs .idea-emoji .emo, .glyphs .ib-icon .emo { width: 20px; height: 20px; }
+.glyphs .br-emoji, .glyphs .mt-emoji, .glyphs .idea-emoji, .glyphs .tip-ic, .glyphs .ib-icon { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; flex: none; background: var(--primary-soft); color: var(--primary); font-size: 20px; }
+.glyphs .bin-emoji { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: color-mix(in srgb, var(--c) 16%, var(--surface)); color: color-mix(in srgb, var(--c) 75%, var(--text)); font-size: 22px; }
+.glyphs .bin-emoji .emo { width: 22px; height: 22px; }
+.glyphs .waste-dots { gap: 6px; font-size: 18px; color: var(--muted); }
+.glyphs .chore .ce, .glyphs .reward .re, .glyphs .big-emoji, .glyphs .rc-emoji, .glyphs .recipe-hero > span, .glyphs .item-hero > span, .glyphs .empty-emoji {
+  width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; background: var(--primary-soft); color: var(--primary); font-size: 28px; margin: 0 auto 2px;
+}
+.glyphs .item-hero > span, .glyphs .recipe-hero > span { margin: 0; color: var(--t, var(--primary)); }
+.glyphs .chore .ce { background: color-mix(in srgb, var(--c) 14%, var(--surface)); color: color-mix(in srgb, var(--c) 75%, var(--text)); }
+.glyphs .chore .ce .emo, .glyphs .reward .re .emo, .glyphs .big-emoji .emo, .glyphs .rc-emoji .emo, .glyphs .empty-emoji .emo, .glyphs .item-hero .emo, .glyphs .recipe-hero .emo { width: 28px; height: 28px; }
+.glyphs .rc-img.emoji-thumb, .glyphs .ms-thumb.emoji-thumb, .glyphs .pick-thumb.emoji-thumb, .glyphs .mt-thumb.emoji-thumb { color: var(--primary); background: var(--primary-soft); }
+.glyphs .rc-img.emoji-thumb .emo { width: 36px; height: 36px; }
+.glyphs .pick span .emo { width: 20px; height: 20px; color: var(--primary); }
+.glyphs .wx-hicon, .glyphs .wx-dicon { color: var(--wxc, var(--muted)); }
+.glyphs .wx-hicon .emo, .glyphs .wx-dicon .emo { width: 24px; height: 24px; }
+.glyphs .di-emoji { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; background: var(--surface); color: var(--primary); box-shadow: var(--shadow); margin-bottom: 4px; }
+.glyphs .di-emoji .emo { width: 26px; height: 26px; }
+.glyphs .dress-item { background: var(--surface2); }
+.glyphs .stars .emo, .glyphs .star-count .emo, .glyphs .cost .emo, .glyphs .wc-stars .emo { color: #D49B16; fill: #F2C14E; stroke: #B7791F; }
+.glyphs .react-btn { font-size: 22px; color: var(--text); }
+.glyphs .wx-warn .emo, .glyphs summary .emo { color: #D08A00; }
+.glyphs .emojis .emoji { display: grid; place-items: center; color: var(--text); }
+.glyphs .emojis .emoji.on { color: var(--primary); }
+
+/* Einkauf */
+.store-tab { border-width: 1px; border-color: var(--hair); box-shadow: var(--shadow); }
+.st-logo { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .06); }
+.shop-item { border-radius: 14px; }
+.shop-list { gap: 6px; }
+.due-card { background: var(--surface); }
+.due-head b { display: inline-flex; align-items: center; gap: 6px; font-family: var(--display); }
+.cat-chip { background: transparent; border: 1px solid var(--line); }
+.cat-chip.on { background: var(--text); border-color: var(--text); }
+
+/* Kalender */
+.day .num { font-family: var(--display); font-weight: 650; }
+.day.today .num { box-shadow: 0 4px 10px -4px color-mix(in srgb, var(--primary) 70%, transparent); }
+.day.sel { background: var(--surface2); }
+.wd { text-transform: none; font-weight: 650; }
+
+/* Wetter */
+.wx-card, .wx-hero { box-shadow: 0 12px 28px -14px rgba(18, 40, 60, .55); }
+.wx-big { font-weight: 250; letter-spacing: -.04em; }
+.wx-temp { font-weight: 300; }
+
+/* Bottom Sheets & Hinweise */
+.sheet { background: var(--bg); border-radius: 24px 24px 0 0; box-shadow: var(--shadow-lg); }
+.sheet-handle::after { width: 36px; background: color-mix(in srgb, var(--muted) 35%, transparent); }
+#toast { border-radius: 14px; box-shadow: var(--shadow-lg); }
+.empty { padding: 48px 24px; }
+.empty .ic:not(.emo) { width: 44px; height: 44px; padding: 14px; box-sizing: content-box; border-radius: 20px; background: var(--primary-soft); opacity: 1; margin-bottom: 4px; }
+
+/* Kinderprofil bleibt verspielt und groß */
+body.child .tile-emoji { font-size: 44px; }
+body.child .page-head h1, body.child .greet h1 { font-size: 34px; }
+
+@media (min-width: 900px) {
+  .tabbar { border-right: 1px solid var(--hair); }
+}
+
+/* Wetter-Symbole in natürlichen Farben */
+.glyphs .wx-hicon .i-sun, .glyphs .wx-dicon .i-sun, .glyphs .i-sunrise { color: #E39B00; }
+.glyphs .i-cloud-sun, .glyphs .i-cloud-sun-rain { color: #C98A12; }
+.glyphs .wx-hicon .i-moon, .glyphs .wx-dicon .i-moon { color: #6B7FA8; }
+.glyphs .i-cloud-rain, .glyphs .i-cloud-drizzle, .glyphs .i-umbrella, .glyphs .i-droplet, .glyphs .i-droplets { color: #2E7FB8; }
+.glyphs .i-cloud-snow, .glyphs .i-snowflake { color: #5A9FD4; }
+.glyphs .i-cloud-lightning, .glyphs .i-zap { color: #7A5BC0; }
+.glyphs .i-cloud, .glyphs .i-cloud-fog, .glyphs .i-wind { color: #7B8893; }
+.glyphs .i-triangle-alert { color: #D08A00; }
+.glyphs .i-siren, .glyphs .i-flame { color: #D2462A; }
+.glyphs .i-heart { color: #D2465E; }
+.wx-card .ic.emo, .wx-hero .ic.emo, .wall .ic.emo { color: inherit !important; }
+.menu-row b { color: var(--text); }
+.menu-row.add b { color: var(--primary); }

@@ -3,7 +3,7 @@
 //   contacts  { name, category, phone, phone2, email, address, notes, memberIds }
 //   lists     { title, emoji, order }      listitems { listId, text, done, order }
 //   timetable { id: 'tt_<memberId>', memberId, periods: [{start,end}], days: { 1: ['Mathe', …], … 5: [] } }
-import { h, icon, toast, sheet, confirmSheet, promptSheet, fmt } from './ui.js';
+import { h, icon, toast, sheet, confirmSheet, promptSheet, fmt, mono } from './ui.js';
 import { store } from './store.js';
 import { members, member, childMode, today } from './domain.js';
 import { openUrl, haptic } from './native.js';
@@ -38,7 +38,7 @@ export function viewBoard() {
     const a = member(m.authorId); const mine = author && m.authorId === author.id;
     const reacts = Object.entries(m.reactions || {}).filter(([, ids]) => ids.length);
     return h('div.msg' + (mine ? '.mine' : '') + (m.pinned ? '.pinned' : ''), { style: { '--c': a?.color || 'var(--muted)' } },
-      mine ? null : h('span.av', { style: { '--c': a?.color } }, a?.emoji || a?.name?.[0] || '?'),
+      mine ? null : h('span.av', { style: { '--c': a?.color } }, mono(a) || '?'),
       h('div.bubble', { onclick: () => msgMenu(m, mine) },
         mine ? null : h('b.msg-author', null, a?.name || 'Unbekannt'),
         h('p', null, m.text),
@@ -74,7 +74,7 @@ export function boardTeaser() {
   const pin = msgs.find((m) => m.pinned); const last = msgs[0];
   const items = [pin, last !== pin ? last : null].filter(Boolean);
   return h('section.section', null, h('h3.section-title', null, 'Pinnwand'),
-    h('a.card.board-teaser', { href: '#pinnwand' }, ...items.map((m) => h('div.bt-row', null, h('span.av', { style: { '--c': member(m.authorId)?.color } }, member(m.authorId)?.emoji || member(m.authorId)?.name?.[0] || '?'), h('span.bt-text', null, (m.pinned ? '📌 ' : '') + m.text), h('small', null, timeLabel(m.createdAt))))));
+    h('a.card.board-teaser', { href: '#pinnwand' }, ...items.map((m) => h('div.bt-row', null, h('span.av', { style: { '--c': member(m.authorId)?.color } }, mono(member(m.authorId)) || '?'), h('span.bt-text', null, (m.pinned ? '📌 ' : '') + m.text), h('small', null, timeLabel(m.createdAt))))));
 }
 
 // ================= Kontakte =================
@@ -115,7 +115,7 @@ function editContact(c) {
   const v = { name: '', category: 'doctor', phone: '', phone2: '', email: '', address: '', notes: '', memberIds: [], ...(c || {}) };
   const f = {}; const sel = new Set(v.memberIds);
   const ppl = h('div.chips.people');
-  const drawP = () => ppl.replaceChildren(...members().map((m) => h('button.person' + (sel.has(m.id) ? '.on' : ''), { type: 'button', style: { '--c': m.color }, onclick: () => { sel.has(m.id) ? sel.delete(m.id) : sel.add(m.id); drawP(); } }, h('span.av', null, m.emoji || m.name[0]), m.name)));
+  const drawP = () => ppl.replaceChildren(...members().map((m) => h('button.person' + (sel.has(m.id) ? '.on' : ''), { type: 'button', style: { '--c': m.color }, onclick: () => { sel.has(m.id) ? sel.delete(m.id) : sel.add(m.id); drawP(); } }, h('span.av', null, mono(m)), m.name)));
   drawP();
   sheet((s) => h('form.sheet-body', { onsubmit: (e) => {
     e.preventDefault(); const name = f.name.value.trim(); if (!name) return;
@@ -246,5 +246,5 @@ export function todaySchoolCard() {
   const rows = kids.map((k) => [k, lessonsOn(k.id, ds)]).filter(([, l]) => l.length);
   if (!rows.length) return null;
   return h('section.section', null, h('h3.section-title', null, date ? `Schule ${fmt.dayLabel(ds)}` : 'Schule heute'),
-    h('a.card.school-today', { href: '#stundenplan' }, ...rows.map(([k, l]) => h('div.st-row', null, h('span.av', { style: { '--c': k.color } }, k.emoji || k.name[0]), h('span.st-main', null, h('b', null, k.name), h('small', null, l.map((x) => x.subject).join(' · '))), h('small.st-end', null, 'bis ' + (l[l.length - 1].end || ''))))));
+    h('a.card.school-today', { href: '#stundenplan' }, ...rows.map(([k, l]) => h('div.st-row', null, h('span.av', { style: { '--c': k.color } }, mono(k)), h('span.st-main', null, h('b', null, k.name), h('small', null, l.map((x) => x.subject).join(' · '))), h('small.st-end', null, 'bis ' + (l[l.length - 1].end || ''))))));
 }

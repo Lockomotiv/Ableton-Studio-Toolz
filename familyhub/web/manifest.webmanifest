@@ -4,7 +4,7 @@
   "lang": "de",
   "start_url": "./#heute",
   "display": "standalone",
-  "background_color": "#F5F2EC",
+  "background_color": "#F3F5F4",
   "theme_color": "#1F6F66",
   "id": "./",
   "scope": "./",
