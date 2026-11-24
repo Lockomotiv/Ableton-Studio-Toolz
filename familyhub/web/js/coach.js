@@ -5,7 +5,9 @@
 
 const MEAT = /bolognese|carbonara|lasagne|frikassee|cordon bleu|hack|rind|schwein|kalb|lamm|hähnchen|hühnchen|huhn|hühner|pute|ente|gans|wurst|würstchen|bratwurst|speck|bacon|schinken|salami|chorizo|gyros|döner|schnitzel|frikadelle|bulette|kotelett|braten|gulasch|steak|leberkäse|cevapcici|fleisch|nuggets|chicken|beef|pork/i;
 const FISH = /fisch|lachs|thunfisch|forelle|kabeljau|seelachs|hering|makrele|garnele|shrimp|scampi|krabbe|muschel|tintenfisch|calamari|sardine|zander|dorade|pangasius|scholle/i;
-const ANIMAL = /(?<!kokos|hafer|soja|mandel|reis|dinkel)milch|käse|butter|sahne|joghurt|quark|ei\b|eier|honig|schmand|crème|creme fraiche|mozzarella|parmesan|feta|ricotta|mascarpone/i;
+// Pflanzendrinks („Hafermilch“ …) zählen nicht als tierisch – ohne Lookbehind (läuft auch auf iOS 15)
+const ANIMAL_RX = /milch|käse|butter|sahne|joghurt|quark|ei\b|eier|honig|schmand|crème|creme fraiche|mozzarella|parmesan|feta|ricotta|mascarpone/i;
+const ANIMAL = { test: (t) => ANIMAL_RX.test(String(t).replace(/(kokos|hafer|soja|mandel|reis|dinkel)milch/gi, '$1drink')) };
 const VEG = /gemüse|salat|tomate|gurke|paprika|zucchini|brokkoli|blumenkohl|karotte|möhre|spinat|kohl|lauch|porree|erbsen|bohnen|linsen|kichererbsen|aubergine|kürbis|pilz|champignon|spargel|mangold|rote bete|sellerie|fenchel|zwiebel|mais|süßkartoffel|rucola|radieschen|avocado|kohlrabi|ratatouille|minestrone/i;
 const LEGUME = /linsen|kichererbsen|bohnen|erbsen|tofu|tempeh|falafel|hummus|dal\b|edamame/i;
 const WHOLE = /vollkorn|dinkel|hafer|naturreis|quinoa|bulgur|buchweizen|hirse|grünkern/i;

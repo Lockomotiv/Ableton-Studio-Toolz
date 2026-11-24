@@ -15,7 +15,10 @@ const TENS = { zwanzig: 20, 'dreißig': 30, dreissig: 30, vierzig: 40, 'fünfzig
 // "ein/eine/einen…" nur in Zeit-/Mengenkontext ersetzen, sonst würde aus "eine Torte" → "1 Torte".
 const ARTICLE_WORDS = new Set(['ein', 'eine', 'einen', 'einem', 'einer']);
 
-const W = '(?<![\\p{L}\\d])'; // Wortanfang (Unicode-sicher, \b kennt kein ä/ö/ü)
+// Wortanfang (Unicode-sicher, \b kennt kein ä/ö/ü). Safari vor iOS 16.4 kennt kein „Lookbehind“ –
+// dort ersatzweise Wortgrenze/Umlaut-Anfang (verbraucht kein Zeichen; nur bei Wörtern mitten in Umlaut-Wörtern ungenauer).
+const LOOKBEHIND = (() => { if (globalThis.__fhNoLookbehind) return false; try { return new RegExp('(?<!a)b', 'u').test('cb'); } catch { return false; } })();
+const W = LOOKBEHIND ? '(?<![\\p{L}\\d])' : '(?:^|\\b|(?=[^A-Za-z0-9_\\s]))'; // Ersatz ohne Lookbehind: Wortgrenze (ASCII) bzw. vor Umlauten
 const E = '(?![\\p{L}\\d])'; // Wortende
 
 function rx(src, flags = 'iu') { return new RegExp(src.replace(/\\b<|\\b>/g, (m) => (m === '\\b<' ? W : E)), flags); }

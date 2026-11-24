@@ -19,7 +19,7 @@ import { wasteType } from '../web/js/wastetypes.js';
 import { DEFAULT_PLACE, forecastUrl, buildModel } from '../web/js/weathercore.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const VERSION = '4.8.0';
+const VERSION = '4.8.1';
 let imgErrAt = 0; // Bild-Fehler höchstens einmal pro Minute ins Log
 const cfg = {
   port: +(process.env.PORT || 8080),
@@ -181,7 +181,7 @@ export function createApp(options = {}) {
       const ext = path.extname(file);
       res.writeHead(200, {
         'Content-Type': MIME[ext] || 'application/octet-stream',
-        'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=300',
+        'Cache-Control': ['.html', '.js', '.css', '.webmanifest'].includes(ext) ? 'no-cache' : 'public, max-age=300',
         'X-Content-Type-Options': 'nosniff',
         'Referrer-Policy': 'no-referrer',
       });

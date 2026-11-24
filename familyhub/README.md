@@ -158,7 +158,7 @@ Unter *Einstellungen* lässt sich „Direkt speichern“ einschalten – dann wi
 
 ## Installation auf dem Handy
 
-1. `release/FamilyHub-4.8.0.apk` aufs Handy und installieren.
+1. `release/FamilyHub-4.8.1.apk` aufs Handy und installieren.
    Die neue App hat eine eigene Paket-ID (`de.familyhub.app`) und läuft **neben** der alten App. Die alte kann gelöscht werden, sobald alles passt.
 2. Beim ersten Start „Familie anlegen“.
 3. Optional: Mehr → Synchronisierung → mit dem Pi verbinden (siehe unten).
@@ -217,7 +217,7 @@ Tailscale läuft nicht auf jedem Gerät. Zwei Wege ohne Tailscale:
 
 **B) VPN der FRITZ!Box (WireGuard)** – nichts ist öffentlich erreichbar: In der FRITZ!Box unter *Internet → Freigaben → VPN (WireGuard)* eine Verbindung für das iPad anlegen, QR-Code mit der App „WireGuard“ (läuft ab iOS 15) scannen. Unterwegs VPN an und `http://<Pi-IP>:8446/` öffnen. Achtung: Hat das fremde WLAN ebenfalls 192.168.178.x, empfiehlt AVM, das Heimnetz auf einen anderen Bereich umzustellen.
 
-Hinweis iOS 15: Termine, Aufgaben, Einkauf, Fotos und Diashow funktionieren. Benachrichtigungen bietet Apple für Web-Apps erst ab iOS 16.4.
+Hinweis iOS 15 (ab 4.8.1 lauffähig – vorher blieb der Bildschirm leer, weil Safari 15 bestimmte Suchmuster nicht kennt): Termine, Aufgaben, Einkauf, Fotos und Diashow funktionieren. Benachrichtigungen bietet Apple für Web-Apps erst ab iOS 16.4.
 
 ### Fotos & Diashow
 * **Fotos** (*Mehr → Fotos*): Galerie aus Immich – Zufällig, Favoriten, „An diesem Tag“, Neueste, einzelne Alben; Vollbild mit Wischen

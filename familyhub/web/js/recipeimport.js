@@ -61,7 +61,7 @@ function stepsOf(ins) {
   if (!ins) return [];
   if (typeof ins === 'string') {
     const lines = ins.split(/\n+|<br\s*\/?>/i).map(decode).filter(Boolean);
-    return lines.length > 1 ? lines : decode(ins).split(/(?<=[.!?])\s+(?=[A-ZÄÖÜ])/).filter(Boolean);
+    return lines.length > 1 ? lines : decode(ins).replace(/([.!?])\s+(?=[A-ZÄÖÜ])/g, '$1\n').split('\n').filter(Boolean);
   }
   const out = [];
   for (const s of [].concat(ins)) {
