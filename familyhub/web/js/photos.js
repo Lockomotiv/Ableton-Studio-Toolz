@@ -63,7 +63,7 @@ export function viewPhotos() {
     body.replaceChildren(
       h('div.slide-cta', null, h('button.btn.primary', { onclick: async () => { const { openWall } = await import('./wall.js'); openWall({ screensaver: true }); } }, icon('photo', 18), 'Diashow starten'), h('a.btn.tonal', { href: '#diashow' }, icon('settings', 18), 'Einstellungen')),
       chips, grid,
-      h('p.hint', null, `Verbunden mit Immich${info.user ? ' (' + info.user + ')' : ''}. `, h('a', { href: '#', onclick: (e) => { e.preventDefault(); body.replaceChildren(connectForm(info)); } }, 'Verbindung ändern')),
+      h('p.hint', null, `Verbunden mit Immich${info.user ? ' (' + info.user + ')' : ''}. `, h('a', { href: '#', onclick: (e) => { e.preventDefault(); body.replaceChildren(connectForm(info)); } }, 'Verbindung ändern'), ' · ', h('a', { href: '#', onclick: (e) => { e.preventDefault(); diagnose(); } }, 'Fotos prüfen')),
       immichButtons());
     try {
       const src = gstate.source.startsWith('album:') ? { source: 'albums', albums: [gstate.source.slice(6)] } : { source: gstate.source };
@@ -76,7 +76,7 @@ export function viewPhotos() {
       // Prüfen, ob die Vorschaubilder wirklich ankommen – sonst verständlich sagen, woran es liegt
       const probe = new Image();
       probe.onerror = async () => {
-        let why = 'Die Vorschaubilder kommen nicht an.';
+        let why = 'Die Vorschaubilder kommen nicht an – „Fotos prüfen“ zeigt, woran es liegt.';
         try { await store.request(`api/v2/photos/${encodeURIComponent(r.items[0].id)}?key=${encodeURIComponent(r.key)}&size=thumbnail`); } catch (e) { if (e.message) why = e.message; }
         grid.before(h('div.card.warn-card', null, h('b', null, 'Fotos werden nicht angezeigt'), h('p', null, why),
           h('p.hint', null, 'Tipp: In Immich unter Kontoeinstellungen → API-Schlüssel braucht der Schlüssel die Rechte „asset.read“, „asset.view“ und „album.read“ (oder „Alle“). Danach hier „Verbindung ändern“ und den neuen Schlüssel eintragen.')));
@@ -201,4 +201,26 @@ function albumPicker(opts = {}) {
     return h('div.sheet-body', null, h('h2.sheet-title', null, opts.title || 'Alben für dieses Gerät'), list,
       h('div.btn-row', null, h('button.btn.ghost', { onclick: () => s.close() }, 'Abbrechen'), h('button.btn.primary', { onclick: () => { if (opts.save) { s.close(); opts.save([...sel]); return; } saveSlide({ albums: [...sel], source: 'albums', sourceSet: true }); s.close(); location.hash = 'diashow'; window.dispatchEvent(new HashChangeEvent('hashchange')); } }, 'Übernehmen')));
   }, { tall: true, label: 'Alben' });
+}
+
+/** Foto-Diagnose: Server prüft Immich Schritt für Schritt, das Gerät prüft, ob ein Bild ankommt. */
+export function diagnose() {
+  sheet((s) => {
+    const list = h('div.diag', null, h('p.soft', null, 'Prüfe …'));
+    (async () => {
+      const rows = [];
+      try { const r = await store.request('api/v2/immich/check', { timeout: 40000 }); rows.push(...r.steps); } catch (e) { rows.push({ name: 'Pi erreichbar', ok: false, detail: e.message }); }
+      if (rows.length && rows.every((x) => x.ok || /Familien-Diashow/.test(x.name))) {
+        try {
+          const p = await loadPhotos({ source: 'random', limit: 3 });
+          const ok = await new Promise((res) => { const img = new Image(); const t = setTimeout(() => res(false), 15000); img.onload = () => { clearTimeout(t); res(true); }; img.onerror = () => { clearTimeout(t); res(false); }; img.src = photoUrl(p.base, p.key, p.items[0].id, 'thumbnail'); });
+          rows.push({ name: 'Bild auf diesem Gerät', ok, detail: ok ? 'wird angezeigt' : 'kommt nicht an – App bzw. Browser neu laden; bei der Android-App Version 4.6.1 oder neuer installieren' });
+        } catch (e) { rows.push({ name: 'Bild auf diesem Gerät', ok: false, detail: e.message }); }
+      }
+      list.replaceChildren(...rows.map((x) => h('div.diag-row' + (x.ok ? '.ok' : '.bad'), null, h('span.diag-ic', null, icon(x.ok ? 'check' : 'close', 16)), h('span', null, h('b', null, x.name), h('small', null, x.detail || '')))));
+      const bad = rows.find((x) => !x.ok && !/Familien-Diashow/.test(x.name));
+      if (bad && /asset\.view/.test(bad.detail + bad.name)) list.append(h('p.hint', null, 'Lösung: In Immich unter Kontoeinstellungen → API-Schlüssel einen neuen Schlüssel mit „asset.read“, „asset.view“ und „album.read“ (oder „Alle“) anlegen und hier unter „Verbindung ändern“ eintragen.'));
+    })();
+    return h('div.sheet-body', null, h('h2.sheet-title', null, 'Fotos prüfen'), list, h('div.btn-row', null, h('span'), h('button.btn.primary', { onclick: () => s.close() }, 'Schließen')));
+  }, { label: 'Fotos prüfen' });
 }

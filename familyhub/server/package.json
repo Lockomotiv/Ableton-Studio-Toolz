@@ -1,6 +1,6 @@
 {
   "name": "familyhub-server",
-  "version": "4.8.1",
+  "version": "4.8.2",
   "private": true,
   "type": "module",
   "description": "FamilyHub-Server: Termine, Aufgaben, Einkauf für die Familie. Ohne externe Abhängigkeiten.",

@@ -1729,3 +1729,8 @@ details.cs-panel:not([open]) .cs-head .ic { transform: rotate(-90deg); }
   .cm-new span { display: none; }
   .tg-ev.short small { display: none; }
 }
+.diag { display: flex; flex-direction: column; gap: 8px; }
+.diag-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--surface); border: 1px solid var(--hair); }
+.diag-row > span:last-child { display: flex; flex-direction: column; } .diag-row small { color: var(--muted); overflow-wrap: anywhere; }
+.diag-ic { width: 24px; height: 24px; flex: none; border-radius: 50%; display: grid; place-items: center; color: #fff; }
+.diag-row.ok .diag-ic { background: #16A34A; } .diag-row.bad .diag-ic { background: var(--bad); }

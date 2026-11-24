@@ -4,7 +4,8 @@ const N = typeof window !== 'undefined' ? window.FHNative : undefined;
 
 export function voiceAvailable() {
   if (N && N.startVoice) return true;
-  return typeof window !== 'undefined' && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  // Browser erlauben das Mikrofon nur auf sicheren Seiten (https) – auf http (z. B. iPad im Heimnetz) gar nicht erst anbieten
+  return typeof window !== 'undefined' && window.isSecureContext !== false && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 }
 
 let active = null;

@@ -140,7 +140,8 @@ export function sheet(build, { onClose, tall, label } = {}) {
   requestAnimationFrame(() => wrap.classList.add('open'));
   sheetStack.push(api);
   const first = panel.querySelector('[autofocus]');
-  if (first) setTimeout(() => first.focus(), 280);
+  // iOS zeigt die Tastatur nur, wenn noch im selben Antippen fokussiert wird – darum sofort, danach zur Sicherheit noch einmal
+  if (first) { try { first.focus({ preventScroll: true }); } catch { /* egal */ } setTimeout(() => { if (document.activeElement !== first) first.focus(); }, 280); }
   return api;
 }
 export function closeTopSheet() { const s = sheetStack[sheetStack.length - 1]; if (s) { s.close(); return true; } return false; }

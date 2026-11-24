@@ -51,6 +51,7 @@ const KIND = { event: ['Termin', 'calendar'], task: ['Aufgabe', 'tasks'], shoppi
 const SLOT_LABEL = { breakfast: 'Frühstück', lunch: 'Mittag', dinner: 'Abend' };
 
 export function openCapture({ mode = voiceAvailable() ? 'voice' : 'text', text = '', kind = null, date = null } = {}) {
+  if (mode === 'voice' && !voiceAvailable()) mode = 'text'; // kein Mikrofon (z. B. http auf dem iPad) → Tastatur mit Diktier-Taste
   let parsed = null;
   let overrides = {};
   let listening = false;
@@ -204,7 +205,9 @@ export function openCapture({ mode = voiceAvailable() ? 'voice' : 'text', text =
     } }, icon(mode === 'voice' ? 'keyboard' : 'mic'));
     return h('div.sheet-body.capture', null,
       h('div.cap-head', null, h('h2.sheet-title', null, 'Was steht an?'), voiceAvailable() ? toggle : null),
-      voiceBlock, ui.status, ui.input, ui.preview,
+      voiceBlock, ui.status, ui.input,
+      !voiceAvailable() && /iPad|iPhone|Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1 ? h('p.hint.dictate-hint', null, 'Tipp: Auf der Tastatur das Mikrofon 🎙 antippen und einfach sprechen – FamilyHub versteht den Satz genauso.') : null,
+      ui.preview,
       h('div.btn-row', null,
         h('button.btn.ghost', { onclick: () => { const p = current(); s.close(); if (p?.kind === 'meal') { location.hash = 'essen'; return; } openEditor(p?.kind === 'event' ? 'events' : p?.kind === 'shopping' ? 'shopping' : 'tasks', null, p || {}); } }, 'Mehr Details'),
         ui.save));
@@ -212,7 +215,7 @@ export function openCapture({ mode = voiceAvailable() ? 'voice' : 'text', text =
 
   if (text) reparse(text); else renderPreview();
   if (mode === 'voice') setTimeout(startListening, 320);
-  else setTimeout(() => ui.input.focus(), 300);
+  else { try { ui.input.focus({ preventScroll: true }); } catch { /* egal */ } setTimeout(() => { if (document.activeElement !== ui.input) ui.input.focus(); }, 300); } // sofort fokussieren: nur dann öffnet iOS die Tastatur
 }
 
 function coerceKind(p, k) {

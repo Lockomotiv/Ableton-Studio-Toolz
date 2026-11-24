@@ -158,7 +158,7 @@ Unter *Einstellungen* lässt sich „Direkt speichern“ einschalten – dann wi
 
 ## Installation auf dem Handy
 
-1. `release/FamilyHub-4.8.1.apk` aufs Handy und installieren.
+1. `release/FamilyHub-4.8.2.apk` aufs Handy und installieren.
    Die neue App hat eine eigene Paket-ID (`de.familyhub.app`) und läuft **neben** der alten App. Die alte kann gelöscht werden, sobald alles passt.
 2. Beim ersten Start „Familie anlegen“.
 3. Optional: Mehr → Synchronisierung → mit dem Pi verbinden (siehe unten).
@@ -220,6 +220,8 @@ Tailscale läuft nicht auf jedem Gerät. Zwei Wege ohne Tailscale:
 Hinweis iOS 15 (ab 4.8.1 lauffähig – vorher blieb der Bildschirm leer, weil Safari 15 bestimmte Suchmuster nicht kennt): Termine, Aufgaben, Einkauf, Fotos und Diashow funktionieren. Benachrichtigungen bietet Apple für Web-Apps erst ab iOS 16.4.
 
 ### Fotos & Diashow
+**Fotos erscheinen nicht?** In der App *Mehr → Fotos → „Fotos prüfen“*: Der Pi testet Schritt für Schritt (Immich erreichbar, API-Schlüssel, Fotos auflisten, Vorschaubild, Album „Familien-Diashow“) und das Gerät prüft, ob ein Bild ankommt. Das Ergebnis steht auch im Protokoll: `docker logs familyhub3 | grep Fotos`.
+
 * **Fotos** (*Mehr → Fotos*): Galerie aus Immich – Zufällig, Favoriten, „An diesem Tag“, Neueste, einzelne Alben; Vollbild mit Wischen
 * **Diashow / Bildschirmschoner**: startet nach **1 Minute** ohne Bedienung (einstellbar: Aus, 1, 2, 5, 10, 30 Min.)
 * Einstellungen (*Fotos → ⚙*): Fotoquelle inkl. Alben-Auswahl, Wechselintervall, Animation (Ken Burns, Überblenden, Schieben, Zoom, abwechselnd),

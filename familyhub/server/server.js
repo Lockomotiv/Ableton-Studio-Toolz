@@ -19,7 +19,7 @@ import { wasteType } from '../web/js/wastetypes.js';
 import { DEFAULT_PLACE, forecastUrl, buildModel } from '../web/js/weathercore.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const VERSION = '4.8.1';
+const VERSION = '4.8.2';
 let imgErrAt = 0; // Bild-Fehler höchstens einmal pro Minute ins Log
 const cfg = {
   port: +(process.env.PORT || 8080),
@@ -454,6 +454,23 @@ export function createApp(options = {}) {
       const r = await immich.test(cfg);
       db.data.secrets.immich = cfg; db.data.secrets.immichUser = r.user; db.save(); immich.cache.clear();
       return send(res, 200, { configured: true, ...r });
+    }
+    if (p === '/api/v2/immich/check' && req.method === 'GET') {
+      // Foto-Diagnose: jeden Schritt einzeln prüfen und verständlich melden
+      const steps = []; const step = (name, ok, detail) => steps.push({ name, ok, detail });
+      const cfg = immichCfg();
+      if (!immich.configured()) { step('Verbindung eingerichtet', false, 'Noch keine Immich-Adresse und kein API-Schlüssel gespeichert (Fotos → Verbinden).'); return send(res, 200, { steps }); }
+      step('Verbindung eingerichtet', true, cfg.url);
+      try { const v = await immich.call('/api/server/ping', { cfg: { ...cfg, key: '' } }); step('Immich erreichbar', v?.res === 'pong', v?.res === 'pong' ? 'antwortet' : 'unerwartete Antwort'); } catch (e) { step('Immich erreichbar', false, e.message + (/localhost|127\.0\.0\.1/.test(cfg.url) ? ' – im Container zeigt „localhost“ auf FamilyHub selbst; http://host.docker.internal:2283 verwenden.' : '')); return send(res, 200, { steps }); }
+      try { const me = await immich.call('/api/users/me'); step('API-Schlüssel gültig', true, me.name || me.email || 'ok'); } catch (e) { step('API-Schlüssel gültig', false, e.message); return send(res, 200, { steps }); }
+      let first = null;
+      try { const list = await immich.photos({ source: 'random', limit: 5 }); first = list[0]; step('Fotos auflisten (asset.read)', list.length > 0, list.length ? `${list.length} Fotos gefunden` : 'Keine Fotos in Immich gefunden'); } catch (e) { step('Fotos auflisten (asset.read)', false, e.message); }
+      if (first) {
+        try { const img = await immich.image(first.id, 'thumbnail'); step('Vorschaubild laden (asset.view)', img.body.length > 100, `${img.type}, ${Math.round(img.body.length / 1024)} KB`); } catch (e) { step('Vorschaubild laden (asset.view)', false, e.message); }
+      }
+      try { const fam = await familyAlbums(); step('Album „Familien-Diashow“', fam.ids.length > 0, fam.ids.length ? `${fam.names.join(', ')} (${fam.count} Medien)` : 'nicht gefunden – Diashow zeigt zufällige Fotos'); } catch (e) { step('Alben lesen (album.read)', false, e.message); }
+      console.log('[Fotos] Diagnose: ' + steps.map((s) => `${s.ok ? '✓' : '✗'} ${s.name}: ${s.detail}`).join(' | '));
+      return send(res, 200, { steps });
     }
     if (p === '/api/v2/server-info' && req.method === 'GET') {
       return send(res, 200, { version: VERSION, node: process.version, db: db.stats(), immich: immich.configured(), publicUrl: c.publicDomain ? `https://${c.publicDomain}/` : null });

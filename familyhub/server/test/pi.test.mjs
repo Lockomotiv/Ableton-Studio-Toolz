@@ -45,6 +45,9 @@ test('Immich verbinden, Alben, Quellen, Bilder', async () => {
     assert.equal(r.status, 502); assert.match(r.body.error, /API-Schlüssel/);
     r = await call('/api/v2/immich', { url: im.url + '/', key: KEY });
     assert.equal(r.body.configured, true); assert.equal(r.body.version, '1.135.3');
+    // Foto-Diagnose: alle Schritte grün
+    let d = await call('/api/v2/immich/check');
+    assert.deepEqual(d.body.steps.map((s) => [s.name, s.ok]), [['Verbindung eingerichtet', true], ['Immich erreichbar', true], ['API-Schlüssel gültig', true], ['Fotos auflisten (asset.read)', true], ['Vorschaubild laden (asset.view)', true], ['Album „Familien-Diashow“', true]]);
     r = await call('/api/v2/immich');
     assert.equal(r.body.configured, true); assert.equal(r.body.key, undefined);
     r = await call('/api/v2/photo-albums');
