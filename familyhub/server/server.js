@@ -19,7 +19,7 @@ import { wasteType } from '../web/js/wastetypes.js';
 import { DEFAULT_PLACE, forecastUrl, buildModel } from '../web/js/weathercore.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const VERSION = '4.7.0';
+const VERSION = '4.8.0';
 let imgErrAt = 0; // Bild-Fehler höchstens einmal pro Minute ins Log
 const cfg = {
   port: +(process.env.PORT || 8080),

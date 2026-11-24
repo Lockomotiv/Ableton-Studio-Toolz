@@ -21,13 +21,13 @@ export function hubPage(title, tabs, active, content) {
   return h('div.page', null, h('div.page-head', null, h('h1', null, title)), subnav(tabs, active), content);
 }
 
-function isoWeek(d) {
+export function isoWeek(d) {
   const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
   const day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day);
   return Math.ceil(((t - new Date(Date.UTC(t.getUTCFullYear(), 0, 1))) / 864e5 + 1) / 7);
 }
 
-function showExternal(ev) {
+export function showExternal(ev) {
   sheet(() => h('div.sheet-body', null,
     h('h2.sheet-title', null, ev.title),
     h('p.muted', null, `${fmt.dayLabel(ev.date)}${ev.allDay ? ', ganztägig' : ', ' + fmt.time(ev.time) + (ev.endTime ? '–' + fmt.time(ev.endTime) : '') + ' Uhr'}`),
@@ -129,96 +129,8 @@ export function personFilter() {
 // ---------- Heute ----------
 export function viewToday() { return viewDashboard(); }
 
-// ---------- Kalender ----------
-const cal = { mode: 'month', cursor: null, selected: null };
-export function viewCalendar() {
-  const now = new Date();
-  if (!cal.selected) cal.selected = today();
-  if (!cal.cursor) cal.cursor = new Date(now.getFullYear(), now.getMonth(), 1);
-  const page = h('div.page.calendar');
-  const rerender = () => page.replaceWith(viewCalendar());
-
-  const week = cal.mode === 'week';
-  const wkStart = ymd(addDays(fmt.parse(cal.selected), -((fmt.parse(cal.selected).getDay() + 6) % 7)));
-  const shift = (dir) => {
-    if (week) { cal.selected = ymd(addDays(fmt.parse(cal.selected), 7 * dir)); const d = fmt.parse(cal.selected); cal.cursor = new Date(d.getFullYear(), d.getMonth(), 1); }
-    else cal.cursor = new Date(cal.cursor.getFullYear(), cal.cursor.getMonth() + dir, 1);
-    rerender();
-  };
-  const head = h('div.cal-head', null,
-    week ? h('h2', null, `KW ${isoWeek(fmt.parse(wkStart))} `, h('span.year', null, `${fmt.parse(wkStart).getDate()}.${fmt.parse(wkStart).getMonth() + 1}.`))
-      : h('h2', null, `${fmt.MO[cal.cursor.getMonth()]} `, h('span.year', null, cal.cursor.getFullYear())),
-    h('button.icon-btn', { 'aria-label': week ? 'Vorige Woche' : 'Voriger Monat', onclick: () => shift(-1) }, icon('left')),
-    h('button.icon-btn', { 'aria-label': week ? 'Nächste Woche' : 'Nächster Monat', onclick: () => shift(1) }, icon('right')),
-    h('button.btn.small.tonal', { onclick: () => { cal.cursor = new Date(now.getFullYear(), now.getMonth(), 1); cal.selected = today(); rerender(); } }, 'Heute'),
-    h('div.seg.small', null,
-      h('button.seg-btn' + (cal.mode === 'month' ? '.on' : ''), { 'aria-label': 'Monat', onclick: () => { cal.mode = 'month'; rerender(); } }, icon('grid', 18)),
-      h('button.seg-btn' + (cal.mode === 'week' ? '.on' : ''), { 'aria-label': 'Woche', onclick: () => { cal.mode = 'week'; rerender(); } }, icon('calendar', 18)),
-      h('button.seg-btn' + (cal.mode === 'list' ? '.on' : ''), { 'aria-label': 'Liste', onclick: () => { cal.mode = 'list'; rerender(); } }, icon('list', 18))));
-
-  page.append(head, personFilter() || '');
-
-  if (week) {
-    const days = [...Array(7)].map((_, i) => ymd(addDays(fmt.parse(wkStart), i)));
-    const evs = agenda(days[0], days[6]);
-    const tasks = openTasks().filter((t) => t.date >= days[0] && t.date <= days[6]);
-    page.append(h('div.week', null, ...days.map((d) => {
-      const dt = fmt.parse(d);
-      const dayEv = evs.filter((e) => e.date <= d && (e.endDate || e.date) >= d);
-      const dayT = sortTasks(tasks.filter((t) => t.date === d));
-      return h('div.week-day' + (d === today() ? '.today' : ''), null,
-        h('button.wd-head', { onclick: () => openCapture({ mode: 'text', kind: 'event', date: d }), 'aria-label': 'Termin am ' + fmt.longDate(dt) }, h('span', null, fmt.WD[dt.getDay()]), h('b', null, dt.getDate()), icon('plus', 14)),
-        h('div.wd-items', null,
-          ...dayEv.map((e) => h('button.wchip', { style: { '--c': e.calColor || (e.memberIds?.length ? member(e.memberIds[0])?.color : 'var(--primary)') }, onclick: () => (e.readOnly ? showExternal(e) : openEditor('events', e)) }, e.allDay ? '' : h('b', null, fmt.time(e.time) + ' '), e.title)),
-          ...dayT.map((t) => h('button.wchip.task', { onclick: () => openEditor('tasks', t) }, icon('check', 13), t.title, t.points ? h('small', null, ` +${t.points} ⭐`) : null)),
-          ...choreSummary(d).map(({ m, done, total }) => h('a.wchip.chores' + (done === total ? '.full' : ''), { href: '#plan', style: { '--c': m.color } }, h('span.av', { style: { '--c': m.color } }, mono(m)), `${done}/${total} Ämter`)),
-          !dayEv.length && !dayT.length && !choreSummary(d).length ? h('span.wd-free', null, 'frei') : null));
-    })), h('a.btn.ghost.more-btn', { href: '#plan' }, icon('list-checks', 18), 'Ämter-Wochenplan öffnen'));
-  } else if (cal.mode === 'month') {
-    const first = cal.cursor;
-    const startOffset = (first.getDay() + 6) % 7; // Montag zuerst
-    const gridStart = addDays(first, -startOffset);
-    const gridEnd = addDays(gridStart, 41);
-    const evs = agenda(ymd(gridStart), ymd(gridEnd));
-    const tasks = openTasks().filter((t) => t.date);
-    const byDay = {};
-    for (const e of evs) {
-      if (e.endDate && e.endDate > e.date) {
-        for (let d = new Date(+new Date(e.date.replace(/-/g, '/'))); ymd(d) <= e.endDate; d = addDays(d, 1)) (byDay[ymd(d)] ||= []).push(e);
-      } else (byDay[e.date] ||= []).push(e);
-    }
-    const taskDays = new Set(tasks.map((t) => t.date));
-    const grid = h('div.month', { role: 'grid' }, ...['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((d) => h('div.wd', null, d)));
-    for (let i = 0; i < 42; i++) {
-      const d = addDays(gridStart, i); const key = ymd(d);
-      const list = byDay[key] || [];
-      const cls = ['day', d.getMonth() !== first.getMonth() ? 'out' : '', key === today() ? 'today' : '', key === cal.selected ? 'sel' : '', d.getDay() === 0 || d.getDay() === 6 ? 'we' : ''].filter(Boolean).join('.');
-      grid.append(h('button.' + cls, { onclick: () => { haptic(); cal.selected = key; rerender(); }, 'aria-label': fmt.longDate(d) + (list.length ? `, ${list.length} Termine` : '') },
-        h('span.num', null, d.getDate()),
-        h('span.dots', null, ...list.slice(0, 3).map((e) => h('i', { style: { background: e.calColor || (e.memberIds?.length ? member(e.memberIds[0])?.color : 'var(--primary)') } })), list.length > 3 ? h('i.plus') : null, taskDays.has(key) ? h('i.task') : null),
-        choreMeter(key)));
-    }
-    page.append(grid);
-    const sel = cal.selected;
-    const dayEvents = agenda(sel, sel);
-    const dayTasks = sortTasks(openTasks().filter((t) => t.date === sel));
-    page.append(section(fmt.longDate(fmt.parse(sel)),
-      dayEvents.length || dayTasks.length ? h('div.list', null, ...dayEvents.map((e) => eventRow(e)), ...dayTasks.map((t) => taskRow(t, { showDate: false }))) : h('p.soft', null, 'Nichts geplant.'),
-      dayChores(sel),
-      h('button.btn.tonal.add-here', { onclick: () => openCapture({ mode: 'text', kind: 'event', date: sel }) }, icon('plus', 18), 'Termin an diesem Tag')));
-  } else {
-    const from = today();
-    const to = ymd(addDays(new Date(), cal.listDays || 60));
-    const evs = agenda(from, to);
-    const groups = {};
-    for (const e of evs) (groups[e.date] ||= []).push(eventRow(e));
-    for (const tk of sortTasks(openTasks().filter((x) => x.date && x.date <= to))) (groups[tk.date < from ? from : tk.date] ||= []).push(taskRow(tk, { showDate: tk.date < from }));
-    const keys = Object.keys(groups).sort();
-    page.append(keys.length ? h('div', null, ...keys.map((k) => section(fmt.dayLabel(k), h('div.list', null, ...groups[k])))) : empty('calendar', 'In den nächsten Wochen ist nichts geplant.'),
-      h('button.btn.ghost.more-btn', { onclick: () => { cal.listDays = (cal.listDays || 60) + 90; rerender(); } }, 'Weitere Termine laden'));
-  }
-  return page;
-}
+// ---------- Kalender (neu in calendar.js: Seitenleiste, Zeitraster, Monat/Woche/Tag/Liste) ----------
+export { viewCalendar } from './calendar.js';
 
 // ---------- Aufgaben ----------
 const tv = { show: 'open' };

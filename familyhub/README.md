@@ -138,6 +138,13 @@ Hinweis zu Cookidoo und Lifesum: Beide bieten keine offene Schnittstelle. Öffen
 - **Dashboard „Heute“ als Kartenraster:** Kopf mit Gruß, Wetter- und Uhr-Pille; Karten Termine (Tagesfokus, Heute, Morgen, Wochenleiste), Kinderwelt (Punkte, Belohnung, offene Ämter, je Kind Level/Ziel/Woche), Aufgaben (Ämter und fällige Aufgaben mit grünem Haken), Einkaufsliste, Nachrichten (mit „Gelesen“-Haken), Wetter, Abfall, Essen, Schule. Tablet: zwei bis drei Spalten.
 - **Gamification:** Level mit Namen (Sternchen → Entdecker → Helfer → … → Sternenkönig) und großer Aufstiegs-Feier; 12 Abzeichen (z. B. „Drei am Stück“, „Frühaufsteher“, „Teamplayer“); **Tagesziel**: alle Ämter des Tages → +2 Bonus-Sterne; **Sternenglas**, das sich bis zur nächsten Belohnung füllt (antippen klimpert); „+N“ fliegt vom Finger; kurze Klänge im Kindermodus (Einstellungen → Belohnungs-Klänge). Level, Ziele und Abzeichen werden nacheinander gefeiert.
 
+### Neu in 4.8: Kalender nach Vorlage
+- **Tablet:** links eine dunkle Seitenleiste mit Mini-Monat (heute in Lime), „Meine Kalender“ zum Ein-/Ausblenden (Familie, verbundene Kalender, Aufgaben, Ämter, Abfall) und „Personen“ als farbige Kategorien; rechts die Hauptfläche mit Lime-Blau-Lavendel-Verlauf.
+- **Kopf:** Monat und Jahr, schwarze „Heute“-Pille, Pfeile, schwarzer „+ Termin“-Knopf, Umschalter Monat · Woche · Tag · Liste.
+- **Woche & Tag als Zeitraster:** große Tageskarten (heute weiß mit lila Zahl, vergangene Tage in Lime), ganztägige Termine, Aufgaben und „Ämter 1/2“ darüber, Termine als Pastell-Blöcke in der Farbe der Person mit Uhrzeit und Avataren, Überschneidungen nebeneinander, lila Jetzt-Linie. Tipp ins Leere = neuer Termin zu dieser Uhrzeit, Tipp auf einen Termin = Detail-Karte wie in der Vorlage.
+- **Monat:** Kacheln mit den Terminen als farbige Zeilen (Handy: Farbstreifen).
+- Handy: Tag als Standard, Woche seitlich scrollbar; Seitenleiste (ohne Mini-Monat) unter dem Kalender.
+
 ### Sprachsteuerung – Beispiele
 
 * „Morgen um halb vier Zahnarzt mit Lena, erinnere mich eine Stunde vorher“
@@ -151,7 +158,7 @@ Unter *Einstellungen* lässt sich „Direkt speichern“ einschalten – dann wi
 
 ## Installation auf dem Handy
 
-1. `release/FamilyHub-4.7.0.apk` aufs Handy und installieren.
+1. `release/FamilyHub-4.8.0.apk` aufs Handy und installieren.
    Die neue App hat eine eigene Paket-ID (`de.familyhub.app`) und läuft **neben** der alten App. Die alte kann gelöscht werden, sobald alles passt.
 2. Beim ersten Start „Familie anlegen“.
 3. Optional: Mehr → Synchronisierung → mit dem Pi verbinden (siehe unten).
