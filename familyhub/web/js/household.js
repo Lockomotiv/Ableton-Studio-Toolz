@@ -14,6 +14,7 @@ import { members, member, childMode, today } from './domain.js';
 import { ymd, addDays } from './nlp.js';
 import { haptic } from './native.js';
 import { celebrate, confetti, counter, progressVar } from './fx.js';
+import { checkDailyBonus, DAILY_BONUS, levelOf, badgesOf, primeBadges, emblem, starJar, LEVELS } from './gamify.js';
 export { confetti };
 
 const DAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
@@ -62,10 +63,12 @@ export function choresFor(date, memberId = null) {
 
 export function toggleChore(chore, memberId, date, fromEl) {
   const key = choreKey(chore.id, memberId, date);
-  if (store.get('points', key)) { store.del('points', key); haptic(); return false; }
+  if (store.get('points', key)) { store.del('points', key); checkDailyBonus(memberId, date); haptic(); return false; }
   const rect = fromEl?.getBoundingClientRect?.();
   store.put('points', { id: key, memberId, delta: chore.points || 1, reason: chore.title, date, kind: 'chore', ref: chore.id });
-  celebrate(memberId, chore.points || 1, null, rect);
+  // Tagesziel: alle Ämter des Tages erledigt → Bonus obendrauf
+  const bonus = checkDailyBonus(memberId, date) ? DAILY_BONUS : 0;
+  celebrate(memberId, (chore.points || 1) + bonus, bonus ? `Tagesziel geschafft – +${bonus} Bonus` : null, rect);
   return true;
 }
 
@@ -382,12 +385,15 @@ export function kidHero(kid) {
       h('div.kh-top', null,
         h('div.kh-count', null, starBadge(kid, true), h('small', null, 'Sterne')),
         h('div.kh-side', null,
-          st > 0 ? h('span.kh-chip', null, '🔥 ', st, st === 1 ? ' Tag' : ' Tage') : null,
+          st > 0 ? h('span.kh-chip.fire', { style: { '--s': Math.min(st, 10) } }, '🔥 ', st, st === 1 ? ' Tag' : ' Tage') : null,
           h('span.kh-chip', null, '+', earnedOn(kid.id, td), ' heute'))),
+      levelBar(kid),
       h('div.kh-goal', null,
-        g.next || g.ready ? h('span.kh-reward', null, (g.next || g.ready).emoji || '🎁') : null,
+        g.next || g.ready ? starJar(kid.id, g.p, (g.next || g.ready).emoji || '🎁') : null,
         goalBar(kid, g, true)),
-      weekBars(kid)),
+      weekBars(kid),
+      dailyGoal(kid, pr)),
+    badgeStrip(kid),
     pr.chores.length ? h('section.section', null, h('h3.section-title', null, 'Deine Ämter heute', h('span.count-pill', null, `${pr.chores.filter((c) => c.done).length}/${pr.chores.length}`)),
       h('div.chore-grid.big', null, ...pr.chores.map((it) => h('button.chore' + (it.done ? '.done' : ''), { style: { '--c': kid.color }, onclick: (e) => toggleChore(it.chore, kid.id, td, e.currentTarget) },
         h('span.ce', null, it.chore.emoji || '⭐'), h('span.ct', null, it.chore.title), h('span.cp', null, it.done ? '✓' : '+' + (it.chore.points || 1) + ' ⭐'))))) : null,
@@ -396,6 +402,45 @@ export function kidHero(kid) {
       progressVar(ring, `rt:${kid.id}:${r.id}`, r.steps.length ? done.length / r.steps.length : 0);
       return h('a.routine-chip' + (done.length === r.steps.length ? '.complete' : ''), { href: '#routinen' }, ring, h('span', null, h('b', null, r.title), h('small', null, r.points ? `+${r.points} ⭐ wenn fertig` : '')));
     })) : null);
+}
+
+/** Level mit Fortschritt zum nächsten Level */
+export function levelBar(m) {
+  const lv = levelOf(m.id);
+  const fillEl = h('i'); progressVar(fillEl, `lv:${m.id}`, lv.p);
+  return h('button.level-bar', { style: { '--c': m.color }, onclick: () => levelInfo(m) }, emblem(lv.level, 'sm'),
+    h('span.lv-main', null, h('span.lv-top', null, h('b', null, lv.name), h('small', null, `noch ${lv.toNext} ⭐ bis Level ${lv.level + 1}`)), h('span.lv-track', null, fillEl)));
+}
+function levelInfo(m) {
+  const lv = levelOf(m.id);
+  sheet((s) => h('div.sheet-body.moment', { style: { '--c': m.color } }, emblem(lv.level, 'xl'), h('p.moment-kicker', null, `Level ${lv.level}`), h('h2.sheet-title', null, lv.name),
+    h('p.muted', null, `${lv.total} Sterne insgesamt gesammelt. Noch ${lv.toNext} bis Level ${lv.level + 1} (${LEVELS[Math.min(lv.level, LEVELS.length - 1)]}).`),
+    h('div.level-ladder', null, ...LEVELS.map((n, i) => h('span.ll' + (i + 1 < lv.level ? '.done' : i + 1 === lv.level ? '.now' : ''), null, h('b', null, i + 1), n))),
+    h('button.btn.primary', { onclick: () => s.close() }, 'Weiter sammeln')), { label: 'Level' });
+}
+/** Tagesziel: alle Ämter → Bonus */
+function dailyGoal(m, pr) {
+  if (pr.chores.length < 2) return null;
+  const done = pr.chores.filter((c) => c.done).length; const all = done === pr.chores.length;
+  return h('div.daily-goal' + (all ? '.won' : ''), null, h('span.dg-ic', null, all ? '🏆' : '🎯'),
+    h('span', null, h('b', null, all ? 'Tagesziel geschafft!' : 'Tagesziel'), h('small', null, all ? `+${DAILY_BONUS} Bonus-Sterne verdient` : `Alle ${pr.chores.length} Ämter → +${DAILY_BONUS} Bonus · noch ${pr.chores.length - done}`)),
+    h('span.dg-dots', null, ...pr.chores.map((c) => h('i' + (c.done ? '.on' : '')))));
+}
+/** Abzeichen kompakt (Dashboard) */
+function badgeStrip(m) {
+  primeBadges(m.id);
+  const list = badgesOf(m.id);
+  const on = list.filter((b) => b.on).length;
+  return h('section.section', null, h('div.section-head', null, h('h3.section-title', null, 'Abzeichen', h('span.count-pill', null, `${on}/${list.length}`)), h('a.link', { href: '#sterne' }, 'Alle ansehen')),
+    h('div.badge-row', null, ...list.map((b) => h('button.badge' + (b.on ? '.on' : ''), { onclick: () => badgeInfo(m, b), 'aria-label': b.t + (b.on ? '' : ' (noch gesperrt)') }, h('span.bd-ic', null, b.on ? b.e : icon('lock', 18)), h('small', null, b.t)))));
+}
+export function badgeWall(m) {
+  primeBadges(m.id);
+  return h('div.badge-grid', null, ...badgesOf(m.id).map((b) => h('button.badge' + (b.on ? '.on' : ''), { onclick: () => badgeInfo(m, b) }, h('span.bd-ic', null, b.on ? b.e : icon('lock', 18)), h('b', null, b.t), h('small', null, b.on ? b.d : (b.hint ? b.hint(m.id) : b.d)))));
+}
+function badgeInfo(m, b) {
+  sheet((s) => h('div.sheet-body.moment', { style: { '--c': m.color } }, h('span.badge-big' + (b.on ? '' : '.locked'), null, b.on ? b.e : icon('lock', 40)), h('p.moment-kicker', null, b.on ? 'Abzeichen' : 'Noch gesperrt'), h('h2.sheet-title', null, b.t),
+    h('p.muted', null, b.d + (!b.on && b.hint ? ` – bisher ${b.hint(m.id)}` : '')), h('button.btn.primary', { onclick: () => s.close() }, b.on ? 'Stark!' : 'Auf geht’s')), { label: 'Abzeichen' });
 }
 
 /** Wochenplan: wer hat an welchem Tag welches Amt – auf einen Blick, abhakbar. */
@@ -462,10 +507,12 @@ export function viewRewards() {
     return h('div.star-card', { style: { '--c': m.color } },
       h('div.sc-head', null, h('span.av.lg', { style: { '--c': m.color } }, mono(m)), h('div', null, h('b', null, m.name), h('small', null, `diese Woche +${wk}`, st > 1 ? ` · 🔥 ${st} Tage` : ''))),
       h('div.star-count', null, starBadge(m, true)),
+      levelBar(m),
       goalBar(m, g),
       weekBars(m),
       kid ? null : h('div.btn-row.wrap', null, h('button.btn.small.tonal', { onclick: () => bonus(m) }, '± Sterne'), h('button.btn.small.ghost', { onclick: () => history(m) }, 'Verlauf')));
   })));
+  if (ms.length) page.append(h('h3.section-title', null, '🏅 Abzeichen'), ...ms.map((m) => h('div.badge-block', null, ms.length > 1 ? h('div.bb-head', null, h('span.av', { style: { '--c': m.color } }, mono(m)), h('b', null, m.name)) : null, badgeWall(m))));
   page.append(h('h3.section-title', null, '🎁 Belohnungen'));
   if (!rewards.length) page.append(h('p.soft', null, kid ? 'Noch keine Belohnungen – frag Mama oder Papa!' : 'Lege fest, wofür Sterne eingetauscht werden können – z. B. „30 Min. Tablet = 10 ⭐“.'));
   page.append(h('div.reward-grid', null, ...rewards.map((r) => {

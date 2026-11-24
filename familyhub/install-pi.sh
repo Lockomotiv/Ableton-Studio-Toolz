@@ -6,6 +6,7 @@
 #   ./install-pi.sh            # Installation / Neustart mit Rückfragen
 #   ./install-pi.sh update     # neueste Version holen und neu starten
 #   ./install-pi.sh status     # Zustand anzeigen
+#   ./install-pi.sh passwort   # Familien-Passwort vergessen → neu setzen
 #   ./install-pi.sh internet   # Zugang von unterwegs ohne Tailscale (HTTPS über eigene Adresse)
 #
 # Was passiert:
@@ -92,6 +93,19 @@ case "${1:-install}" in
     compose up -d --build
     sleep 3; status; exit 0 ;;
   internet) internet "${2:-}"; exit 0 ;;
+  passwort|password)
+    say "Familien-Passwort neu setzen"
+    read -r -s -p "Neues Passwort (mind. 6 Zeichen): " P1; echo
+    read -r -s -p "Noch einmal: " P2; echo
+    [ "$P1" = "$P2" ] || die "Die beiden Eingaben sind verschieden."
+    [ "${#P1}" -ge 6 ] || die "Mindestens 6 Zeichen."
+    env_set FAMILYHUB_PASSWORD "$P1"
+    compose up -d >/dev/null
+    for i in $(seq 1 20); do sleep 2; curl -fsS "http://127.0.0.1:$(env_get FAMILYHUB_PORT | grep . || echo 8446)/healthz" >/dev/null 2>&1 && break; done
+    sed -i '/^FAMILYHUB_PASSWORD=/d' .env   # nur einmal anwenden – gespeichert ist es jetzt in der Datenbank
+    compose up -d >/dev/null
+    ok "Neues Familien-Passwort ist gesetzt. Bereits angemeldete Geräte bleiben angemeldet."
+    exit 0 ;;
 esac
 
 say "FamilyHub – Installation"

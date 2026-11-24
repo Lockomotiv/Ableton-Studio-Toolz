@@ -76,15 +76,15 @@ export function confetti() {
   setTimeout(() => box.remove(), 1700);
 }
 
-/** Lob + Sterneflug; meldet erreichte Belohnungsziele. */
+/** Lob + Sterneflug; Level-Aufstieg, Ziel und neue Abzeichen feiert gamify.js nacheinander. */
 export function celebrate(memberId, pts, text, fromRect) {
   const m = member(memberId);
-  const after = balanceOf(memberId); const before = after - pts;
   haptic('success');
   flyStars(fromRect, memberId, pts);
-  const reached = store.list('rewards').filter((r) => r.cost > before && r.cost <= after).sort((a, b) => b.cost - a.cost)[0];
-  if (reached && m) { setTimeout(() => goalReached(m, reached), 750); return; }
-  toast(`${text || 'Super'}${m ? ', ' + m.name : ''}! +${pts} ⭐`);
+  import('./gamify.js').then((g) => {
+    const r = g.onEarn(memberId, pts, fromRect) || {};
+    if (!r.levelUp && !r.reached && !r.badges) toast(`${text || 'Super'}${m ? ', ' + m.name : ''}! +${pts} ⭐`);
+  });
   if (m?.role === 'child' || childMode()) confetti();
   if (childMode() && store.config.voiceSpeak) speak(`${text || 'Super gemacht'}! Plus ${pts} Sterne.`);
 }

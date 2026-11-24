@@ -10,7 +10,7 @@ import { calendars, refreshCalendar, calStatus } from './extcal.js';
 import { openWall } from './wall.js';
 import { MEMBER_COLORS } from './domain.js';
 
-const APP_VERSION = '4.6.3';
+const APP_VERSION = '4.7.0';
 
 function row(ic, title, sub, onclick, right) {
   return h(onclick ? 'button.menu-row' : 'div.menu-row', { onclick }, h('span.mi', null, icon(ic, 20)), h('span.mt', null, h('b', null, title), sub ? h('small', null, sub) : null), right || (onclick ? icon('right', 18) : null));
@@ -207,27 +207,8 @@ export function viewSync() {
   const s = store.config.server;
   const page = h('div.page', null, back('Synchronisierung'));
   if (!store.serverEnabled()) {
-    let base, pw, fam;
-    const st = h('p.status');
-    const form = h('form.card', { onsubmit: async (e) => {
-      e.preventDefault();
-      status(st, '◌ Verbinde …');
-      try {
-        const probe = await store.probe(normalizeBase(base.value), 5000);
-        if (!probe.ok) throw new Error(probe.msg);
-        await store.connect({ base: base.value, password: pw.value, setup: probe.setup, familyName: fam.value || undefined, device: (info().device || 'Handy') });
-        store.saveConfig({ server: { home: normalizeBase(base.value) } });
-        toast('Verbunden – alle Geräte sind jetzt auf dem gleichen Stand'); location.hash = 'mehr';
-      } catch (err) { status(st, '○ ' + err.message, 'bad'); }
-    } },
-    h('h2', null, 'Mit dem FamilyHub-Server verbinden'),
-    h('p.muted', null, 'Damit alle Familienmitglieder dieselben Termine, Aufgaben und Einkäufe sehen. Ohne Server bleibt alles nur auf diesem Handy.'),
-    h('label.field', null, h('span', null, 'Server-Adresse'), base = h('input', { value: webOrigin || s.home, inputmode: 'url', autocomplete: 'off', required: true })),
-    h('label.field', null, h('span', null, 'Familien-Passwort'), pw = h('input', { type: 'password', required: true, autocomplete: 'current-password' })),
-    h('details', null, h('summary', null, 'Server ist neu?'), h('p.hint', null, 'Beim allerersten Verbinden wird das eingegebene Passwort als Familien-Passwort festgelegt.'), h('label.field', null, h('span', null, 'Familienname'), fam = h('input', { placeholder: 'z. B. Familie Müller' }))),
-    st,
-    h('button.btn.primary.big', { type: 'submit' }, icon('link', 18), 'Verbinden'));
-    page.append(form, h('p.hint', null, 'Die Server-Software liegt im Projektordner „familyhub/server“ und läuft per Docker auf dem Pi.'));
+    page.append(h('div.card.tip', null, h('b', null, 'Mit dem Pi verbinden'), h('p', null, 'Damit alle Familienmitglieder dieselben Termine, Aufgaben und Einkäufe sehen. Ohne Pi bleibt alles nur auf diesem Gerät.'),
+      h('button.btn.primary', { onclick: async () => { const { showLogin } = await import('./login.js'); showLogin({ onDone: () => { location.hash = 'heute'; } }); } }, icon('link', 18), 'Anmelden')));
     return page;
   }
   const st = h('p.status ' + (store.sync.state === 'error' ? 'bad' : 'ok'), null, store.sync.state === 'error' ? '○ ' + store.sync.error : store.sync.state === 'syncing' ? '◌ Synchronisiere …' : `● Verbunden mit ${s.active || s.home}`);
@@ -267,6 +248,7 @@ export function viewSettings() {
     h('div.menu', null, sel('Design', 'theme', [['system', 'Wie System'], ['light', 'Hell'], ['dark', 'Dunkel']])),
     h('h3.section-title', null, 'Sprachsteuerung'),
     h('div.menu', null,
+      sw('Belohnungs-Klänge', 'Kurze Töne beim Sterne-Sammeln (im Kindermodus automatisch an)', 'sounds'),
       sw('Direkt speichern', 'Nach dem Sprechen ohne Nachfrage eintragen (Rückgängig bleibt möglich)', 'voiceAutoSave'),
       sw('Bestätigung vorlesen', 'FamilyHub sagt kurz, was eingetragen wurde', 'voiceSpeak')),
     h('h3.section-title', null, 'Erinnerungen'),

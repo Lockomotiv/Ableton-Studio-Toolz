@@ -1,19 +1,15 @@
 // Hauptbereiche: Heute, Kalender, Aufgaben, Einkauf.
 import { h, icon, fmt, toast, mono } from './ui.js';
 import { store } from './store.js';
-import { agenda, openTasks, doneTasks, taskBucket, BUCKETS, sortTasks, completeTask, reopenTask, nextUp, members, member, childMode, refreshNative, today } from './domain.js';
-import { ymd, addDays, repeatLabel, SHOPPING_CATEGORY_ORDER, shoppingCategory, parse } from './nlp.js';
+import { agenda, openTasks, doneTasks, taskBucket, BUCKETS, sortTasks, completeTask, reopenTask, members, member, childMode, refreshNative, today } from './domain.js';
+import { ymd, addDays, repeatLabel, parse } from './nlp.js';
 import { openEditor } from './editors.js';
 import { openCapture, commit } from './capture.js';
 import { haptic } from './native.js';
 import { minutesOf } from './recur.js';
-import { familyStarsCard, kidHero, choresFor, toggleChore, dayProgress } from './household.js';
+import { choresFor, toggleChore } from './household.js';
 import { celebrate } from './fx.js';
-import { todayMealsCard } from './kitchen.js';
-import { boardTeaser, todaySchoolCard } from './family.js';
-import { todayWasteCard } from './waste.js';
-import { installBanner } from './iphone.js';
-import { todayWeatherCard } from './weather.js';
+import { viewDashboard } from './dashboard.js';
 import { sheet } from './ui.js';
 
 export const TASK_TABS = [['aufgaben', 'To-dos'], ['aemter', 'Ämter'], ['plan', 'Wochenplan'], ['routinen', 'Routinen'], ['sterne', 'Sterne']];
@@ -47,7 +43,7 @@ export function avatars(ids, size = 'sm') {
   return h('span.avs.' + size, null, ...ms.slice(0, 4).map((m) => h('span.av', { style: { '--c': m.color }, title: m.name }, mono(m))));
 }
 
-function eventRow(ev, { showDay } = {}) {
+export function eventRow(ev, { showDay } = {}) {
   const c = ev.calColor || (ev.memberIds?.length ? member(ev.memberIds[0])?.color : null);
   const now = new Date(); const td = ymd(now); const nowMin = now.getHours() * 60 + now.getMinutes();
   const past = ev.date < td || (ev.date === td && !ev.allDay && (minutesOf(ev.endTime || ev.time) ?? 0) < nowMin);
@@ -65,7 +61,7 @@ function eventRow(ev, { showDay } = {}) {
     avatars(ev.memberIds));
 }
 
-function taskRow(t, { showDate = true } = {}) {
+export function taskRow(t, { showDate = true } = {}) {
   const bucket = taskBucket(t);
   const check = h('button.check' + (t.done ? '.on' : ''), { 'aria-label': t.done ? 'Als offen markieren' : 'Erledigt', onclick: (e) => {
     e.stopPropagation();
@@ -131,61 +127,7 @@ export function personFilter() {
 }
 
 // ---------- Heute ----------
-export function viewToday() {
-  const now = new Date(); const td = today(); const tm = ymd(addDays(now, 1));
-  const hour = now.getHours();
-  const greet = hour < 5 ? 'Gute Nacht' : hour < 11 ? 'Guten Morgen' : hour < 17 ? 'Hallo' : hour < 22 ? 'Guten Abend' : 'Gute Nacht';
-  const kid = childMode();
-  const me = kid || member(store.config.meId);
-  // Abholtermine stehen in der eigenen Abfall-Karte
-  const todays = agenda(td, td).filter((e) => !e.waste);
-  const tomorrows = agenda(tm, tm).filter((e) => !e.waste);
-  const tasks = sortTasks(openTasks());
-  const dueTasks = tasks.filter((t) => t.date && t.date <= td);
-  const nxt = nextUp(now);
-  const shop = store.list('shopping').filter((s) => !s.done);
-
-  const quick = h('button.quickbar', { onclick: () => openCapture({ mode: 'text' }) },
-    icon('sparkle', 20), h('span.qtext', null, 'Was steht an?'),
-    h('span.quick-mic', { onclick: (e) => { e.stopPropagation(); openCapture({ mode: 'voice' }); } }, icon('mic', 20)));
-
-  const hero = nxt ? h('button.hero', { style: { '--c': nxt.memberIds?.length ? member(nxt.memberIds[0])?.color : 'var(--primary)' }, onclick: () => openEditor('events', nxt) },
-    h('div.hero-label', null, 'Als Nächstes · ' + fmt.until(nxt.date, nxt.time, now)),
-    h('div.hero-title', null, nxt.title),
-    h('div.hero-meta', null, `${fmt.dayLabel(nxt.date)}, ${fmt.time(nxt.time)}${nxt.endTime ? '–' + fmt.time(nxt.endTime) : ''} Uhr`, nxt.location ? ' · ' + nxt.location : ''),
-    avatars(nxt.memberIds, 'md')) : null;
-
-  const stats = h('div.stats', null,
-    h('a.stat', { href: '#kalender' }, h('b', null, todays.length), h('span', null, todays.length === 1 ? 'Termin heute' : 'Termine heute')),
-    h('a.stat', { href: '#aufgaben' }, h('b', null, dueTasks.length), h('span', null, 'Aufgaben fällig')),
-    !kid ? h('a.stat', { href: '#einkauf' }, h('b', null, shop.length), h('span', null, 'auf der Liste')) : null);
-
-  return h('div.page.today', null,
-    h('header.greet', null,
-      h('p.date', null, fmt.longDate(now)),
-      h('h1', null, `${greet}${me ? ', ' + me.name : ''}`, kid ? ' ' + (kid.emoji || '👋') : '')),
-    kid ? kidHero(kid) : null,
-    installBanner(),
-    todayWeatherCard(),
-    quick,
-    personFilter(),
-    stats,
-    hero,
-    kid ? null : familyStarsCard(),
-    section('Heute',
-      todays.length ? h('div.list', null, ...todays.map((e) => eventRow(e))) : h('p.soft', null, 'Heute keine Termine. 🌤'),
-    ),
-    dueTasks.length ? section('Zu erledigen', h('div.list', null, ...dueTasks.slice(0, 6).map((t) => taskRow(t))), dueTasks.length > 6 ? h('a.more', { href: '#aufgaben' }, `Alle ${dueTasks.length} anzeigen`) : null) : null,
-    todayWasteCard(),
-    boardTeaser(),
-    todaySchoolCard(),
-    todayMealsCard(),
-    tomorrows.length ? section('Morgen', h('div.list', null, ...tomorrows.map((e) => eventRow(e)))) : null,
-    !kid && shop.length ? section('Einkaufsliste', h('a.card.shop-teaser', { href: '#einkauf' },
-      h('div.pills', null, ...shop.slice(0, 8).map((s) => h('span.pill', null, s.name)), shop.length > 8 ? h('span.pill.more', null, '+' + (shop.length - 8)) : null))) : null,
-    !members().length && !kid ? h('div.card.tip', null, h('b', null, 'Tipp: Familie anlegen'), h('p', null, 'Leg alle Familienmitglieder an. Dann versteht FamilyHub Sätze wie „Freitag Turnen mit Lena“ und färbt alles passend ein.'), h('a.btn.tonal', { href: '#familie' }, icon('users', 18), 'Familie einrichten')) : null,
-  );
-}
+export function viewToday() { return viewDashboard(); }
 
 // ---------- Kalender ----------
 const cal = { mode: 'month', cursor: null, selected: null };

@@ -132,6 +132,12 @@ Hinweis zu Cookidoo und Lifesum: Beide bieten keine offene Schnittstelle. Öffen
 - *Mehr → Fotos → Zahnrad (Diashow)*: unter „Familien-Diashow“ seht ihr, welches Album aktiv ist, und könnt für die ganze Familie andere Alben festlegen (oder zurück auf „Automatisch“).
 - Pro Gerät lässt sich weiterhin eine eigene Quelle wählen (Zufällig, Favoriten, An diesem Tag, Neueste, ausgewählte Alben). Solange auf einem Gerät nichts gewählt wurde, gilt der Familien-Standard.
 
+### Neu in 4.7: Liquid-Glass-Design, neuer Login, Dashboard, mehr Belohnung
+- **Design nach euren Vorlagen:** pastellblau/lavendel (hell) bzw. Navy (dunkel), milchige Glaskarten, Pillen-Buttons mit Blau-Verlauf, kleine blaue Kopf-Labels, schwebende Tab-Leiste, violett-blaue Sprachkugel.
+- **Login-Screen:** Glas-Logo, „Willkommen zurück“, Familien-Passwort mit Auge, „Angemeldet bleiben“, „Passwort vergessen?“ (Befehl: `./install-pi.sh passwort`), Hell/Dunkel-Schalter; darunter „Pi suchen“ (durchsucht das Heimnetz), „Nur dieses Gerät“ und „Hilfe“. Wird die Seite direkt vom Pi geöffnet (iPad/iPhone), entfällt das Adressfeld. Danach: „Wer bist du?“ oder „Gemeinsames Gerät (Tablet)“.
+- **Dashboard „Heute“ als Kartenraster:** Kopf mit Gruß, Wetter- und Uhr-Pille; Karten Termine (Tagesfokus, Heute, Morgen, Wochenleiste), Kinderwelt (Punkte, Belohnung, offene Ämter, je Kind Level/Ziel/Woche), Aufgaben (Ämter und fällige Aufgaben mit grünem Haken), Einkaufsliste, Nachrichten (mit „Gelesen“-Haken), Wetter, Abfall, Essen, Schule. Tablet: zwei bis drei Spalten.
+- **Gamification:** Level mit Namen (Sternchen → Entdecker → Helfer → … → Sternenkönig) und großer Aufstiegs-Feier; 12 Abzeichen (z. B. „Drei am Stück“, „Frühaufsteher“, „Teamplayer“); **Tagesziel**: alle Ämter des Tages → +2 Bonus-Sterne; **Sternenglas**, das sich bis zur nächsten Belohnung füllt (antippen klimpert); „+N“ fliegt vom Finger; kurze Klänge im Kindermodus (Einstellungen → Belohnungs-Klänge). Level, Ziele und Abzeichen werden nacheinander gefeiert.
+
 ### Sprachsteuerung – Beispiele
 
 * „Morgen um halb vier Zahnarzt mit Lena, erinnere mich eine Stunde vorher“
@@ -145,7 +151,7 @@ Unter *Einstellungen* lässt sich „Direkt speichern“ einschalten – dann wi
 
 ## Installation auf dem Handy
 
-1. `release/FamilyHub-4.6.3.apk` aufs Handy und installieren.
+1. `release/FamilyHub-4.7.0.apk` aufs Handy und installieren.
    Die neue App hat eine eigene Paket-ID (`de.familyhub.app`) und läuft **neben** der alten App. Die alte kann gelöscht werden, sobald alles passt.
 2. Beim ersten Start „Familie anlegen“.
 3. Optional: Mehr → Synchronisierung → mit dem Pi verbinden (siehe unten).

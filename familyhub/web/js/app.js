@@ -19,6 +19,7 @@ import { openCapture } from './capture.js';
 import { consumeLaunchAction, haptic, moveToBack, isApp } from './native.js';
 import { voiceAvailable } from './voice.js';
 import { editMember } from './editors.js';
+import { needsLogin, showLogin } from './login.js';
 
 const ROUTES = {
   heute: viewToday, kalender: viewCalendar, aufgaben: viewTasks, einkauf: viewShopping, mehr: viewMore,
@@ -63,6 +64,7 @@ function render(reason) {
   const r = route();
   const kid = childMode();
   document.body.classList.toggle('child', !!kid);
+  document.body.dataset.route = r;
   const meM = members().find((m) => m.id === store.config.meId);
   setEmojiMode(!!kid || meM?.role === 'child');
   // Topbar
@@ -147,6 +149,7 @@ setInterval(() => { if (!document.hidden && !document.querySelector('.sheet-wrap
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { render('tick'); refreshNative(); } });
 
 function onboarding() {
+  if (needsLogin()) { showLogin(); return; }
   if (store.config.onboarded || members().length || store.list('events').length) return;
   sheet((s) => h('div.sheet-body.welcome', null,
     h('div.welcome-logo', null, '⌂'),
@@ -162,11 +165,14 @@ function onboarding() {
       h('button.btn.ghost', { onclick: () => s.close() }, 'Später'))), { onClose: () => store.saveConfig({ onboarded: true }), label: 'Willkommen' });
 }
 
+// „Angemeldet bleiben“ nicht gewählt → beim nächsten Start neu anmelden
+if (store.config.server.ephemeral && store.config.server.token) store.saveConfig({ server: { token: null } });
+store.on(() => { if (needsLogin() && !document.querySelector('.login')) showLogin(); });
 applyTheme();
 render();
 refreshNative();
 store.syncNow();
-setTimeout(onboarding, 400);
+setTimeout(onboarding, needsLogin() ? 0 : 400);
 armScreensaver();
 store.on((r) => { if (r === 'config') armScreensaver(); if (r === 'data' && store.list('calendars').length) refreshCalendars(); });
 const la = consumeLaunchAction();
