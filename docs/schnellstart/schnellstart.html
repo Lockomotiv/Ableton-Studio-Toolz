@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Connect Studio – Schnellstart Testversion</title>
+<style>
+  @page { size: A4; margin: 0; }
+  :root { --ink: #15171c; --muted: #5d6573; --line: #e3e6ec; --accent: #ff7a1a; --accent-dark: #d95f00; --ok: #1f9e74; --panel: #f6f7f9; --dark: #0f1115; --warn: #b7791f; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { font-family: "Inter", sans-serif; color: var(--ink); font-size: 8.9pt; line-height: 1.38; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .page { width: 210mm; height: 297mm; padding: 12mm 16mm 14mm; position: relative; overflow: hidden; page-break-after: always; }
+  .page:last-child { page-break-after: auto; }
+  .head { display: flex; justify-content: space-between; align-items: center; background: var(--dark); color: #e8eaef; margin: -12mm -16mm 5mm; padding: 7mm 16mm 6mm; }
+  .head h1 { font-family: "Inter Display"; font-size: 20pt; margin: 0; }
+  .head h1 span { color: var(--accent); }
+  .head .meta { text-align: right; font-size: 8pt; color: #b9bfcb; }
+  .brand { font-weight: 800; letter-spacing: 0.18em; font-size: 8pt; color: #ffb070; margin-bottom: 1mm; }
+  h2 { font-family: "Inter Display"; font-size: 12pt; margin: 0 0 1.8mm; display: flex; align-items: center; gap: 3mm; }
+  h2 .n { width: 7mm; height: 7mm; border-radius: 50%; background: var(--accent); color: #fff; font-size: 9pt; display: grid; place-items: center; flex: none; }
+  section { margin-bottom: 4mm; }
+  p { margin: 0 0 2mm; }
+  ol, ul { margin: 0 0 2mm; padding-left: 5mm; }
+  li { margin-bottom: 0.6mm; }
+  li::marker { color: var(--accent-dark); font-weight: 700; }
+  code { font-family: "JetBrains Mono", monospace; font-size: 8.2pt; background: var(--panel); border: 1px solid var(--line); border-radius: 1mm; padding: 0 1mm; }
+  .box { background: var(--panel); border: 1px solid var(--line); border-radius: 2mm; padding: 2.2mm 3.5mm; margin: 0 0 4mm; }
+  .warn { background: #fff7e8; border-color: #f2d49b; }
+  .ok { background: #e9f7f1; border-color: #b6e4d1; }
+  table { width: 100%; border-collapse: collapse; font-size: 8.2pt; }
+  th, td { border-bottom: 1px solid var(--line); padding: 1.05mm 1.6mm; text-align: left; vertical-align: top; }
+  th { font-size: 7.2pt; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  td.chk { width: 9mm; text-align: center; }
+  td.chk span { display: inline-block; width: 4mm; height: 4mm; border: 1.2px solid #9aa1ad; border-radius: 0.8mm; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
+  .foot { position: absolute; left: 16mm; right: 16mm; bottom: 8mm; font-size: 7.3pt; color: var(--muted); display: flex; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 2mm; }
+  .k { font-weight: 600; }
+</style>
+</head>
+<body>
+<section class="page">
+  <div class="head">
+    <div><div class="brand">LOCK-O-MOTIV CONNECT STUDIO</div><h1>Schnellstart <span>Testversion</span></h1></div>
+    <div class="meta">Version 0.3.0 · Windows 11 · Ableton Live 12 Suite<br>Dauer: ca. 15 Minuten</div>
+  </div>
+
+  <div class="box warn"><b>Testversion:</b> Diese Version ist automatisch getestet, aber noch nie mit echtem Ableton Live unter Windows gelaufen. Bitte mit einem <b>Test-Set</b> arbeiten, nicht mit Ihrem Arbeitsprojekt – Connect Studio verändert Tempo, Loop, Lautstärke und Panorama.</div>
+
+  <section>
+    <h2><span class="n">1</span>Installieren</h2>
+    <ol>
+      <li>Datei <code>LOCK-O-MOTIV Connect Studio_0.3.0_x64-setup.exe</code> aus dem Download-Paket starten.</li>
+      <li>Optional Prüfsumme kontrollieren (PowerShell im Ordner): <code>Get-FileHash *setup.exe</code> → muss mit der <code>.sha256</code>-Datei übereinstimmen.</li>
+      <li>Windows SmartScreen warnt, weil die Testversion nicht signiert ist: <i>Weitere Informationen → Trotzdem ausführen</i>.</li>
+      <li>Installation läuft pro Benutzer, ohne Administratorrechte. Danach <b>Connect Studio</b> über Startmenü oder Desktop öffnen.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2><span class="n">2</span>Einrichten (einmalig, Assistent startet automatisch)</h2>
+    <table>
+      <tr><th>Schritt</th><th>Was tun</th><th>Erwartung</th></tr>
+      <tr><td class="k">1 Ableton erkennen</td><td>„Jetzt prüfen“ (Live darf schon laufen)</td><td>„Ableton Live 12 installiert“ = OK</td></tr>
+      <tr><td class="k">2 AbletonOSC</td><td>Haken <b>„Nur lokal erreichbar“</b> lassen → <b>„AbletonOSC installieren“</b>. Dann <b>Live neu starten</b> und in Live <i>Optionen → Einstellungen → Link, Tempo &amp; MIDI → Control Surface</i> = <code>AbletonOSC</code> (Ein-/Ausgang: Keine)</td><td>„Installiert … nur lokal erreichbar ✔“. Live-Statuszeile: „AbletonOSC: Listening for OSC on port 11000“</td></tr>
+      <tr><td class="k">3 Verbindung</td><td>„Verbindung testen“</td><td>Grün: „AbletonOSC antwortet (Ableton Live 12.x)“ mit Zeit in ms</td></tr>
+      <tr><td class="k">4 ASIO</td><td>überspringen (kommt in Sprint 3)</td><td>–</td></tr>
+      <tr><td class="k">5 Kamera/Mikro</td><td>„Kamera &amp; Mikrofon testen“, Windows-Abfrage erlauben</td><td>Eigenes Bild, Pegel bewegt sich beim Sprechen</td></tr>
+      <tr><td class="k">6 Netzwerk</td><td>„LAN-Port testweise öffnen“; Windows-Firewall: <b>nur „Privat“</b> erlauben</td><td>„Port 47870 kann geöffnet werden“ + LAN-Adresse</td></tr>
+      <tr><td class="k">7 Rolle</td><td>Anzeigename, Host, Remote Studio, Adapter <b>AbletonOSC</b> → „Einrichtung abschließen“</td><td>Studio öffnet sich, links unten grün „Mit Ableton verbunden“</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2><span class="n">3</span>Erster Test allein – Seite „Studio“</h2>
+    <p>Test-Set mit mindestens 4 Spuren und einem Clip in Spur 1, Slot 1 (Session-Ansicht) öffnen.</p>
+    <table>
+      <tr><th></th><th>Aktion</th><th>Erwartung</th></tr>
+      <tr><td class="chk"><span></span></td><td>▶ Play / ■ Stop</td><td>Live startet/stoppt, im Protokoll ✔</td></tr>
+      <tr><td class="chk"><span></span></td><td>Tempo 128 → Setzen; dann in Live auf 100 drehen</td><td>Live 128 BPM; Connect Studio zeigt binnen ~1 s 100</td></tr>
+      <tr><td class="chk"><span></span></td><td>Loop an/aus · 🔗 Link an/aus</td><td>Schalter in Live folgen</td></tr>
+      <tr><td class="chk"><span></span></td><td>Spurnamen, Lautstärke Spur 2 ziehen, Panorama Spur 1</td><td>Namen identisch, Regler in Live bewegen sich</td></tr>
+      <tr><td class="chk"><span></span></td><td>Clip starten Spur 1/Slot 1 · dann leerer Slot</td><td>Clip startet · Meldung „enthält keinen Clip“</td></tr>
+      <tr><td class="chk"><span></span></td><td>Live schließen, wieder öffnen</td><td>Rot „Nicht verbunden“ → ohne Neustart wieder grün</td></tr>
+      <tr><td class="chk"><span></span></td><td>Seite Diagnose → „Diagnose ausführen“</td><td>alle OK (Live-Prozess, Script, /live/test, API, <b>OSC-Port nur lokal</b>)</td></tr>
+    </table>
+  </section>
+  <div class="foot"><span>Connect Studio 0.3.0 Testversion · Schnellstart</span><span>1/2</span></div>
+</section>
+
+<section class="page">
+  <section>
+    <h2><span class="n">4</span>Zu zweit testen (zwei Windows-Rechner im selben Netz)</h2>
+    <div class="two">
+      <div>
+        <p class="k">Rechner A – Host (mit Ableton)</p>
+        <ol>
+          <li>Seite <b>Session</b>: Remote Studio, „Lokales Netz“, neues Projekt „Test“ → <b>Sitzung starten</b>.</li>
+          <li>Einladungscode <code>LOM1.…</code> kopieren und an B schicken (Messenger/E-Mail).</li>
+          <li>Nach dem Verbinden: <b>Sicherheitscode</b> mit B vergleichen.</li>
+          <li><b>„Bildschirm + DAW-Ton“</b> → Bildschirm wählen, „Systemaudio teilen“ an.</li>
+          <li>Anfrage von B: <b>„Gemeinsam steuern“</b>, später „Komplett übergeben“ und „Zurückholen“.</li>
+        </ol>
+      </div>
+      <div>
+        <p class="k">Rechner B – Gast</p>
+        <ol>
+          <li>Einrichtung mit Rolle „Gast“ (Schritt 2/3 darf ohne Ableton übersprungen werden).</li>
+          <li>Seite <b>Session</b>: Code einfügen → <b>Beitreten</b>, Kamera/Mikro erlauben.</li>
+          <li>Seite Studio: gesperrt → <b>„Steuerung anfragen“</b>; nach Freigabe Play/Tempo/Fader bedienen.</li>
+          <li>Eine WAV aus dem Explorer <b>ins Fenster ziehen</b>.</li>
+          <li>Seite <b>Projekt-Hub</b>: Idee festhalten.</li>
+        </ol>
+      </div>
+    </div>
+    <table style="margin-top:3mm">
+      <tr><th></th><th>Prüfen</th><th>Erwartung</th></tr>
+      <tr><td class="chk"><span></span></td><td>Video und Stimme in beide Richtungen</td><td>Bild + Ton, Stummschalten wirkt</td></tr>
+      <tr><td class="chk"><span></span></td><td>B hört den Ableton-Mix (A mit Kopfhörern!)</td><td>Mix hörbar, B hört sich selbst nicht als Echo</td></tr>
+      <tr><td class="chk"><span></span></td><td>B steuert A's Live nach Freigabe</td><td>Live bei A reagiert, ✔ im Protokoll</td></tr>
+      <tr><td class="chk"><span></span></td><td>A: „Komplett übergeben“ → „Zurückholen“</td><td>A gesperrt, danach sofort wieder frei, B gesperrt</td></tr>
+      <tr><td class="chk"><span></span></td><td>Sample von B an A</td><td>A: Annehmen → „Prüfsumme identisch“; „Ins Projekt übernehmen“ legt es unter <code>Samples\Imported\Connect Studio</code> ab</td></tr>
+      <tr><td class="chk"><span></span></td><td>Idee/Vorlage im Hub</td><td>erscheint sofort beim anderen</td></tr>
+      <tr><td class="chk"><span></span></td><td>B trennt WLAN 10 s</td><td>A: „unterbrochen“, Steuerung zurück bei A; danach automatisch wieder verbunden</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2><span class="n">5</span>Lokal mit Ableton Link</h2>
+    <p>Beide Rechner im selben Netz, jeder mit eigenem Live: auf beiden <b>Studio → 🔗 Link an</b>. Tempo und Phase laufen sample-genau synchron (Ableton-eigene Funktion). Optional zusätzlich eine Session im Modus <b>Dual Studio</b> für Video, Hub und Samples.</p>
+  </section>
+
+  <section>
+    <h2><span class="n">6</span>Was bitte zurückmelden</h2>
+    <ul>
+      <li>Die angehakten Tabellen (Foto genügt) – bei ✘ kurz, was passiert ist</li>
+      <li>Screenshot der Seite <b>Diagnose</b> und der Seite <b>Session → Verbindung (gemessen)</b></li>
+      <li>Protokoll: <code>%APPDATA%\de.lockomotiv.connectstudio\logs\daw-commands.jsonl</code></li>
+      <li>AbletonOSC-Log: <code>Dokumente\Ableton\User Library\Remote Scripts\AbletonOSC\logs\abletonosc.log</code></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><span class="n">7</span>Wenn etwas hakt</h2>
+    <table>
+      <tr><th>Symptom</th><th>Lösung</th></tr>
+      <tr><td>„Keine Antwort von AbletonOSC (Timeout)“</td><td>Live nach der Installation neu gestartet? Control Surface = AbletonOSC? Ordnername exakt <code>AbletonOSC</code>?</td></tr>
+      <tr><td>„UDP-Port 127.0.0.1:11001 … belegt“</td><td>Zweite Connect-Studio-Instanz oder anderes OSC-Programm beenden.</td></tr>
+      <tr><td>Script gilt als „nicht gefunden“, obwohl installiert</td><td>User Library liegt woanders (Live: Einstellungen → Library). Umgebungsvariable <code>LOM_ABLETON_USER_LIBRARY</code> auf diesen Ordner setzen und neu installieren.</td></tr>
+      <tr><td>Gast kann nicht beitreten</td><td>Firewall-Abfrage bei A mit „Privat“ erlaubt? Beide im selben Netz? Einladung abgelaufen (Standard 24 h)?</td></tr>
+      <tr><td>Kein DAW-Ton beim Gast</td><td>„Systemaudio teilen“ im Freigabedialog an? Live gibt über ASIO ohne Windows-Ausgang aus → im Interface-Treiber Loopback aktivieren oder Live auf ein Windows-Gerät stellen.</td></tr>
+    </table>
+  </section>
+  <div class="foot"><span>Ausführliche Anleitungen: docs/troubleshooting/windows-test-anleitung.md · docs/collaboration/zusammenarbeit.md</span><span>2/2</span></div>
+</section>
+</body>
+</html>

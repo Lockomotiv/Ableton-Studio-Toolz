@@ -181,7 +181,13 @@ pub async fn run_all(adapter: &dyn DawAdapter, osc_send_port: u16, osc_listen_po
     // 3. AbletonOSC Remote Script vorhanden
     let t = Instant::now();
     out.push(match find_abletonosc() {
-        Some(p) => check("abletonosc_installed", "AbletonOSC Remote Script installiert", t, CheckStatus::Pass, p.display().to_string()),
+        Some(p) => {
+            let local = std::fs::read_to_string(p.join("abletonosc").join("osc_server.py"))
+                .map(|c| c.contains("('127.0.0.1', OSC_LISTEN_PORT)"))
+                .unwrap_or(false);
+            check("abletonosc_installed", "AbletonOSC Remote Script installiert", t, CheckStatus::Pass,
+                  format!("{}{}", p.display(), if local { "\nKonfiguriert: nur lokal erreichbar (127.0.0.1)" } else { "" }))
+        }
         None => check("abletonosc_installed", "AbletonOSC Remote Script installiert", t, CheckStatus::Fail,
                       format!("Nicht gefunden. Gesucht in:\n{}", abletonosc_candidates().iter().map(|p| p.display().to_string()).collect::<Vec<_>>().join("\n"))),
     });

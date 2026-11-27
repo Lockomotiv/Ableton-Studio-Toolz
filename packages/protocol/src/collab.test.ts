@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  createInvite, createItem, decodeFrame, decodeInvite, editItem, encodeFrame, encodeInvite, isInsecureServer,
+  createInvite, inviteExpired, createItem, decodeFrame, decodeInvite, editItem, encodeFrame, encodeInvite, isInsecureServer,
   isValidHubItem, maxClock, mergeItems, parseSessionMessage, sampleProblem, securityCode, sdpFingerprints, sha256Hex,
 } from "./index";
 
@@ -65,6 +65,13 @@ describe("Einladungen", () => {
     expect(() => decodeInvite("hallo")).toThrow(/LOM1/);
     expect(() => decodeInvite("LOM1.!!!")).toThrow();
   });
+  it("Ablaufzeit wird übertragen und erkannt", () => {
+    const inv = createInvite("ws://192.168.1.2:47870", "Lock", "dual", 1);
+    const back = decodeInvite(encodeInvite(inv));
+    expect(back.expiresAt).toBe(inv.expiresAt);
+    expect(inviteExpired(back)).toBe(false);
+    expect(inviteExpired(back, (inv.expiresAt! + 1) * 1000)).toBe(true);
+  });
   it("erkennt unverschlüsselte Internet-Server", () => {
     expect(isInsecureServer("ws://192.168.1.20:47870")).toBe(false);
     expect(isInsecureServer("ws://studio.example.org:8787")).toBe(true);
@@ -91,7 +98,8 @@ describe("Dateien", () => {
     expect(sampleProblem("kick.wav", 10)).toBeNull();
     expect(sampleProblem("Bass.MID", 10)).toBeNull();
     expect(sampleProblem("virus.exe", 10)).toMatch(/nicht erlaubt/);
-    expect(sampleProblem("big.wav", 300 * 1024 * 1024)).toMatch(/größer/);
+    expect(sampleProblem("big.wav", 300 * 1024 * 1024)).toBeNull();
+    expect(sampleProblem("huge.wav", 3 * 1024 * 1024 * 1024)).toMatch(/größer als 2 GB/);
   });
   it("Binärrahmen Roundtrip", async () => {
     const data = new Uint8Array([1, 2, 3, 250]);

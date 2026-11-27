@@ -1,18 +1,25 @@
 # THIRD_PARTY_NOTICES
 
-LOCK-O-MOTIV Connect Studio 0.1.0 verwendet folgende Drittkomponenten.
+LOCK-O-MOTIV Connect Studio 0.3.0 verwendet folgende Drittkomponenten.
 Automatisch erzeugt mit `node scripts/license-report.mjs` aus dem aufgelösten Cargo-Abhängigkeitsgraph
 (alle Zielplattformen, ohne Dev-Abhängigkeiten) und den npm-Laufzeitabhängigkeiten.
 
 > **Hinweis (Sprint 1):** Diese Liste nennt Lizenz-Kennungen. Die vollständigen Lizenztexte werden vor
 > dem Beta-Release (Sprint 5) mit einem Werkzeug wie `cargo-about` in diese Datei bzw. den Installer übernommen.
 
-## Nicht mitgelieferte, separat zu installierende Komponenten
+## Mitgelieferte Komponenten außerhalb des Programmcodes
 
 | Komponente | Version | Lizenz | Verwendung |
 |---|---|---|---|
-| AbletonOSC (ideoforms/AbletonOSC) | Commit 0ca68214bd62 | MIT (enthält eine Kopie von python-osc, Unlicense/Public Domain) | Remote Script in Ableton Live; wird vom Benutzer installiert, nicht mit Connect Studio ausgeliefert |
-| Microsoft Edge WebView2 Runtime | Systemkomponente | Microsoft-Lizenz | Bestandteil von Windows 11, wird nicht mitgeliefert |
+| AbletonOSC (ideoforms/AbletonOSC), Copyright (c) Daniel John Jones and contributors | Commit 0ca68214bd62 | MIT | Remote Script für Ableton Live; im Installer enthalten, wird nur auf Klick in die User Library kopiert (optional mit Bind-Adresse 127.0.0.1). Lizenztext: `resources/AbletonOSC/LICENSE.md` |
+| python-osc (in AbletonOSC enthalten, Ordner `pythonosc/`) | wie AbletonOSC | Unlicense (gemeinfrei) | OSC-Codec innerhalb von AbletonOSC |
+
+## Nicht mitgeliefert
+
+| Komponente | Lizenz | Verwendung |
+|---|---|---|
+| Microsoft Edge WebView2 Runtime | Microsoft-Lizenz | Bestandteil von Windows 11 |
+| Ableton Live | proprietär | wird weder mitgeliefert noch verändert |
 
 ## Zusammenfassung
 

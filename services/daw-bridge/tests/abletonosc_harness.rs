@@ -260,3 +260,80 @@ async fn diagnostics_against_harness() {
     assert_eq!(get("osc_listen_port").status, CheckStatus::Pass);
     assert_eq!(get("osc_metrics").status, CheckStatus::Pass);
 }
+
+/// Installiert das gebündelte AbletonOSC wie Connect Studio mit "nur lokal" (Bind 127.0.0.1)
+/// und startet es mit seinen eigenen Standardwerten: Es muss auf 127.0.0.1:11000 lauschen,
+/// NICHT auf 0.0.0.0, und weiterhin normal antworten.
+#[tokio::test(flavor = "multi_thread")]
+async fn local_only_patch_binds_loopback_and_works() {
+    if skip() { return; }
+    let bundle = repo_root().join("apps/desktop/src-tauri/resources/AbletonOSC");
+    if !bundle.join("manager.py").is_file() {
+        eprintln!("ÜBERSPRUNGEN: {} fehlt – node scripts/prepare-abletonosc.mjs", bundle.display());
+        return;
+    }
+    let tmp = std::env::temp_dir().join(format!("lom-patch-{}", std::process::id()));
+    let target = tmp.join("AbletonOSC");
+    let _ = std::fs::remove_dir_all(&tmp);
+    copy_dir(&bundle, &target);
+    let server = target.join("abletonosc/osc_server.py");
+    let code = std::fs::read_to_string(&server).unwrap();
+    std::fs::write(&server, code.replacen("('0.0.0.0', OSC_LISTEN_PORT)", "('127.0.0.1', OSC_LISTEN_PORT)", 1)).unwrap();
+
+    let response = free_port();
+    let dir = repo_root().join("tests/integration/abletonosc-harness");
+    let mut child = Command::new(python())
+        .arg("-u")
+        .arg(dir.join("harness.py"))
+        .arg("--abletonosc")
+        .arg(&target)
+        .args(["--response-port", &response.to_string(), "--keep-bind"])
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn()
+        .unwrap();
+    let lines = Arc::new(Mutex::new(Vec::new()));
+    let out = child.stdout.take().unwrap();
+    let l2 = lines.clone();
+    std::thread::spawn(move || {
+        for line in BufReader::new(out).lines().map_while(Result::ok) {
+            l2.lock().unwrap().push(line);
+        }
+    });
+    let h = Harness { child, lines, listen: 11000, response };
+    assert!(h.wait_line(|l| l.starts_with("HARNESS READY"), Duration::from_secs(10)), "Harness nicht bereit (Port 11000 belegt?)");
+    assert!(h.wait_line(|l| l.contains("HARNESS BIND 127.0.0.1:11000"), Duration::from_secs(1)), "{:?}", h.lines.lock().unwrap());
+    // Gegenprobe: Port 11000 auf einer LAN-Adresse binden. Das gelingt nur, wenn AbletonOSC
+    // NICHT auf 0.0.0.0 (alle Schnittstellen) lauscht.
+    let lan_ip = std::net::UdpSocket::bind("0.0.0.0:0")
+        .and_then(|s| s.connect("192.0.2.1:9").map(|_| s))
+        .and_then(|s| s.local_addr())
+        .map(|a| a.ip())
+        .ok()
+        .filter(|ip| !ip.is_loopback() && !ip.is_unspecified());
+    match lan_ip {
+        Some(ip) => {
+            let probe = std::net::UdpSocket::bind((ip, 11000));
+            assert!(probe.is_ok(), "AbletonOSC belegt {ip}:11000 – lauscht also nicht nur lokal");
+        }
+        None => eprintln!("Hinweis: keine LAN-Adresse – Gegenprobe übersprungen"),
+    }
+    let a = h.adapter().await;
+    let p = a.probe().await;
+    assert!(p.reachable, "{}", p.message);
+    assert!(a.execute(DawCommand::Play).await.unwrap().verified);
+    drop(h);
+    let _ = std::fs::remove_dir_all(&tmp);
+}
+
+fn copy_dir(src: &std::path::Path, dst: &std::path::Path) {
+    std::fs::create_dir_all(dst).unwrap();
+    for e in std::fs::read_dir(src).unwrap().flatten() {
+        let p = e.path();
+        if p.is_dir() {
+            copy_dir(&p, &dst.join(e.file_name()));
+        } else {
+            std::fs::copy(&p, dst.join(e.file_name())).unwrap();
+        }
+    }
+}

@@ -1,4 +1,7 @@
-# Test unter Windows 11 mit Ableton Live 12 Suite (Sprint 1)
+# Test unter Windows 11 mit Ableton Live 12 Suite
+
+> **Kurzfassung:** [Schnellstart-PDF](../schnellstart/Connect-Studio-Schnellstart.pdf) (2 Seiten). Ab Version 0.3.0 installiert
+> der Einrichtungsassistent AbletonOSC per Klick (Schritt 2) – Abschnitt 2 unten ist dann nur noch die manuelle Alternative.
 
 Diese Anleitung führt durch den **ersten echten Hardware-Test**. Alles, was Sie hier prüfen, wurde
 bisher nur gegen die AbletonOSC-Testgegenstelle (echter AbletonOSC-Code, simulierte Live-API) und
@@ -17,7 +20,7 @@ unter Linux getestet – **noch nie gegen echtes Ableton Live unter Windows.**
    Get-Content .\*.sha256
    ```
    Beide Werte müssen übereinstimmen.
-4. `LOCK-O-MOTIV Connect Studio_0.2.0_x64-setup.exe` ausführen. Der Installer ist **nicht signiert** –
+4. `LOCK-O-MOTIV Connect Studio_0.3.0_x64-setup.exe` ausführen. Der Installer ist **nicht signiert** –
    Windows SmartScreen warnt; *Weitere Informationen → Trotzdem ausführen*. Installation erfolgt pro
    Benutzer (keine Administratorrechte).
 

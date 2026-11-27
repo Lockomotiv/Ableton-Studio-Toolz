@@ -16,10 +16,10 @@
 //! * TLS: hinter einem Reverse-Proxy (z. B. Caddy) betreiben, siehe docs.
 
 use std::collections::HashMap;
-use std::net::SocketAddr;
+use std::net::{IpAddr, SocketAddr};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use base64::Engine;
 use futures_util::{SinkExt, StreamExt};
@@ -59,9 +59,17 @@ pub enum Role {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(tag = "type", rename_all = "camelCase")]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
 enum ClientMsg {
-    Join { room: String, token: String, role: Role, name: String },
+    Join {
+        room: String,
+        token: String,
+        role: Role,
+        name: String,
+        /// Nur vom Host: Unix-Zeit (s), ab der Gäste nicht mehr beitreten dürfen.
+        #[serde(default)]
+        expires_at: Option<u64>,
+    },
     Signal { data: Value },
     Leave,
 }
@@ -94,6 +102,7 @@ struct Peer {
 
 struct Room {
     token_hash: [u8; 32],
+    expires_at: Option<u64>,
     host: Option<Peer>,
     guest: Option<Peer>,
 }
@@ -102,6 +111,31 @@ struct Room {
 pub struct State {
     rooms: Mutex<HashMap<String, Room>>,
     next_conn: AtomicU64,
+    /// Zeitpunkte von Join-Versuchen bzw. Fehlversuchen je IP (gleitendes Fenster)
+    attempts: Mutex<HashMap<IpAddr, Vec<Instant>>>,
+    failures: Mutex<HashMap<IpAddr, Vec<Instant>>>,
+}
+
+/// Höchstens so viele Join-Versuche je IP und Minute.
+pub const MAX_JOINS_PER_MINUTE: usize = 30;
+/// Höchstens so viele fehlgeschlagene Joins (falsches Geheimnis, unbekannter Raum) je IP und Minute.
+pub const MAX_FAILURES_PER_MINUTE: usize = 10;
+
+fn over_limit(map: &Mutex<HashMap<IpAddr, Vec<Instant>>>, ip: IpAddr, max: usize, record: bool) -> bool {
+    let now = Instant::now();
+    let mut m = map.lock().unwrap();
+    if m.len() > 10_000 {
+        m.retain(|_, v| v.iter().any(|t| now.duration_since(*t) < Duration::from_secs(60)));
+    }
+    let v = m.entry(ip).or_default();
+    v.retain(|t| now.duration_since(*t) < Duration::from_secs(60));
+    if record {
+        v.push(now);
+        v.len() > max
+    } else {
+        // reine Abfrage: Grenze bereits erreicht?
+        v.len() >= max
+    }
 }
 
 impl State {
@@ -156,7 +190,7 @@ pub async fn serve(listener: TcpListener, cfg: Arc<Config>, state: Arc<State>) {
     }
 }
 
-async fn handle(stream: TcpStream, _addr: SocketAddr, cfg: Arc<Config>, state: Arc<State>) {
+async fn handle(stream: TcpStream, addr: SocketAddr, cfg: Arc<Config>, state: Arc<State>) {
     let ws_cfg = WebSocketConfig::default()
         .max_message_size(Some(MAX_MESSAGE_BYTES))
         .max_frame_size(Some(MAX_MESSAGE_BYTES));
@@ -181,8 +215,17 @@ async fn handle(stream: TcpStream, _addr: SocketAddr, cfg: Arc<Config>, state: A
     let first = tokio::time::timeout(JOIN_TIMEOUT, source.next()).await;
     let joined = match first {
         Ok(Some(Ok(Message::Text(t)))) => match serde_json::from_str::<ClientMsg>(&t) {
-            Ok(ClientMsg::Join { room, token, role, name }) => {
-                join(&state, &cfg, conn, &tx, room, token, role, name.chars().take(64).collect())
+            Ok(ClientMsg::Join { room, token, role, name, expires_at }) => {
+                let ip = addr.ip();
+                if over_limit(&state.attempts, ip, MAX_JOINS_PER_MINUTE, true) || over_limit(&state.failures, ip, MAX_FAILURES_PER_MINUTE, false) {
+                    Err(("rate-limited", "Zu viele Verbindungsversuche – bitte eine Minute warten"))
+                } else {
+                    let r = join(&state, &cfg, conn, &tx, room, token, role, name.chars().take(64).collect(), expires_at);
+                    if matches!(r, Err((c, _)) if c == "forbidden" || c == "no-room" || c == "expired") {
+                        over_limit(&state.failures, ip, MAX_FAILURES_PER_MINUTE, true);
+                    }
+                    r
+                }
             }
             _ => Err(("bad-request", "Erste Nachricht muss 'join' sein")),
         },
@@ -261,6 +304,7 @@ fn join(
     token: String,
     role: Role,
     name: String,
+    expires_at: Option<u64>,
 ) -> Result<(String, Role), (&'static str, &'static str)> {
     if !valid_room(&room) {
         return Err(("bad-room", "Ungültige Raum-ID"));
@@ -278,11 +322,21 @@ fn join(
         if rooms.len() >= max {
             return Err(("server-full", "Server ausgelastet"));
         }
-        rooms.insert(room.clone(), Room { token_hash: h, host: None, guest: None });
+        rooms.insert(room.clone(), Room { token_hash: h, expires_at: None, host: None, guest: None });
     }
     let r = rooms.get_mut(&room).unwrap();
     if r.token_hash != h {
         return Err(("forbidden", "Einladung ungültig"));
+    }
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+    match role {
+        // Der Host legt die Gültigkeit fest (und darf sie bei Wiederverbindung bestätigen).
+        Role::Host => r.expires_at = expires_at,
+        Role::Guest => {
+            if r.expires_at.is_some_and(|e| now >= e) {
+                return Err(("expired", "Diese Einladung ist abgelaufen – bitte beim Host eine neue anfordern"));
+            }
+        }
     }
     let (slot, other) = match role {
         Role::Host => (&mut r.host, &r.guest),

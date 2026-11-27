@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { AppInfo, Settings } from "@lom/shared-types";
 import {
-  createInvite, decodeInvite, encodeInvite, isInsecureServer, newId,
+  createInvite, decodeInvite, encodeInvite, inviteExpired, isInsecureServer, newId,
   type ControlMode, type HubProject, type SessionMode,
 } from "@lom/protocol";
 import { api, errorMessage } from "../api";
@@ -66,6 +66,7 @@ function StartSession(props: { info: AppInfo; settings: Settings; onSettings: (s
   const [projectId, setProjectId] = useState(settings.activeProjectId);
   const [newName, setNewName] = useState("");
   const [code, setCode] = useState("");
+  const [validHours, setValidHours] = useState(24);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warn, setWarn] = useState<string | null>(null);
@@ -96,7 +97,7 @@ function StartSession(props: { info: AppInfo; settings: Settings; onSettings: (s
         if (!settings.signalingUrl) throw new Error("Unter Einstellungen zuerst einen Signalisierungsserver eintragen");
         server = settings.signalingUrl;
       }
-      const invite = createInvite(server, settings.displayName || "Host", mode);
+      const invite = createInvite(server, settings.displayName || "Host", mode, validHours);
       const ownView = net === "lan" ? { ...invite, server: `ws://127.0.0.1:${new URL(server).port}` } : invite;
       props.onSettings(await api.settingsSave({ ...settings, activeProjectId: project.id, defaultMode: mode }));
       // Der Host verbindet sich lokal, der Gast erhält die LAN-/Internet-Adresse.
@@ -114,6 +115,7 @@ function StartSession(props: { info: AppInfo; settings: Settings; onSettings: (s
     setError(null);
     try {
       const invite = decodeInvite(code);
+      if (inviteExpired(invite)) throw new Error("Diese Einladung ist abgelaufen – bitte beim Host eine neue anfordern.");
       await startSession({ role: "guest", mode: invite.mode, invite, project: null, settings, appVersion: props.info.version });
     } catch (e) {
       setError(errorMessage(e));
@@ -153,6 +155,14 @@ function StartSession(props: { info: AppInfo; settings: Settings; onSettings: (s
                 {settings.signalingUrl ? <code>{settings.signalingUrl}</code> : <em>– kein Server eingetragen –</em>}
               </label>
             </fieldset>
+            <label className="field">
+              Einladung gültig für
+              <select className="input" value={validHours} onChange={(e) => setValidHours(Number(e.target.value))} data-testid="invite-validity">
+                <option value={1}>1 Stunde</option>
+                <option value={24}>24 Stunden</option>
+                <option value={168}>7 Tage</option>
+              </select>
+            </label>
             <label className="field">
               Projekt im Hub
               <select className="input" value={projectId} onChange={(e) => setProjectId(e.target.value)} data-testid="host-project">
@@ -266,7 +276,10 @@ function ActiveSession({ snap }: { snap: RtcSnapshot }) {
             >
               {copied ? "Kopiert ✔" : "Code kopieren"}
             </button>
-            <span className="hint">Server: {decodeInvite(invite).server}</span>
+            <span className="hint">
+              Server: {decodeInvite(invite).server}
+              {decodeInvite(invite).expiresAt ? ` · gültig bis ${new Date(decodeInvite(invite).expiresAt! * 1000).toLocaleString("de-DE")}` : ""}
+            </span>
           </div>
         </div>
       )}

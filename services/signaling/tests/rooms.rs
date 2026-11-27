@@ -123,3 +123,41 @@ async fn turn_credentials_are_issued_without_exposing_secret() {
     assert!(ice["username"].as_str().unwrap().ends_with(&format!(":{ROOM}")));
     assert!(!r.to_string().contains("s3cr3t"));
 }
+
+#[tokio::test]
+async fn expired_invite_rejects_guest_but_not_host() {
+    let (url, _) = server(Config::default()).await;
+    let past = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() - 5;
+    let mut h = connect(&url).await;
+    send(&mut h, json!({"type":"join","room":ROOM,"token":TOKEN,"role":"host","name":"Host","expiresAt":past})).await;
+    assert_eq!(recv(&mut h).await["type"], "joined");
+    let (_g, r) = join(&url, "guest", TOKEN, "Gast").await;
+    assert_eq!(r["code"], "expired");
+}
+
+#[tokio::test]
+async fn valid_expiry_lets_guest_in() {
+    let (url, _) = server(Config::default()).await;
+    let future = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() + 3600;
+    let mut h = connect(&url).await;
+    send(&mut h, json!({"type":"join","room":ROOM,"token":TOKEN,"role":"host","name":"Host","expiresAt":future})).await;
+    recv(&mut h).await;
+    let (_g, r) = join(&url, "guest", TOKEN, "Gast").await;
+    assert_eq!(r["type"], "joined");
+}
+
+#[tokio::test]
+async fn brute_force_is_rate_limited() {
+    let (url, _) = server(Config::default()).await;
+    let (_h, _) = join(&url, "host", TOKEN, "Host").await;
+    let mut codes = Vec::new();
+    for i in 0..13 {
+        let (_g, r) = join(&url, "guest", &format!("{:032x}", i + 1), "Angreifer").await;
+        codes.push(r["code"].as_str().unwrap_or("").to_string());
+    }
+    assert!(codes[..10].iter().all(|c| c == "forbidden"), "{codes:?}");
+    assert!(codes[10..].iter().all(|c| c == "rate-limited"), "{codes:?}");
+    // auch mit dem richtigen Geheimnis wird diese IP vorerst gebremst
+    let (_g, r) = join(&url, "guest", TOKEN, "Gast").await;
+    assert_eq!(r["code"], "rate-limited");
+}

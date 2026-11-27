@@ -116,6 +116,8 @@ export interface Invite {
   token: string;
   hostName: string;
   mode: SessionMode;
+  /** Unix-Zeit (s), ab der Gäste nicht mehr beitreten können (vom Server durchgesetzt) */
+  expiresAt?: number;
 }
 
 const INVITE_PREFIX = "LOM1.";
@@ -138,12 +140,16 @@ export function randomHex(bytes: number): string {
   return Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
 }
 
-export function createInvite(server: string, hostName: string, mode: SessionMode): Invite {
-  return { server, room: randomHex(8), token: randomHex(24), hostName, mode };
+export function createInvite(server: string, hostName: string, mode: SessionMode, validHours = 24): Invite {
+  return { server, room: randomHex(8), token: randomHex(24), hostName, mode, expiresAt: Math.floor(Date.now() / 1000) + Math.round(validHours * 3600) };
+}
+
+export function inviteExpired(i: Invite, nowMs = Date.now()): boolean {
+  return i.expiresAt !== undefined && nowMs / 1000 >= i.expiresAt;
 }
 
 export function encodeInvite(i: Invite): string {
-  return INVITE_PREFIX + b64urlEncode(JSON.stringify({ s: i.server, r: i.room, t: i.token, h: i.hostName, m: i.mode }));
+  return INVITE_PREFIX + b64urlEncode(JSON.stringify({ s: i.server, r: i.room, t: i.token, h: i.hostName, m: i.mode, x: i.expiresAt }));
 }
 
 /** Liest einen Einladungscode. Wirft eine verständliche Fehlermeldung. */
@@ -165,6 +171,7 @@ export function decodeInvite(code: string): Invite {
     token: o.t,
     hostName: isStr(o.h, 64) ? o.h : "Host",
     mode: o.m === "dual" ? "dual" : "remote",
+    ...(Number.isSafeInteger(o.x) ? { expiresAt: o.x as number } : {}),
   };
 }
 
@@ -208,14 +215,14 @@ export async function securityCode(localSdp: string, remoteSdp: string): Promise
 // ------------------------------------------------------------------ Dateien
 
 export const SAMPLE_EXTENSIONS = ["wav", "aif", "aiff", "mp3", "flac", "mid", "midi"];
-/** Grenze im Client: SHA-256 wird im Speicher berechnet. */
-export const MAX_SAMPLE_BYTES = 200 * 1024 * 1024;
+/** Grenze je Datei (SHA-256 wird schrittweise berechnet, Rust-Empfang erlaubt dieselbe Größe). */
+export const MAX_SAMPLE_BYTES = 2 * 1024 * 1024 * 1024;
 
 export function sampleProblem(name: string, size: number): string | null {
   const ext = name.toLowerCase().split(".").pop() ?? "";
   if (!name.includes(".") || !SAMPLE_EXTENSIONS.includes(ext)) return `„${name}“: Dateityp nicht erlaubt (WAV, AIFF, MP3, FLAC, MIDI)`;
   if (size <= 0) return `„${name}“ ist leer`;
-  if (size > MAX_SAMPLE_BYTES) return `„${name}“ ist größer als ${MAX_SAMPLE_BYTES / 1024 / 1024} MB`;
+  if (size > MAX_SAMPLE_BYTES) return `„${name}“ ist größer als ${MAX_SAMPLE_BYTES / 1024 / 1024 / 1024} GB`;
   return null;
 }
 

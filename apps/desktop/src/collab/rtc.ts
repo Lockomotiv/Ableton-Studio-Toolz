@@ -198,7 +198,16 @@ export class RtcSession {
     this.ws = ws;
     ws.onopen = () => {
       this.wsRetry = 0;
-      ws.send(JSON.stringify({ type: "join", room: this.o.invite.room, token: this.o.invite.token, role: this.o.role, name: this.o.name }));
+      ws.send(
+        JSON.stringify({
+          type: "join",
+          room: this.o.invite.room,
+          token: this.o.invite.token,
+          role: this.o.role,
+          name: this.o.name,
+          ...(this.o.role === "host" && this.o.invite.expiresAt ? { expiresAt: this.o.invite.expiresAt } : {}),
+        }),
+      );
     };
     ws.onmessage = (e) => void this.onServer(String(e.data));
     ws.onclose = () => {

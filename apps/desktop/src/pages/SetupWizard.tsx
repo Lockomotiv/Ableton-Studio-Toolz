@@ -133,35 +133,7 @@ export function SetupWizard(props: {
             </>
           )}
 
-          {step === 1 && (
-            <>
-              <p>
-                Connect Studio steuert Live über das Open-Source-Remote-Script <strong>AbletonOSC</strong> (MIT-Lizenz).
-                Es wird <em>nicht</em> automatisch installiert.
-              </p>
-              <ol className="instructions">
-                <li>
-                  AbletonOSC herunterladen: <code>https://github.com/ideoforms/AbletonOSC</code> (geprüft mit Commit{" "}
-                  <code>0ca6821</code>).
-                </li>
-                <li>
-                  Ordner als <code>AbletonOSC</code> nach{" "}
-                  <code>Dokumente\Ableton\User Library\Remote Scripts\</code> kopieren.
-                </li>
-                <li>
-                  Live neu starten → <em>Einstellungen → Link, Tempo &amp; MIDI → Control Surface</em> →{" "}
-                  <code>AbletonOSC</code> wählen.
-                </li>
-                <li>
-                  Live zeigt „AbletonOSC: Listening for OSC on port 11000“ in der Statuszeile.
-                </li>
-              </ol>
-              <button className="btn btn-accent" onClick={diagnose} disabled={busy}>
-                {busy ? "Prüfe …" : "Installation prüfen"}
-              </button>
-              {checks && <CheckList checks={checks} only={["abletonosc_installed", "osc_listen_port", "osc_exposure"]} />}
-            </>
-          )}
+          {step === 1 && <AbletonOscStep busy={busy} onCheck={diagnose} checks={checks} />}
 
           {step === 2 && (
             <>
@@ -336,6 +308,83 @@ function NetworkInfo(props: { settings: Settings }) {
       </button>
       {err && <div className="banner banner-error">{err}</div>}
       {urls && <div className="banner banner-ok">Port {props.settings.lanPort} kann geöffnet werden. Erreichbar unter: {urls.join(", ") || "– keine LAN-Adresse –"}</div>}
+    </>
+  );
+}
+
+function AbletonOscStep(props: { busy: boolean; onCheck: () => void; checks: DiagnosticCheck[] | null }) {
+  const [info, setInfo] = useState<Awaited<ReturnType<typeof api.abletonoscInfo>> | null>(null);
+  const [localOnly, setLocalOnly] = useState(true);
+  const [result, setResult] = useState<Awaited<ReturnType<typeof api.abletonoscInstall>> | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [working, setWorking] = useState(false);
+  useEffect(() => {
+    api.abletonoscInfo().then(setInfo).catch((e) => setErr(errorMessage(e)));
+  }, [result]);
+  return (
+    <>
+      <p>
+        Connect Studio steuert Live über das Open-Source-Remote-Script <strong>AbletonOSC</strong> (MIT-Lizenz). Eine geprüfte Version
+        (Commit <code>{info?.commit?.slice(0, 7) ?? "0ca6821"}</code>) ist mitgeliefert und kann hier mit einem Klick installiert werden.
+      </p>
+      {info && (
+        <div className={`banner ${info.installed ? "banner-ok" : "banner-warn"}`} data-testid="abletonosc-state">
+          {info.installed
+            ? <>AbletonOSC ist installiert in <code>{info.target}</code>{info.installedLocalOnly ? " – nur lokal erreichbar ✔" : " – lauscht im ganzen Netzwerk (0.0.0.0)"}.</>
+            : <>AbletonOSC ist noch nicht installiert. Ziel: <code>{info.target ?? "?"}</code></>}
+        </div>
+      )}
+      <label className="switch">
+        <input type="checkbox" checked={localOnly} onChange={(e) => setLocalOnly(e.target.checked)} data-testid="abletonosc-local-only" />
+        <span>
+          <strong>Nur lokal erreichbar (empfohlen)</strong> – AbletonOSC nimmt Befehle nur von diesem Rechner an. Ohne diese Option kann jeder
+          im selben Netzwerk Ihr Live-Set steuern. (Einzige Änderung am Original: Bind-Adresse 127.0.0.1.)
+        </span>
+      </label>
+      <div className="row">
+        <button
+          className="btn btn-accent"
+          data-testid="btn-abletonosc-install"
+          disabled={working || !info?.available}
+          onClick={async () => {
+            setWorking(true);
+            setErr(null);
+            try {
+              setResult(await api.abletonoscInstall(localOnly));
+            } catch (e) {
+              setErr(errorMessage(e));
+            } finally {
+              setWorking(false);
+            }
+          }}
+        >
+          {working ? "Installiere …" : info?.installed ? "AbletonOSC neu installieren" : "AbletonOSC installieren"}
+        </button>
+        <button className="btn" onClick={props.onCheck} disabled={props.busy}>
+          {props.busy ? "Prüfe …" : "Installation prüfen"}
+        </button>
+      </div>
+      {info && !info.available && <div className="banner banner-error">Das mitgelieferte AbletonOSC fehlt in dieser Installation. Bitte manuell installieren (siehe unten).</div>}
+      {err && <div className="banner banner-error">{err}</div>}
+      {result && (
+        <div className="banner banner-ok" data-testid="abletonosc-installed">
+          Installiert ({result.files} Dateien) nach <code>{result.target}</code>
+          {result.backup && <> · vorherige Version gesichert unter <code>{result.backup}</code></>}
+        </div>
+      )}
+      <ol className="instructions">
+        <li><strong>Ableton Live neu starten</strong> (Remote Scripts werden nur beim Start geladen).</li>
+        <li>
+          In Live: <em>Optionen → Einstellungen → Link, Tempo &amp; MIDI → Control Surface</em> → <code>AbletonOSC</code> wählen (Ein-/Ausgang: Keine).
+        </li>
+        <li>Live meldet in der Statuszeile „AbletonOSC: Listening for OSC on port 11000“ → weiter zu Schritt 3.</li>
+      </ol>
+      <details className="hint">
+        <summary>Manuelle Installation</summary>
+        AbletonOSC von github.com/ideoforms/AbletonOSC laden, Ordner in <code>AbletonOSC</code> umbenennen und nach
+        <code> Dokumente\Ableton\User Library\Remote Scripts\</code> kopieren.
+      </details>
+      {props.checks && <CheckList checks={props.checks} only={["abletonosc_installed", "osc_listen_port", "osc_exposure"]} />}
     </>
   );
 }

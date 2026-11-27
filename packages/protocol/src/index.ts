@@ -79,3 +79,4 @@ export function formatPan(v: number): string {
 
 export * from "./hub";
 export * from "./session";
+export * from "./sha256";

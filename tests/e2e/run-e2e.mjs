@@ -142,7 +142,8 @@ async function main() {
   const listen = await freePort();
   const response = await freePort();
   const dataDir = mkdtempSync(join(tmpdir(), "lom-e2e-"));
-  const env = { ...process.env, LOM_DATA_DIR: dataDir, LOM_OSC_SEND_PORT: String(listen), LOM_OSC_LISTEN_PORT: String(response) };
+  const userLib = join(dataDir, "User Library");
+  const env = { ...process.env, LOM_ABLETON_USER_LIBRARY: userLib, LOM_DATA_DIR: dataDir, LOM_OSC_SEND_PORT: String(listen), LOM_OSC_LISTEN_PORT: String(response) };
 
   const driverArgs = (process.env.TAURI_DRIVER_ARGS ?? "").split(" ").filter(Boolean);
   const driver = start(process.env.TAURI_DRIVER ?? "tauri-driver", driverArgs, { env });
@@ -161,6 +162,23 @@ async function main() {
   const setupShown = await waitFor(() => exists('[data-testid="wizard-step-1"]'), 5000).catch(() => false);
   record("Erststart öffnet Einrichtungsassistenten", !!setupShown);
   await screenshot("01-einrichtung-erststart.png");
+
+  // Ein-Klick-Installation des mitgelieferten AbletonOSC (in einen Test-Benutzerordner)
+  await click('[data-testid="wizard-step-2"]');
+  await waitFor(() => exists('[data-testid="abletonosc-state"]'));
+  await click('[data-testid="btn-abletonosc-install"]');
+  const installed = await waitFor(() => exists('[data-testid="abletonosc-installed"]'), 10000).catch(() => false);
+  const srv = join(userLib, "Remote Scripts", "AbletonOSC", "abletonosc", "osc_server.py");
+  const code = existsSync(srv) ? readFileSync(srv, "utf8") : "";
+  record(
+    "AbletonOSC per Klick installiert, nur lokal (127.0.0.1) erreichbar",
+    !!installed && code.includes("('127.0.0.1', OSC_LISTEN_PORT)") && !code.includes("('0.0.0.0', OSC_LISTEN_PORT)") && existsSync(join(userLib, "Remote Scripts", "AbletonOSC", "manager.py")),
+    srv,
+  );
+  await waitFor(async () => (await text('[data-testid="abletonosc-state"]')).includes("nur lokal erreichbar ✔"), 8000);
+  await waitFor(async () => !(await text('[data-testid="btn-abletonosc-install"]')).includes("Installiere"));
+  await sleep(600);
+  await screenshot("06-einrichtung-abletonosc-installiert.png");
 
   await click('[data-testid="nav-studio"]');
   await waitFor(async () => (await badge()) === "mock");

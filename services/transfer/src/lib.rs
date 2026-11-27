@@ -25,7 +25,7 @@ use serde::Serialize;
 use sha2::{Digest, Sha256};
 
 pub const ALLOWED_EXTENSIONS: &[&str] = &["wav", "aif", "aiff", "mp3", "flac", "mid", "midi"];
-pub const DEFAULT_MAX_BYTES: u64 = 512 * 1024 * 1024;
+pub const DEFAULT_MAX_BYTES: u64 = 2 * 1024 * 1024 * 1024;
 pub const IMPORT_SUBDIR: [&str; 3] = ["Samples", "Imported", "Connect Studio"];
 
 #[derive(Debug, thiserror::Error, Clone, PartialEq, Serialize)]

@@ -61,7 +61,7 @@ Host aus Live zurückgelesen.
 
 ## Samples austauschen
 
-Dateien **irgendwo ins Fenster ziehen** (oder *Samples → Dropzone*). Erlaubt: WAV, AIFF, MP3, FLAC, MIDI bis 200 MB.
+Dateien **irgendwo ins Fenster ziehen** (oder *Samples → Dropzone*). Erlaubt: WAV, AIFF, MP3, FLAC, MIDI bis 2 GB.
 Der Empfänger nimmt jedes Angebot ausdrücklich an. Die Datei wird direkt (Ende-zu-Ende verschlüsselt) übertragen, mit SHA-256 geprüft und im
 sicheren Empfangsordner `Dokumente\LOCK-O-MOTIV Connect Studio\Empfangen` abgelegt – nie überschrieben, nie geöffnet oder ausgeführt.
 Bei Abbruch: *Erneut senden* – der Empfang setzt an der unterbrochenen Stelle fort.

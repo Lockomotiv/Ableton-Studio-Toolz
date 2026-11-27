@@ -88,6 +88,7 @@ jobs:
           path: |
             target/release/bundle/nsis/*.exe
             target/release/bundle/nsis/*.sha256
+            docs/schnellstart/Connect-Studio-Schnellstart.pdf
             target/release/connect-studio.exe
             target/release/lom-signaling.exe
 
@@ -110,12 +111,24 @@ jobs:
         working-directory: apps/desktop
         run: npx tauri build --debug --no-bundle
       - run: cargo install tauri-driver --locked
-      - run: cargo install msedgedriver-tool --locked
-      - name: Passenden msedgedriver laden
+      - name: Playwright + Chromium (Gast-Teilnehmer)
+        run: |
+          npm i --no-save playwright@1.63.0
+          npx playwright install chromium
+      - name: Passenden msedgedriver zur WebView2-Version laden
         shell: pwsh
         run: |
-          msedgedriver-tool
-          echo "TAURI_DRIVER_ARGS=--native-driver $PWD\msedgedriver.exe" >> $env:GITHUB_ENV
+          $keys = @(
+            "HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}",
+            "HKLM:\SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
+          )
+          $ver = $null
+          foreach ($k in $keys) { if (Test-Path $k) { $ver = (Get-ItemProperty $k).pv; if ($ver) { break } } }
+          if (-not $ver) { $ver = (Get-Item "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe").VersionInfo.ProductVersion }
+          Write-Host "WebView2/Edge-Version: $ver"
+          Invoke-WebRequest "https://msedgedriver.microsoft.com/$ver/edgedriver_win64.zip" -OutFile edgedriver.zip
+          Expand-Archive edgedriver.zip -DestinationPath edgedriver -Force
+          echo "TAURI_DRIVER_ARGS=--native-driver $PWD\edgedriver\msedgedriver.exe" >> $env:GITHUB_ENV
       - name: E2E
         run: node tests/e2e/run-e2e.mjs
       - uses: actions/upload-artifact@v4

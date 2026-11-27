@@ -111,7 +111,7 @@ export function SamplesPage(props: { settings: Settings; onSettings: (s: Setting
         <div className="dz-icon">⇪</div>
         <div>
           <strong>{connected ? `Dateien hierher ziehen – gehen direkt an ${snap?.core.peerName ?? "den Partner"}` : "Keine Session verbunden"}</strong>
-          <div className="muted">{SAMPLE_EXTENSIONS.map((e) => e.toUpperCase()).join(", ")} · bis 200 MB je Datei · oder klicken zum Auswählen</div>
+          <div className="muted">{SAMPLE_EXTENSIONS.map((e) => e.toUpperCase()).join(", ")} · bis 2 GB je Datei · oder klicken zum Auswählen</div>
         </div>
         <input
           ref={pick}

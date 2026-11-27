@@ -35,6 +35,8 @@ ap.add_argument("--listen-port", type=int, default=11000)
 ap.add_argument("--response-port", type=int, default=11001)
 ap.add_argument("--tracks", type=int, default=4)
 ap.add_argument("--scenes", type=int, default=4)
+ap.add_argument("--keep-bind", action="store_true",
+                help="Bind-Adresse/Port NICHT überschreiben (prüft die Standardwerte des Checkouts, z. B. die 127.0.0.1-Variante)")
 args = ap.parse_args()
 
 
@@ -257,10 +259,16 @@ import AbletonOSC  # noqa: E402
 import AbletonOSC.abletonosc.osc_server as osc_mod  # noqa: E402
 
 osc_mod.OSC_RESPONSE_PORT = args.response_port
-osc_mod.OSCServer.__init__.__defaults__ = (
-    ("127.0.0.1", args.listen_port),
-    ("127.0.0.1", args.response_port),
-)
+if args.keep_bind:
+    _local, _remote = osc_mod.OSCServer.__init__.__defaults__
+    osc_mod.OSCServer.__init__.__defaults__ = (_local, ("127.0.0.1", args.response_port))
+    args.listen_port = _local[1]
+    print(f"HARNESS BIND {_local[0]}:{_local[1]} (Standard des Checkouts)", flush=True)
+else:
+    osc_mod.OSCServer.__init__.__defaults__ = (
+        ("127.0.0.1", args.listen_port),
+        ("127.0.0.1", args.response_port),
+    )
 
 manager = AbletonOSC.create_instance(None)
 print(f"HARNESS READY listen=127.0.0.1:{args.listen_port} response={args.response_port} "

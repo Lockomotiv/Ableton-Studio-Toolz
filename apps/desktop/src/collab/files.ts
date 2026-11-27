@@ -3,7 +3,7 @@
 // die Daten als Binärrahmen über "files". Der Sender wartet, wenn der Puffer
 // des Datei-Kanals voll ist – dadurch bleiben Steuerbefehle reaktionsschnell.
 import {
-  decodeFrame, encodeFrame, randomHex, sampleProblem, sha256Hex, type SessionMessage,
+  decodeFrame, encodeFrame, randomHex, sampleProblem, sha256Blob, type SessionMessage,
 } from "@lom/protocol";
 
 export const CHUNK_BYTES = 64 * 1024;
@@ -89,8 +89,9 @@ export class FileTransfers {
       this.files.set(id, f);
       this.add({ id, direction: "out", name: f.name, size: f.size, done: 0, status: "hashing" });
       try {
-        const sha = await sha256Hex(await f.arrayBuffer());
-        this.upd(id, { sha256: sha, status: "offered" });
+        // schrittweise: konstanter Speicherbedarf auch bei großen Dateien
+        const sha = await sha256Blob(f, 4 * 1024 * 1024, (done) => this.upd(id, { done }));
+        this.upd(id, { sha256: sha, status: "offered", done: 0 });
         this.link.sendControl({ t: "file-offer", id, name: f.name, size: f.size, sha256: sha });
       } catch (e) {
         this.upd(id, { status: "failed", error: String(e) });

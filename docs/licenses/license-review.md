@@ -7,15 +7,15 @@ Connect Studio selbst steht unter **MIT** (`Cargo.toml`, `package.json`).
 
 | Komponente | Lizenz | Geprüft anhand | Bewertung |
 |---|---|---|---|
-| AbletonOSC (Commit 0ca6821) | MIT | `LICENSE.md` im Repository | ✔ Nutzung und Weitergabe erlaubt. Wird in Sprint 1 **nicht** mitgeliefert, sondern vom Benutzer installiert. |
-| python-osc (in AbletonOSC eingebettet, Ordner `pythonosc/`) | Unlicense (laut python-osc-Projekt; im AbletonOSC-Checkout liegt keine eigene Lizenzdatei für diesen Ordner) | Projektangabe python-osc | ⚠ Vor einer Weitergabe von AbletonOSC durch uns (z. B. im Installer) Lizenzdatei ergänzen. |
+| AbletonOSC (Commit 0ca6821) | MIT | `LICENSE.md` im Repository | ✔ Ab 0.3.0 **im Installer mitgeliefert** (MIT erlaubt Weitergabe; Lizenztext liegt bei). Installation in die User Library nur auf Klick. Einzige optionale Änderung: Bind-Adresse 127.0.0.1, dokumentiert in `CONNECT_STUDIO.txt`. |
+| python-osc (in AbletonOSC eingebettet, Ordner `pythonosc/`) | Unlicense (laut python-osc-Projekt) | Projektangabe python-osc | ✔ Hinweis in `THIRD_PARTY.txt` des mitgelieferten Ordners ergänzt (im AbletonOSC-Checkout liegt keine eigene Lizenzdatei für diesen Ordner). |
 | Tauri 2 | MIT OR Apache-2.0 | crates.io-Metadaten | ✔ |
 | React 18.3.1 | MIT | package-lock | ✔ |
 | rosc (OSC-Codec) | MIT OR Apache-2.0 | crates.io-Metadaten | ✔ |
 | rusqlite + SQLite (bundled) | MIT; SQLite gemeinfrei | crates.io-Metadaten | ✔ |
 | sysinfo, dirs, tokio, serde | MIT bzw. MIT OR Apache-2.0 | crates.io-Metadaten | ✔ |
 
-Vollständige Liste: [`THIRD_PARTY_NOTICES.md`](../../THIRD_PARTY_NOTICES.md) (464 Crates, 6 npm-Laufzeitpakete),
+Vollständige Liste: [`THIRD_PARTY_NOTICES.md`](../../THIRD_PARTY_NOTICES.md) (Crates und npm-Laufzeitpakete, automatisch erzeugt),
 maschinenlesbar: `license-summary.json`, SBOMs (CycloneDX 1.5): `sbom-rust-desktop.cdx.json`,
 `sbom-rust-daw-bridge.cdx.json`, `sbom-npm.cdx.json`.
 

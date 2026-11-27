@@ -2,7 +2,10 @@
 
 Gemeinsame Musikproduktion mit Ableton Live 12 über LAN und Internet – kostenlos, quelloffen, ohne Abos.
 
-> **Entwicklungsstand 0.2.0 (Sprint 2):** Online-Zusammenarbeit – Video/Sprache, Bildschirm + DAW-Ton,
+> **Testversion 0.3.0:** Installer mit AbletonOSC-Ein-Klick-Installation (nur lokal erreichbar) und
+> [Schnellstart-PDF](docs/schnellstart/Connect-Studio-Schnellstart.pdf) – [Versionshinweise](docs/sprints/version-0.3.0.md).
+>
+> **Entwicklungsstand Sprint 2:** Online-Zusammenarbeit – Video/Sprache, Bildschirm + DAW-Ton,
 > gemeinsame Steuerung bis zur kompletten Übergabe, Samples per Drag & Drop, Projekt-Hub mit Ideen und Planer,
 > Ableton-Link-Schalter für lokal. **Noch nicht unter Windows und nicht mit echtem Ableton Live getestet** –
 > siehe [Testanleitung](docs/troubleshooting/windows-test-anleitung.md) und [Sprint-2-Bericht](docs/sprints/sprint-2.md).

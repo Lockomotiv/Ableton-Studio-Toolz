@@ -1,5 +1,6 @@
 //! Tauri-Backend von LOCK-O-MOTIV Connect Studio (Sprint 1).
 
+mod abletonosc_install;
 mod hub;
 mod settings;
 
@@ -318,6 +319,38 @@ fn transfer_import(state: tauri::State<'_, AppState>, file_name: String, project
         .map_err(terr)
 }
 
+// ------------------------------------------------------------------ AbletonOSC-Installation
+
+fn bundled_abletonosc(app: &tauri::AppHandle) -> PathBuf {
+    if let Ok(p) = std::env::var("LOM_ABLETONOSC_BUNDLE") {
+        return PathBuf::from(p);
+    }
+    app.path()
+        .resolve("resources/AbletonOSC", tauri::path::BaseDirectory::Resource)
+        .unwrap_or_else(|_| PathBuf::from("resources/AbletonOSC"))
+}
+
+#[tauri::command]
+fn abletonosc_info(app: tauri::AppHandle) -> CmdResult<abletonosc_install::BundledInfo> {
+    let rs = abletonosc_install::remote_scripts_dir();
+    Ok(abletonosc_install::info(&bundled_abletonosc(&app), rs.as_deref()))
+}
+
+/// Kopiert das mitgelieferte AbletonOSC in die User Library (nur auf Klick).
+#[tauri::command]
+fn abletonosc_install(app: tauri::AppHandle, state: tauri::State<'_, AppState>, local_only: bool) -> CmdResult<abletonosc_install::InstallResult> {
+    let rs = abletonosc_install::remote_scripts_dir().ok_or_else(|| err("install", "Dokumente-Ordner nicht bestimmbar"))?;
+    let backups = if std::env::var("LOM_DATA_DIR").is_ok() {
+        state.data_dir.join("backups")
+    } else {
+        dirs::document_dir()
+            .map(|d| d.join("LOCK-O-MOTIV Connect Studio").join("Sicherungen"))
+            .unwrap_or_else(|| state.data_dir.join("backups"))
+    };
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+    abletonosc_install::install(&bundled_abletonosc(&app), &rs, &backups, local_only, now).map_err(|e| err("install", e))
+}
+
 // ------------------------------------------------------------------ LAN-Hosting
 
 fn lan_urls(port: u16) -> Vec<String> {
@@ -475,6 +508,8 @@ pub fn run() {
             transfer_import,
             hosting_start,
             hosting_stop,
+            abletonosc_info,
+            abletonosc_install,
         ])
         .run(tauri::generate_context!())
         .expect("Fehler beim Start von Connect Studio");

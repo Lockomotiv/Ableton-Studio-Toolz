@@ -53,6 +53,11 @@ export const api = {
   transferPreview: (fileName: string) => invoke<ArrayBuffer>("transfer_preview", { fileName }),
   transferImport: (fileName: string, projectDir: string) => invoke<string>("transfer_import", { fileName, projectDir }),
 
+  abletonoscInfo: () =>
+    invoke<{ available: boolean; commit: string | null; target: string | null; installed: boolean; installedLocalOnly: boolean | null }>("abletonosc_info"),
+  abletonoscInstall: (localOnly: boolean) =>
+    invoke<{ target: string; backup: string | null; localOnly: boolean; commit: string; files: number }>("abletonosc_install", { localOnly }),
+
   hostingStart: (port: number) => invoke<HostingInfo>("hosting_start", { port }),
   hostingStop: () => invoke<HostingInfo>("hosting_stop"),
 };

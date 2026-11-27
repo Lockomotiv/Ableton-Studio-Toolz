@@ -9,3 +9,4 @@ __pycache__/
 .DS_Store
 services/signaling/deploy/.env
 tests/e2e/last-collab-run.json
+apps/desktop/src-tauri/resources/
