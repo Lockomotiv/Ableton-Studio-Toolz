@@ -31,7 +31,8 @@ jobs:
       - name: TypeScript-Tests
         run: npx vitest run
       - name: Rust-Tests (Unit + AbletonOSC-Harness)
-        run: cargo test --workspace
+        # Harness-Tests nacheinander: jede startet einen eigenen AbletonOSC-Prozess
+        run: cargo test --workspace -- --test-threads=1
       - name: App bauen (Debug, eingebettetes Frontend)
         working-directory: apps/desktop
         run: npx tauri build --debug --no-bundle
@@ -73,7 +74,8 @@ jobs:
         run: node scripts/prepare-abletonosc.mjs
       - run: npx vitest run
       - name: Rust-Tests (Unit + AbletonOSC-Harness)
-        run: cargo test --workspace
+        # Harness-Tests nacheinander: jede startet einen eigenen AbletonOSC-Prozess
+        run: cargo test --workspace -- --test-threads=1
       - name: Release-Build + NSIS-Installer
         working-directory: apps/desktop
         run: npx tauri build
