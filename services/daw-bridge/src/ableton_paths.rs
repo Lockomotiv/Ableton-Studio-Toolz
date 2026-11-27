@@ -42,12 +42,22 @@ fn unescape(s: &str) -> String {
     s.replace("&amp;", "&").replace("&quot;", "\"").replace("&apos;", "'").replace("&lt;", "<").replace("&gt;", ">")
 }
 
+/// Live 10 schreibt `C:\…\Ableton\`, Live 11.2+ `C:/…/Ableton` – unter Windows einheitlich mit `\`.
+pub fn normalize_sep(p: &str, windows: bool) -> String {
+    if windows { p.replace('/', "\\") } else { p.to_string() }
+}
+
+fn norm(p: PathBuf) -> PathBuf {
+    PathBuf::from(normalize_sep(&p.to_string_lossy(), cfg!(windows)))
+}
+
 /// Liest mögliche User-Library-Pfade aus Lives `Library.cfg`.
 /// Das Format ist nicht offiziell dokumentiert; ausgewertet werden `ProjectPath`/`ProjectName`
 /// im Block `<UserLibrary>` und – als Rückfall – jeder Wert, der auf „User Library“ endet.
 pub fn parse_library_cfg(xml: &str) -> Vec<PathBuf> {
     let mut out: Vec<PathBuf> = Vec::new();
     let mut push = |p: PathBuf| {
+        let p = norm(p);
         if !p.as_os_str().is_empty() && !out.contains(&p) {
             out.push(p);
         }
@@ -105,8 +115,30 @@ pub fn library_cfg_files() -> Vec<PathBuf> {
             }
         }
     }
-    files.sort_by(|a, b| b.0.cmp(&a.0));
+    // Zuletzt benutzte Live-Version zuerst (Änderungszeit der Library.cfg);
+    // bei gleicher Zeit die höhere Versionsnummer.
+    files.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| live_version_key(&b.1).cmp(&live_version_key(&a.1))));
     files.into_iter().map(|(_, f)| f).collect()
+}
+
+/// Sortierschlüssel aus dem Ordnernamen "Live 12.4.16" bzw. "Live 12.4.5b9" (Beta < Release).
+pub fn live_version_key(cfg: &Path) -> Vec<u32> {
+    let dir = cfg
+        .ancestors()
+        .filter_map(|a| a.file_name())
+        .map(|n| n.to_string_lossy().to_string())
+        .find(|n| n.starts_with("Live "))
+        .unwrap_or_default();
+    let v = dir.trim_start_matches("Live ");
+    let (main, beta) = match v.split_once('b') {
+        Some((m, b)) => (m, b.parse::<u32>().ok()),
+        None => (v, None),
+    };
+    let mut k: Vec<u32> = main.split('.').map(|x| x.parse().unwrap_or(0)).collect();
+    k.resize(3, 0);
+    // Release über allen Betas derselben Version
+    k.push(beta.unwrap_or(u32::MAX));
+    k
 }
 
 /// Wurzeln aller vorhandenen Laufwerke (nur Windows).
@@ -179,7 +211,7 @@ pub fn user_library_candidates(user_choice: Option<&Path>) -> Vec<Candidate> {
     }
     let mut seen = std::collections::HashSet::new();
     list.into_iter()
-        .filter(|(p, _)| seen.insert(p.to_string_lossy().to_lowercase()))
+        .filter(|(p, _)| seen.insert(normalize_sep(&p.to_string_lossy(), true).trim_end_matches('\\').to_lowercase()))
         .map(|(p, s)| cand(p, s))
         // Laufwerks-Vermutungen nur zeigen, wenn es sie wirklich gibt
         .filter(|c| c.source != "drive" || c.exists)
@@ -273,6 +305,28 @@ mod tests {
         assert_eq!(s[0], "G:\\Musik & Produktion\\Ableton\\User Library");
         assert!(!s.iter().any(|x| x.contains("Resources")), "Factory-Packs dürfen nicht als User Library gelten");
         assert!(!s.iter().any(|x| x.ends_with("Produktion\\Ableton")), "übergeordneter Ordner ist keine User Library");
+    }
+
+    /// Echtes Format aus dem ersten Windows-Test (Live 12.4.16): Schrägstriche, kein abschließender Trenner.
+    #[test]
+    fn library_cfg_live12_forward_slashes() {
+        let xml = r#"<UserLibrary><LibraryProject><ProjectName Value="User Library" /><ProjectPath Value="C:/Users/Lock-O-Motiv/Documents/Ableton" /></LibraryProject></UserLibrary>"#;
+        let p = parse_library_cfg(xml);
+        let s = normalize_sep(&p[0].to_string_lossy(), true);
+        assert_eq!(s, "C:\\Users\\Lock-O-Motiv\\Documents\\Ableton\\User Library");
+        // gleicher Ort wie der Windows-Standard → wird nicht doppelt gelistet
+        let default = normalize_sep("C:\\Users\\Lock-O-Motiv\\Documents\\Ableton\\User Library", true);
+        assert_eq!(s.to_lowercase(), default.to_lowercase());
+    }
+
+    #[test]
+    fn version_order_release_beats_beta() {
+        let k = |v: &str| live_version_key(&PathBuf::from(format!("/AppData/Ableton/Live {v}/Preferences/Library.cfg")));
+        assert!(k("12.4.16") > k("12.4.7"));
+        assert!(k("12.4.5") > k("12.4.5b9"));
+        assert!(k("12.4") > k("12.0b27"));
+        assert!(k("12.0.1") > k("11.3.21"));
+        assert!(k("10.1.42") < k("11.0"));
     }
 
     #[test]
