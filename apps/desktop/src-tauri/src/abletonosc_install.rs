@@ -56,11 +56,10 @@ fn copy_dir(src: &Path, dst: &Path, n: &mut usize) -> std::io::Result<()> {
     Ok(())
 }
 
-pub fn remote_scripts_dir() -> Option<PathBuf> {
-    if let Ok(custom) = std::env::var("LOM_ABLETON_USER_LIBRARY") {
-        return Some(PathBuf::from(custom).join("Remote Scripts"));
-    }
-    dirs::document_dir().map(|d| d.join("Ableton").join("User Library").join("Remote Scripts"))
+/// Remote-Scripts-Ordner der erkannten bzw. gewählten User Library.
+pub fn remote_scripts_dir(user_choice: Option<&Path>) -> Option<PathBuf> {
+    let cands = lom_daw_bridge::ableton_paths::user_library_candidates(user_choice);
+    lom_daw_bridge::ableton_paths::resolve_user_library(&cands).map(|c| PathBuf::from(c.path).join("Remote Scripts"))
 }
 
 pub fn info(src: &Path, remote_scripts: Option<&Path>) -> BundledInfo {

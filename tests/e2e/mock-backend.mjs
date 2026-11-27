@@ -9,7 +9,7 @@ export function installMockBackend(cfg) {
   const state = {
     settings: {
       role: cfg.role, defaultMode: "remote", adapter: "mock", setupCompleted: true, displayName: cfg.name, siteId: cfg.siteId,
-      signalingUrl: "", usePublicStun: false, extraStun: "", lanPort: 47870, projectFolder: "C:\\Musik\\Sommer-Track Project", activeProjectId: "",
+      signalingUrl: "", usePublicStun: false, extraStun: "", lanPort: 47870, projectFolder: "C:\\Musik\\Sommer-Track Project", activeProjectId: "", userLibraryPath: "",
     },
     daw: { isPlaying: false, tempo: 120, loopEnabled: false, linkEnabled: false, log: [],
       tracks: [{ index: 0, name: "Drums", volume: 0.85, panning: 0 }, { index: 1, name: "Bass", volume: 0.85, panning: 0 }, { index: 2, name: "Keys", volume: 0.85, panning: 0 }] },

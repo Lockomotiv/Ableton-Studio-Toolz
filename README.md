@@ -38,7 +38,8 @@ Anleitung: [docs/collaboration/zusammenarbeit.md](docs/collaboration/zusammenarb
 
 ```bash
 npm ci
-./scripts/fetch-abletonosc.sh      # Windows: .\scripts\fetch-abletonosc.ps1 (nur für Tests)
+./scripts/fetch-abletonosc.sh      # Windows: .\scripts\fetch-abletonosc.ps1
+node scripts/prepare-abletonosc.mjs # mitgeliefertes AbletonOSC für den Build vorbereiten (Pflicht)
 npm run dev                         # startet die App (Tauri dev)
 npm test                            # TypeScript- + Rust-Tests
 ```

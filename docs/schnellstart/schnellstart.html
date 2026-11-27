@@ -61,7 +61,7 @@
     <table>
       <tr><th>Schritt</th><th>Was tun</th><th>Erwartung</th></tr>
       <tr><td class="k">1 Ableton erkennen</td><td>„Jetzt prüfen“ (Live darf schon laufen)</td><td>„Ableton Live 12 installiert“ = OK</td></tr>
-      <tr><td class="k">2 AbletonOSC</td><td>Haken <b>„Nur lokal erreichbar“</b> lassen → <b>„AbletonOSC installieren“</b>. Dann <b>Live neu starten</b> und in Live <i>Optionen → Einstellungen → Link, Tempo &amp; MIDI → Control Surface</i> = <code>AbletonOSC</code> (Ein-/Ausgang: Keine)</td><td>„Installiert … nur lokal erreichbar ✔“. Live-Statuszeile: „AbletonOSC: Listening for OSC on port 11000“</td></tr>
+      <tr><td class="k">2 AbletonOSC</td><td>Oben steht die erkannte <b>User Library</b> (auch auf anderen Laufwerken, aus Lives Einstellungen). Stimmt sie nicht: <b>„Ordner wählen …“</b>. Haken <b>„Nur lokal erreichbar“</b> lassen → <b>„AbletonOSC installieren“</b>. Dann <b>Live neu starten</b> und in Live <i>Optionen → Einstellungen → Link, Tempo &amp; MIDI → Control Surface</i> = <code>AbletonOSC</code> (Ein-/Ausgang: Keine)</td><td>„Installiert … nur lokal erreichbar ✔“. Live-Statuszeile: „AbletonOSC: Listening for OSC on port 11000“</td></tr>
       <tr><td class="k">3 Verbindung</td><td>„Verbindung testen“</td><td>Grün: „AbletonOSC antwortet (Ableton Live 12.x)“ mit Zeit in ms</td></tr>
       <tr><td class="k">4 ASIO</td><td>überspringen (kommt in Sprint 3)</td><td>–</td></tr>
       <tr><td class="k">5 Kamera/Mikro</td><td>„Kamera &amp; Mikrofon testen“, Windows-Abfrage erlauben</td><td>Eigenes Bild, Pegel bewegt sich beim Sprechen</td></tr>
@@ -135,7 +135,7 @@
       <li>Die angehakten Tabellen (Foto genügt) – bei ✘ kurz, was passiert ist</li>
       <li>Screenshot der Seite <b>Diagnose</b> und der Seite <b>Session → Verbindung (gemessen)</b></li>
       <li>Protokoll: <code>%APPDATA%\de.lockomotiv.connectstudio\logs\daw-commands.jsonl</code></li>
-      <li>AbletonOSC-Log: <code>Dokumente\Ableton\User Library\Remote Scripts\AbletonOSC\logs\abletonosc.log</code></li>
+      <li>AbletonOSC-Log: <code><code>Dokumente\Ableton\User Library\Remote Scripts\AbletonOSC\logs\abletonosc.log</code>lt;User Library<code>Dokumente\Ableton\User Library\Remote Scripts\AbletonOSC\logs\abletonosc.log</code>gt;\Remote Scripts\AbletonOSC\logs\abletonosc.log</code> (Ort siehe Einrichtung, Schritt 2)</li>
     </ul>
   </section>
 
@@ -145,7 +145,7 @@
       <tr><th>Symptom</th><th>Lösung</th></tr>
       <tr><td>„Keine Antwort von AbletonOSC (Timeout)“</td><td>Live nach der Installation neu gestartet? Control Surface = AbletonOSC? Ordnername exakt <code>AbletonOSC</code>?</td></tr>
       <tr><td>„UDP-Port 127.0.0.1:11001 … belegt“</td><td>Zweite Connect-Studio-Instanz oder anderes OSC-Programm beenden.</td></tr>
-      <tr><td>Script gilt als „nicht gefunden“, obwohl installiert</td><td>User Library liegt woanders (Live: Einstellungen → Library). Umgebungsvariable <code>LOM_ABLETON_USER_LIBRARY</code> auf diesen Ordner setzen und neu installieren.</td></tr>
+      <tr><td>Script „nicht gefunden“ / falsche User Library</td><td>Ort in Live ablesen (<i>Einstellungen → Library → Speicherort der User Library</i>), in Connect Studio unter <i>Einrichtung → Schritt 2</i> oder <i>Einstellungen</i> per „Ordner wählen …“ setzen, dann neu installieren.</td></tr>
       <tr><td>Gast kann nicht beitreten</td><td>Firewall-Abfrage bei A mit „Privat“ erlaubt? Beide im selben Netz? Einladung abgelaufen (Standard 24 h)?</td></tr>
       <tr><td>Kein DAW-Ton beim Gast</td><td>„Systemaudio teilen“ im Freigabedialog an? Live gibt über ASIO ohne Windows-Ausgang aus → im Interface-Treiber Loopback aktivieren oder Live auf ein Windows-Gerät stellen.</td></tr>
     </table>

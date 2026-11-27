@@ -5,6 +5,7 @@
 //! * [`AbletonOscAdapter`] – echte Verbindung über AbletonOSC (UDP, ausschließlich 127.0.0.1).
 
 pub mod ableton_osc;
+pub mod ableton_paths;
 pub mod command;
 pub mod diagnostics;
 pub mod error;

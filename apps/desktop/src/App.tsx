@@ -72,9 +72,18 @@ export default function App() {
       .catch((e) => setStatusError(errorMessage(e)));
   }, [refreshInfo]);
 
+  // Ohne Antwort von Live seltener fragen (spart Timeouts und Last), mit Verbindung jede Sekunde.
+  const lastOk = useRef(true);
+  useEffect(() => {
+    lastOk.current = !statusError;
+  }, [statusError]);
   useEffect(() => {
     void pollStatus();
-    const t = setInterval(() => void pollStatus(), POLL_MS);
+    let ticks = 0;
+    const t = setInterval(() => {
+      ticks++;
+      if (lastOk.current || ticks % 4 === 0) void pollStatus();
+    }, POLL_MS);
     return () => clearInterval(t);
   }, [pollStatus]);
 
@@ -255,6 +264,7 @@ export default function App() {
               setSettings(s);
               setPage("studio");
             }}
+            onSettings={setSettings}
           />
         )}
         {page === "settings" && settings && info && (

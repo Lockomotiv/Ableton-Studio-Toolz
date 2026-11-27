@@ -23,6 +23,7 @@ lom-signaling = { path = "../../../services/signaling" }
 lom-transfer = { path = "../../../services/transfer" }
 if-addrs = "0.13"
 dirs = "6"
+tauri-plugin-dialog = "2"
 
 [dev-dependencies]
 tempfile = "3"

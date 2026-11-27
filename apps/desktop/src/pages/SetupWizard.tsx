@@ -3,6 +3,7 @@ import type { AdapterKind, AppInfo, DiagnosticCheck, ProbeResult, Role, Settings
 import { api, errorMessage } from "../api";
 import { CheckList } from "../components/CheckList";
 import { VideoTile } from "./SessionPage";
+import { UserLibraryPicker } from "../components/UserLibraryPicker";
 
 interface Step {
   title: string;
@@ -25,6 +26,7 @@ export function SetupWizard(props: {
   settings: Settings;
   onAdapterChanged: (i: AppInfo) => Promise<void> | void;
   onDone: (s: Settings) => void;
+  onSettings: (s: Settings) => void;
 }) {
   const [step, setStep] = useState(0);
   const [checks, setChecks] = useState<DiagnosticCheck[] | null>(null);
@@ -133,7 +135,7 @@ export function SetupWizard(props: {
             </>
           )}
 
-          {step === 1 && <AbletonOscStep busy={busy} onCheck={diagnose} checks={checks} />}
+          {step === 1 && <AbletonOscStep busy={busy} onCheck={diagnose} checks={checks} settings={props.settings} onSettings={props.onSettings} />}
 
           {step === 2 && (
             <>
@@ -312,7 +314,7 @@ function NetworkInfo(props: { settings: Settings }) {
   );
 }
 
-function AbletonOscStep(props: { busy: boolean; onCheck: () => void; checks: DiagnosticCheck[] | null }) {
+function AbletonOscStep(props: { busy: boolean; onCheck: () => void; checks: DiagnosticCheck[] | null; settings: Settings; onSettings: (s: Settings) => void }) {
   const [info, setInfo] = useState<Awaited<ReturnType<typeof api.abletonoscInfo>> | null>(null);
   const [localOnly, setLocalOnly] = useState(true);
   const [result, setResult] = useState<Awaited<ReturnType<typeof api.abletonoscInstall>> | null>(null);
@@ -320,13 +322,14 @@ function AbletonOscStep(props: { busy: boolean; onCheck: () => void; checks: Dia
   const [working, setWorking] = useState(false);
   useEffect(() => {
     api.abletonoscInfo().then(setInfo).catch((e) => setErr(errorMessage(e)));
-  }, [result]);
+  }, [result, props.settings.userLibraryPath]);
   return (
     <>
       <p>
         Connect Studio steuert Live über das Open-Source-Remote-Script <strong>AbletonOSC</strong> (MIT-Lizenz). Eine geprüfte Version
         (Commit <code>{info?.commit?.slice(0, 7) ?? "0ca6821"}</code>) ist mitgeliefert und kann hier mit einem Klick installiert werden.
       </p>
+      <UserLibraryPicker settings={props.settings} onSettings={props.onSettings} />
       {info && (
         <div className={`banner ${info.installed ? "banner-ok" : "banner-warn"}`} data-testid="abletonosc-state">
           {info.installed

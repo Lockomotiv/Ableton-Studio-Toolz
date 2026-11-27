@@ -101,6 +101,23 @@ export interface Settings {
   lanPort: number;
   projectFolder: string;
   activeProjectId: string;
+  /** gewählte Ableton User Library; leer = automatisch erkennen */
+  userLibraryPath: string;
+}
+
+export interface LibraryCandidate {
+  path: string;
+  /** env | settings | live | default | drive */
+  source: string;
+  exists: boolean;
+  hasAbletonosc: boolean;
+}
+
+export interface AbletonLocations {
+  userLibrary: LibraryCandidate | null;
+  candidates: LibraryCandidate[];
+  installations: string[];
+  libraryCfgFiles: string[];
 }
 
 export interface HostingInfo {

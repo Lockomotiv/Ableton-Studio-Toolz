@@ -40,32 +40,7 @@ fn check(id: &str, label: &str, start: Instant, status: CheckStatus, detail: imp
 
 // ---------------------------------------------------------------- Ableton-Installation
 
-/// Sucht Ableton-Live-Programmdateien unter den Standard-Installationspfaden von Windows.
-pub fn find_ableton_installations() -> Vec<PathBuf> {
-    let mut roots: Vec<PathBuf> = Vec::new();
-    for var in ["ProgramData", "ProgramFiles", "ProgramW6432"] {
-        if let Ok(v) = std::env::var(var) {
-            roots.push(Path::new(&v).join("Ableton"));
-        }
-    }
-    let mut found = Vec::new();
-    for root in roots {
-        let Ok(entries) = std::fs::read_dir(&root) else { continue };
-        for e in entries.flatten() {
-            let program = e.path().join("Program");
-            let Ok(files) = std::fs::read_dir(&program) else { continue };
-            for f in files.flatten() {
-                let name = f.file_name().to_string_lossy().to_string();
-                if name.starts_with("Ableton Live") && name.to_lowercase().ends_with(".exe") {
-                    found.push(f.path());
-                }
-            }
-        }
-    }
-    found.sort();
-    found.dedup();
-    found
-}
+pub use crate::ableton_paths::find_ableton_installations;
 
 pub fn running_ableton_processes() -> Vec<String> {
     use sysinfo::{ProcessRefreshKind, ProcessesToUpdate, System};
@@ -82,23 +57,16 @@ pub fn running_ableton_processes() -> Vec<String> {
     names
 }
 
-/// Mögliche Orte des AbletonOSC-Remote-Scripts (User Library).
-pub fn abletonosc_candidates() -> Vec<PathBuf> {
-    let mut v = Vec::new();
-    if let Ok(custom) = std::env::var("LOM_ABLETON_USER_LIBRARY") {
-        v.push(PathBuf::from(custom).join("Remote Scripts").join("AbletonOSC"));
-    }
-    if let Some(docs) = dirs::document_dir() {
-        v.push(docs.join("Ableton").join("User Library").join("Remote Scripts").join("AbletonOSC"));
-    }
-    if let Some(home) = dirs::home_dir() {
-        v.push(home.join("Music").join("Ableton").join("User Library").join("Remote Scripts").join("AbletonOSC"));
-    }
-    v
+/// Mögliche Orte des AbletonOSC-Remote-Scripts (je User-Library-Kandidat).
+pub fn abletonosc_candidates(user_library: Option<&Path>) -> Vec<PathBuf> {
+    crate::ableton_paths::user_library_candidates(user_library)
+        .into_iter()
+        .map(|c| PathBuf::from(c.path).join("Remote Scripts").join("AbletonOSC"))
+        .collect()
 }
 
-pub fn find_abletonosc() -> Option<PathBuf> {
-    abletonosc_candidates()
+pub fn find_abletonosc(user_library: Option<&Path>) -> Option<PathBuf> {
+    abletonosc_candidates(user_library)
         .into_iter()
         .find(|p| p.join("manager.py").is_file() && p.join("abletonosc").join("osc_server.py").is_file())
 }
@@ -145,7 +113,7 @@ fn run_netstat() -> Option<String> {
 
 // ---------------------------------------------------------------- Gesamtlauf
 
-pub async fn run_all(adapter: &dyn DawAdapter, osc_send_port: u16, osc_listen_port: u16) -> Vec<DiagnosticCheck> {
+pub async fn run_all(adapter: &dyn DawAdapter, osc_send_port: u16, osc_listen_port: u16, user_library: Option<&Path>) -> Vec<DiagnosticCheck> {
     let mut out = Vec::new();
     let windows = cfg!(windows);
 
@@ -162,7 +130,7 @@ pub async fn run_all(adapter: &dyn DawAdapter, osc_send_port: u16, osc_listen_po
                   format!("Nur andere Live-Versionen gefunden:\n{}", inst.iter().map(|p| p.display().to_string()).collect::<Vec<_>>().join("\n")))
         } else {
             check("ableton_installed", "Ableton Live 12 installiert", t, CheckStatus::Fail,
-                  "Keine Ableton-Live-Programmdatei unter %ProgramData%\\Ableton oder %ProgramFiles%\\Ableton gefunden. Bei abweichendem Installationsort kann diese Prüfung fehlschlagen, obwohl Live installiert ist.")
+                  "Keine Ableton-Live-Programmdatei gefunden (gesucht: ProgramData/Program Files/Ableton auf allen Laufwerken). Tipp: Live starten – dann wird der Programmpfad am laufenden Prozess erkannt.")
         });
     } else {
         out.push(check("ableton_installed", "Ableton Live 12 installiert", t, CheckStatus::Skipped,
@@ -180,7 +148,7 @@ pub async fn run_all(adapter: &dyn DawAdapter, osc_send_port: u16, osc_listen_po
 
     // 3. AbletonOSC Remote Script vorhanden
     let t = Instant::now();
-    out.push(match find_abletonosc() {
+    out.push(match find_abletonosc(user_library) {
         Some(p) => {
             let local = std::fs::read_to_string(p.join("abletonosc").join("osc_server.py"))
                 .map(|c| c.contains("('127.0.0.1', OSC_LISTEN_PORT)"))
@@ -189,7 +157,7 @@ pub async fn run_all(adapter: &dyn DawAdapter, osc_send_port: u16, osc_listen_po
                   format!("{}{}", p.display(), if local { "\nKonfiguriert: nur lokal erreichbar (127.0.0.1)" } else { "" }))
         }
         None => check("abletonosc_installed", "AbletonOSC Remote Script installiert", t, CheckStatus::Fail,
-                      format!("Nicht gefunden. Gesucht in:\n{}", abletonosc_candidates().iter().map(|p| p.display().to_string()).collect::<Vec<_>>().join("\n"))),
+                      format!("Nicht gefunden. Gesucht in:\n{}", abletonosc_candidates(user_library).iter().map(|p| p.display().to_string()).collect::<Vec<_>>().join("\n"))),
     });
 
     // 4. Lokaler Antwortport
@@ -313,7 +281,7 @@ Active Connections
     #[tokio::test]
     async fn mock_diagnostics_never_claim_connection() {
         let m = crate::MockAdapter::new();
-        let checks = run_all(&m, 11000, 11001).await;
+        let checks = run_all(&m, 11000, 11001, None).await;
         let rt = checks.iter().find(|c| c.id == "osc_roundtrip").unwrap();
         assert_eq!(rt.status, CheckStatus::Skipped);
         let api = checks.iter().find(|c| c.id == "osc_api").unwrap();

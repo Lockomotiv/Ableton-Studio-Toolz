@@ -250,3 +250,5 @@ legend { color: var(--muted); padding: 0 6px; font-size: 12px; }
 }
 form.row .input.kind-select { width: 130px; }
 form.row .input.grow { width: auto; }
+.userlib { display: flex; flex-direction: column; gap: 8px; }
+.userlib .link { margin-right: 10px; }

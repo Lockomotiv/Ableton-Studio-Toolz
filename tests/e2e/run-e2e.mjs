@@ -142,8 +142,17 @@ async function main() {
   const listen = await freePort();
   const response = await freePort();
   const dataDir = mkdtempSync(join(tmpdir(), "lom-e2e-"));
-  const userLib = join(dataDir, "User Library");
-  const env = { ...process.env, LOM_ABLETON_USER_LIBRARY: userLib, LOM_DATA_DIR: dataDir, LOM_OSC_SEND_PORT: String(listen), LOM_OSC_LISTEN_PORT: String(response) };
+  // Simuliert eine User Library auf einem anderen "Laufwerk", die nur über Lives Library.cfg auffindbar ist
+  const driveG = join(dataDir, "Laufwerk G", "Ableton");
+  const userLib = join(driveG, "User Library");
+  mkdirSync(userLib, { recursive: true });
+  const appData = join(dataDir, "AppData");
+  mkdirSync(join(appData, "Ableton", "Live 12.1.5", "Preferences"), { recursive: true });
+  writeFileSync(
+    join(appData, "Ableton", "Live 12.1.5", "Preferences", "Library.cfg"),
+    `<?xml version="1.0" encoding="UTF-8"?>\n<Ableton><ContentLibrary><UserLibrary><LibraryProject><ProjectName Value="User Library" /><ProjectPath Value="${driveG}${WIN ? "\\" : "/"}" /></LibraryProject></UserLibrary></ContentLibrary></Ableton>`,
+  );
+  const env = { ...process.env, APPDATA: appData, LOM_DATA_DIR: dataDir, LOM_OSC_SEND_PORT: String(listen), LOM_OSC_LISTEN_PORT: String(response) };
 
   const driverArgs = (process.env.TAURI_DRIVER_ARGS ?? "").split(" ").filter(Boolean);
   const driver = start(process.env.TAURI_DRIVER ?? "tauri-driver", driverArgs, { env });
@@ -153,7 +162,8 @@ async function main() {
   });
 
   const session = await wd("POST", "/session", {
-    capabilities: { alwaysMatch: { browserName: "wry", "tauri:options": { application: APP } } },
+    // browserName "wry" nur für WebKitWebDriver (Linux); msedgedriver (Windows) erwartet ihn nicht
+    capabilities: { alwaysMatch: { ...(WIN ? {} : { browserName: "wry" }), "tauri:options": { application: APP } } },
   });
   sid = session.sessionId;
 
@@ -166,6 +176,8 @@ async function main() {
   // Ein-Klick-Installation des mitgelieferten AbletonOSC (in einen Test-Benutzerordner)
   await click('[data-testid="wizard-step-2"]');
   await waitFor(() => exists('[data-testid="abletonosc-state"]'));
+  const ulText = await waitFor(async () => (await exists('[data-testid="userlib-current"]')) && (await text('[data-testid="userlib-current"]')), 8000);
+  record("User Library über Lives Library.cfg erkannt (anderes Laufwerk)", ulText.includes("Laufwerk G") && ulText.includes("Library.cfg"), ulText.replace(/\s+/g, " ").slice(0, 140));
   await click('[data-testid="btn-abletonosc-install"]');
   const installed = await waitFor(() => exists('[data-testid="abletonosc-installed"]'), 10000).catch(() => false);
   const srv = join(userLib, "Remote Scripts", "AbletonOSC", "abletonosc", "osc_server.py");
@@ -179,6 +191,17 @@ async function main() {
   await waitFor(async () => !(await text('[data-testid="btn-abletonosc-install"]')).includes("Installiere"));
   await sleep(600);
   await screenshot("06-einrichtung-abletonosc-installiert.png");
+
+  // Manuelle Wahl eines anderen Ordners hat Vorrang
+  const manualLib = join(dataDir, "Andere Library");
+  mkdirSync(manualLib, { recursive: true });
+  await type('[data-testid="userlib-input"]', manualLib);
+  await click('[data-testid="btn-userlib-save"]');
+  const manualText = await waitFor(async () => {
+    const t = await text('[data-testid="userlib-current"]');
+    return t.includes("Andere Library") && t;
+  }, 8000).catch(() => "");
+  record("Manuell gewählte User Library hat Vorrang und wird gespeichert", manualText.includes("von Ihnen gewählt"), manualText.replace(/\s+/g, " ").slice(0, 120));
 
   await click('[data-testid="nav-studio"]');
   await waitFor(async () => (await badge()) === "mock");
@@ -345,8 +368,14 @@ async function main() {
 }
 
 main()
-  .catch((e) => {
+  .catch(async (e) => {
     record("E2E-Lauf", false, e.message);
+    try {
+      await screenshot("fehler-e2e.png");
+      console.log("  Badge beim Fehler:", (await text('[data-testid="connection-badge"]')).replace(/\n/g, " | "));
+    } catch {
+      /* Sitzung evtl. schon weg */
+    }
   })
   .finally(async () => {
     stopAll();

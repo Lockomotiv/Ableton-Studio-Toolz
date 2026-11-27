@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { AdapterKind, AppInfo, Settings } from "@lom/shared-types";
 import { api, errorMessage } from "../api";
+import { UserLibraryPicker } from "../components/UserLibraryPicker";
 
 export function SettingsPage(props: {
   info: AppInfo;
@@ -127,6 +128,11 @@ export function SettingsPage(props: {
             Einrichtungsassistent erneut öffnen
           </button>
         </div>
+      </section>
+
+      <section className="card">
+        <div className="card-title">Ableton User Library</div>
+        <UserLibraryPicker settings={settings} onSettings={props.onSettings} />
       </section>
     </div>
   );

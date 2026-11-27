@@ -252,7 +252,7 @@ async fn diagnostics_against_harness() {
     if skip() { return; }
     let h = Harness::start();
     let a = h.adapter().await;
-    let checks = run_all(&a, h.listen, h.response).await;
+    let checks = run_all(&a, h.listen, h.response, None).await;
     let get = |id: &str| checks.iter().find(|c| c.id == id).unwrap().clone();
     assert_eq!(get("osc_roundtrip").status, CheckStatus::Pass);
     assert_eq!(get("live_version").status, CheckStatus::Pass);

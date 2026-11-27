@@ -208,7 +208,8 @@ async fn set_adapter(state: tauri::State<'_, AppState>, kind: AdapterKind) -> Cm
 #[tauri::command]
 async fn run_diagnostics(state: tauri::State<'_, AppState>) -> CmdResult<Vec<DiagnosticCheck>> {
     let adapter = state.current().await;
-    let mut checks = diagnostics::run_all(adapter.as_ref(), state.osc.send_port, state.osc.listen_port).await;
+    let choice = user_library_choice(&state);
+    let mut checks = diagnostics::run_all(adapter.as_ref(), state.osc.send_port, state.osc.listen_port, choice.as_deref()).await;
     let db_err = state.settings_error.lock().unwrap().clone();
     checks.push(DiagnosticCheck {
         id: "settings_db".into(),
@@ -330,16 +331,55 @@ fn bundled_abletonosc(app: &tauri::AppHandle) -> PathBuf {
         .unwrap_or_else(|_| PathBuf::from("resources/AbletonOSC"))
 }
 
+fn user_library_choice(state: &AppState) -> Option<PathBuf> {
+    let g = state.settings.lock().unwrap();
+    g.as_ref()
+        .and_then(|s| s.load().ok())
+        .map(|s| s.user_library_path.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .map(PathBuf::from)
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AbletonLocations {
+    /// verwendete User Library (null = keine bestimmbar)
+    user_library: Option<lom_daw_bridge::ableton_paths::Candidate>,
+    candidates: Vec<lom_daw_bridge::ableton_paths::Candidate>,
+    installations: Vec<String>,
+    library_cfg_files: Vec<String>,
+}
+
+/// Wo liegen Live und die User Library? (Library.cfg, Laufwerke, laufender Prozess)
 #[tauri::command]
-fn abletonosc_info(app: tauri::AppHandle) -> CmdResult<abletonosc_install::BundledInfo> {
-    let rs = abletonosc_install::remote_scripts_dir();
+async fn ableton_locations(state: tauri::State<'_, AppState>) -> CmdResult<AbletonLocations> {
+    let choice = user_library_choice(&state);
+    let r = tauri::async_runtime::spawn_blocking(move || {
+        use lom_daw_bridge::ableton_paths as ap;
+        let candidates = ap::user_library_candidates(choice.as_deref());
+        AbletonLocations {
+            user_library: ap::resolve_user_library(&candidates),
+            installations: ap::find_ableton_installations().iter().map(|p| p.display().to_string()).collect(),
+            library_cfg_files: ap::library_cfg_files().iter().map(|p| p.display().to_string()).collect(),
+            candidates,
+        }
+    })
+    .await
+    .map_err(|e| err("paths", e.to_string()))?;
+    Ok(r)
+}
+
+#[tauri::command]
+fn abletonosc_info(app: tauri::AppHandle, state: tauri::State<'_, AppState>) -> CmdResult<abletonosc_install::BundledInfo> {
+    let rs = abletonosc_install::remote_scripts_dir(user_library_choice(&state).as_deref());
     Ok(abletonosc_install::info(&bundled_abletonosc(&app), rs.as_deref()))
 }
 
 /// Kopiert das mitgelieferte AbletonOSC in die User Library (nur auf Klick).
 #[tauri::command]
 fn abletonosc_install(app: tauri::AppHandle, state: tauri::State<'_, AppState>, local_only: bool) -> CmdResult<abletonosc_install::InstallResult> {
-    let rs = abletonosc_install::remote_scripts_dir().ok_or_else(|| err("install", "Dokumente-Ordner nicht bestimmbar"))?;
+    let rs = abletonosc_install::remote_scripts_dir(user_library_choice(&state).as_deref())
+        .ok_or_else(|| err("install", "Ableton User Library nicht bestimmbar – bitte den Ordner wählen"))?;
     let backups = if std::env::var("LOM_DATA_DIR").is_ok() {
         state.data_dir.join("backups")
     } else {
@@ -430,6 +470,7 @@ fn env_adapter() -> Option<AdapterKind> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let data_dir = std::env::var("LOM_DATA_DIR")
                 .map(PathBuf::from)
@@ -510,6 +551,7 @@ pub fn run() {
             hosting_stop,
             abletonosc_info,
             abletonosc_install,
+            ableton_locations,
         ])
         .run(tauri::generate_context!())
         .expect("Fehler beim Start von Connect Studio");

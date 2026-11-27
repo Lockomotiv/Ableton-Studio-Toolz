@@ -45,6 +45,8 @@ pub struct Settings {
     pub project_folder: String,
     /// Zuletzt geöffnetes Hub-Projekt
     pub active_project_id: String,
+    /// Vom Benutzer gewählte Ableton User Library (leer = automatisch erkennen)
+    pub user_library_path: String,
 }
 
 impl Default for Settings {
@@ -62,6 +64,7 @@ impl Default for Settings {
             lan_port: 47870,
             project_folder: String::new(),
             active_project_id: String::new(),
+            user_library_path: String::new(),
         }
     }
 }

@@ -34,7 +34,7 @@ const status = (over: Partial<LiveStatus> = {}): LiveStatus => ({
 
 const settings: Settings = {
   role: "host", defaultMode: "remote", adapter: "mock", setupCompleted: true, displayName: "Test", siteId: "site1",
-  signalingUrl: "", usePublicStun: true, extraStun: "", lanPort: 47870, projectFolder: "", activeProjectId: "",
+  signalingUrl: "", usePublicStun: true, extraStun: "", lanPort: 47870, projectFolder: "", activeProjectId: "", userLibraryPath: "",
 };
 
 describe("badgeState", () => {
